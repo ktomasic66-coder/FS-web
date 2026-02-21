@@ -24,6 +24,7 @@ const LOG_FILE = path.join(__dirname, 'admin-logs.json');
 
 const uploadPath = path.join(__dirname, 'public/uploads');
 const backupDir = path.join(__dirname, 'backups');
+const SESSION_FILE = path.join(__dirname, 'sessions.json');
 
 /* funkcje loga */
 
@@ -123,6 +124,52 @@ function readJsonSafe(filePath, fallback) {
 
 function writeJsonSafe(filePath, data) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+}
+
+function readSessionMap() {
+  return readJsonSafe(SESSION_FILE, {});
+}
+
+function writeSessionMap(data) {
+  writeJsonSafe(SESSION_FILE, data);
+}
+
+class FileSessionStore extends session.Store {
+  get(sid, callback) {
+    try {
+      const map = readSessionMap();
+      const raw = map[sid];
+      callback(null, raw ? JSON.parse(raw) : null);
+    } catch (err) {
+      callback(err);
+    }
+  }
+
+  set(sid, sess, callback) {
+    try {
+      const map = readSessionMap();
+      map[sid] = JSON.stringify(sess);
+      writeSessionMap(map);
+      callback && callback(null);
+    } catch (err) {
+      callback && callback(err);
+    }
+  }
+
+  destroy(sid, callback) {
+    try {
+      const map = readSessionMap();
+      delete map[sid];
+      writeSessionMap(map);
+      callback && callback(null);
+    } catch (err) {
+      callback && callback(err);
+    }
+  }
+
+  touch(sid, sess, callback) {
+    this.set(sid, sess, callback);
+  }
 }
 
 /* ----- Gallery ----- */
@@ -273,12 +320,20 @@ app.set('view engine', 'ejs');
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.set('trust proxy', 1);
 
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    store: new FileSessionStore(),
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 * 24 * 7,
+    },
   })
 );
 
