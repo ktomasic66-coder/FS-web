@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Slavonska Ravnica | FS25 Server</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+
+<div id="particles-js"></div>
+
+<nav class="navbar">
+    <div class="logo">
+        <img src="/images/logo.png" alt="SR Logo">
+        <span>Slavonska Ravnica</span>
+    </div>
+
+    <ul>
+        <li><a href="/">Početna</a></li>
+        <li><a href="/galerija">Galerija</a></li>
+        <li><a href="/pravila">Pravila</a></li>
+        <li><a href="/statistika">Statistika</a></li>
+
+        <% if(user){ %>
+            <li><a href="/profile">Profil</a></li>
+            <li><a href="/admin">Admin</a></li>
+            <li><a href="/logout">Logout</a></li>
+        <% } else { %>
+            <li><a href="/auth/discord">Login</a></li>
+        <% } %>
+    </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+    <div class="hero-content">
+        <h1>Slavonska Ravnica  FS25 Server</h1>
+        <p>
+            Realističan Farming Simulator 25 multiplayer s fokusom na ekonomiju,
+            timski rad i dugoročni razvoj farmi.
+        </p>
+
+        <% if(!user){ %>
+            <a href="/auth/discord" class="btn-primary">
+                Prijava putem Discorda
+            </a>
+        <% } else { %>
+            <div class="profile">
+                <img src="https://cdn.discordapp.com/avatars/<%= user.id %>/<%= user.avatar %>.png">
+                <h2><%= user.username %></h2>
+            </div>
+        <% } %>
+    </div>
+</section>
+
+<div class="news-section">
+  <section class="news-section">
+  <h2 class="news-title">📰 Novosti</h2>
+
+  <% if(!news || news.length === 0) { %>
+    <p class="no-news">Nema objava.</p>
+  <% } else { %>
+    <div class="news-grid">
+      <% news.slice(0,4).forEach(post => { %>
+        <div class="news-card">
+          <h3><%= post.title %></h3>
+
+          <p class="news-content">
+            <%= post.content.length > 120 ? post.content.substring(0,120) + "..." : post.content %>
+          </p>
+
+          <div class="news-meta">
+            <span><%= post.author %></span>
+            <span><%= post.date %></span>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</section>
+</div>
+
+<!-- TKO SMO MI -->
+<section class="section">
+    <h2>Tko smo mi</h2>
+    <p>
+        Slavonska Ravnica je zajednica igrača koji žele kvalitetno i organizirano FS25 iskustvo.
+        Gradimo server gdje trud ima vrijednost, a napredak dolazi kroz rad i suradnju.
+        Kod nas farme imaju priču.
+    </p>
+</section>
+
+<!-- STO NUDIMO -->
+<section class="section cards">
+    <div class="card">
+        <h3>🚜 Realistična ekonomija</h3>
+        <p>Balansiran sustav napretka bez preskakanja faza.</p>
+    </div>
+
+    <div class="card">
+        <h3>👥 Aktivna zajednica</h3>
+        <p>Ozbiljna i organizirana ekipa.</p>
+    </div>
+
+    <div class="card">
+        <h3>🏆 Eventovi</h3>
+        <p>Redovni izazovi i zajednički projekti.</p>
+    </div>
+
+    <div class="card">
+        <h3>🛠 Stabilan server</h3>
+        <p>Optimizirano i dugoročno iskustvo.</p>
+    </div>
+</section>
+
+<!-- KAKO SE PRIDRUZITI -->
+<section class="section join-section">
+    <h2>Kako se pridružiti</h2>
+
+    <div class="join-steps">
+        <div class="step">
+            <span>1</span>
+            <p>Prijavi se putem Discorda</p>
+        </div>
+
+        <div class="step">
+            <span>2</span>
+            <p>Pridružo se Discordu</p>
+        </div>
+
+        <div class="step">
+            <span>3</span>
+            <p>Otvori tiket za role PLAYER</p>
+        </div>
+
+        <div class="step">
+            <span>4</span>
+            <p>Kreni graditi svoju farmu</p>
+        </div>
+    </div>
+</section>
+
+
+<!-- CTA -->
+<section class="cta-banner">
+    <h2>Spreman za ozbiljan multiplayer?</h2>
+
+    <% if(!user){ %>
+        <a href="/auth/discord" class="btn-primary">
+            Prijavi se da bi se pridružio
+        </a>
+    <% } else { %>
+        <a href="https://discord.gg/slavonskaravnica" class="btn-primary" target="_blank">
+            Pridruži se zajednici
+        </a>
+    <% } %>
+</section>
+
+
+<script src="https://cdn.jsdelivr.net/npm/particles.js"></script>
+<script>
+particlesJS("particles-js", {
+  particles: {
+    number: { value: 70 },
+    size: { value: 3 },
+    move: { speed: 1 },
+    line_linked: { enable: true, opacity: 0.2 },
+  }
+});
+</script>
+
+</body>
+</html>

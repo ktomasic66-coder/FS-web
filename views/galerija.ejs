@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Galerija</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">
+        <img src="/images/logo.png" alt="SR Logo">
+        <span>Slavonska Ravnica</span>
+    </div>
+    <ul>
+        <li><a href="/">Početna</a></li>
+        <li><a href="/galerija">Galerija</a></li>
+        <li><a href="/pravila">Pravila</a></li>
+        <li><a href="/statistika">Statistika</a></li>
+        <% if(user){ %>
+            <li><a href="/profile">Profil</a></li>
+            <li><a href="/admin">Admin</a></li>
+            <li><a href="/logout">Logout</a></li>
+        <% } else { %>
+            <li><a href="/auth/discord">Login</a></li>
+        <% } %>
+    </ul>
+</nav> 
+
+<div class="section">
+
+<h1 class="gallery-title">Galerija Zajednice 🚜</h1>
+
+<% if(user && isPlayer){ %>
+<form action="/upload" method="POST" enctype="multipart/form-data" class="upload-form">
+    <input type="file" name="image" required>
+    <button class="btn-primary">Upload sliku</button>
+</form>
+<% } %>
+
+<div class="gallery-grid">
+
+<% if (gallery && gallery.length > 0) { %>
+
+    <% gallery.forEach(function(img){ %>
+
+    <div class="gallery-card">
+
+        <!-- SLIKA -->
+        <img 
+            src="/uploads/<%= img.filename %>" 
+            onclick="openLightbox('/uploads/<%= img.filename %>')"
+            alt="slika"
+        >
+
+        <!-- DELETE (ADMIN) -->
+        <% if (isAdmin) { %>
+        <form action="/delete/<%= img.filename %>" method="POST" onsubmit="return confirm('Obrisati sliku?')">
+            <button type="submit" class="delete-btn">Obriši</button>
+        </form>
+        <% } %>
+
+        <!-- UPLOADER -->
+        <div class="uploader">
+            <img src="https://cdn.discordapp.com/avatars/<%= img.uploaderId %>/<%= img.uploaderAvatar %>.png">
+            <span><%= img.uploaderName %></span>
+        </div>
+
+        <!-- KOMENTARI -->
+        <div class="comments">
+
+            <% if(img.comments && img.comments.length > 0){ %>
+                <% img.comments.forEach(function(c){ %>
+                    <div class="comment">
+                        <strong><%= c.user %>:</strong> <%= c.text %>
+                    </div>
+                <% }) %>
+            <% } %>
+
+            <% if(user){ %>
+            <form action="/comment/<%= img.filename %>" method="POST">
+                <input type="text" name="comment" placeholder="Dodaj komentar..." required>
+            </form>
+            <% } %>
+
+        </div>
+
+    </div>
+
+    <% }) %>
+
+<% } else { %>
+
+    <p>Nema uploadanih slika.</p>
+
+<% } %>
+
+</div>
+</div>
+
+<!-- LIGHTBOX -->
+<div id="lightbox" class="lightbox" onclick="closeLightbox()">
+    <img id="lightbox-img">
+</div>
+
+<script>
+function openLightbox(src){
+    document.getElementById("lightbox").style.display = "flex";
+    document.getElementById("lightbox-img").src = src;
+}
+function closeLightbox(){
+    document.getElementById("lightbox").style.display = "none";
+}
+</script>
+
+</body>
+</html>

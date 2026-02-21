@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="/style.css">
+
+  <script>
+    function togglePanel(id) {
+      const el = document.getElementById(id);
+      el.classList.toggle("open");
+    }
+  </script>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="logo">
+    <img src="/images/logo.png" alt="SR Logo">
+    <span>Slavonska Ravnica</span>
+  </div>
+  <ul>
+    <li><a href="/">Početna</a></li>
+    <li><a href="/galerija">Galerija</a></li>
+    <li><a href="/pravila">Pravila</a></li>
+    <li><a href="/statistika">Statistika</a></li>
+    <li><a href="/profile">Profil</a></li>
+    <li><a href="/logout">Logout</a></li>
+  </ul>
+</nav>
+
+<div class="hero">
+  <div class="admin-wrapper">
+
+    <h1>🛠 Admin Panel</h1>
+
+    <!-- ================= STATISTIKA ================= -->
+    <div class="admin-section">
+      <div class="admin-header" onclick="togglePanel('stats')">
+        📊 Statistika
+      </div>
+
+      <div id="stats" class="admin-content">
+        <p>Discord članovi: <strong><%= discordMembers %></strong></p>
+        <p>Ukupno slika: <strong><%= imagesCount %></strong></p>
+        <p>Objave: <strong><%= newsCount %></strong></p>
+      </div>
+    </div>
+
+
+    <!-- ================= NOVOSTI ================= -->
+    <div class="admin-section">
+      <div class="admin-header" onclick="togglePanel('news')">
+        📰 Upravljanje novostima
+      </div>
+
+      <div id="news" class="admin-content">
+
+        <!-- DODAJ NOVOST -->
+        <form method="POST" action="/admin/news">
+          <input type="text" name="title" placeholder="Naslov" required>
+          <textarea name="content" placeholder="Sadržaj..." required></textarea>
+          <button type="submit">Objavi</button>
+        </form>
+
+        <hr style="margin:30px 0; opacity:.2;">
+
+        <h3>Postojeće objave</h3>
+
+        <% if(news && news.length > 0){ %>
+
+          <% news.forEach(post => { %>
+
+            <div class="admin-news-item">
+
+  <div class="news-left">
+    <strong><%= post.title %></strong>
+    <small><%= post.date %></small>
+  </div>
+
+  <form method="POST" action="/admin/news/delete/<%= post.id %>"
+        onsubmit="return confirm('Obrisati ovu objavu?')">
+    <button type="submit" class="delete-btn">Obriši</button>
+  </form>
+
+</div>
+
+          <% }) %>
+
+        <% } else { %>
+
+          <p style="opacity:.6;">Nema objava.</p>
+
+        <% } %>
+
+      </div>
+    </div>
+
+
+    <!-- ================= PRAVILA ================= -->
+    <div class="admin-section">
+      <div class="admin-header" onclick="togglePanel('rules')">
+        📜 Uredi pravila
+      </div>
+
+      <div id="rules" class="admin-content">
+        <form method="POST" action="/admin/rules">
+          <textarea name="content" placeholder="Upiši pravila..."></textarea>
+          <button type="submit">Spremi</button>
+        </form>
+      </div>
+    </div>
+
+
+    <!-- ================= BLACKLIST ================= -->
+    <div class="admin-section">
+      <div class="admin-header" onclick="togglePanel('blacklist')">
+        ⛔ Blacklist
+      </div>
+
+      <div id="blacklist" class="admin-content">
+        <form method="POST" action="/admin/blacklist/add">
+          <input type="text" name="userId" placeholder="Discord User ID">
+          <button type="submit">Dodaj</button>
+        </form>
+      </div>
+    </div>
+
+
+    <!-- ================= LOGOVI ================= -->
+    <div class="admin-section">
+      <div class="admin-header" onclick="togglePanel('logs')">
+        📜 Admin logovi
+      </div>
+
+      <div id="logs" class="admin-content">
+
+        <% if(!logs || logs.length === 0){ %>
+
+          <p style="opacity:.6;">Nema logova.</p>
+
+        <% } else { %>
+
+          <% logs.slice(0,20).forEach(log => { %>
+
+            <div class="log-entry">
+              <strong><%= log.admin %></strong> – <%= log.action %>
+              <div class="log-date"><%= log.date %></div>
+            </div>
+
+          <% }) %>
+
+        <% } %>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
