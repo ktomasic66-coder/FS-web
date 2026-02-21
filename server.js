@@ -1,4 +1,4 @@
-require('dotenv').config();
+﻿require('dotenv').config();
 
 let mainGuild = null;
 
@@ -76,16 +76,16 @@ const discordClient = new Client({
 let discordMemberCount = 0;
 
 discordClient.once('clientReady', async () => {
-  console.log(`🤖 Bot prijavljen kao ${discordClient.user.tag}`);
+  console.log(`ðŸ¤– Bot prijavljen kao ${discordClient.user.tag}`);
 
   try {
     mainGuild = await discordClient.guilds.fetch(GUILD_ID);
     await mainGuild.members.fetch(); // cache members
     discordMemberCount = mainGuild.memberCount;
 
-    console.log('📊 Discord članovi:', discordMemberCount);
+    console.log('ðŸ“Š Discord Älanovi:', discordMemberCount);
   } catch (err) {
-    console.log('❌ Guild error:', err.message);
+    console.log('âŒ Guild error:', err.message);
   }
 });
 
@@ -322,13 +322,13 @@ app.get('/profile', (req, res) => {
 app.get('/admin', requireAdmin, (req, res) => {
 
   const logs = loadLogs();
-  const news = loadNews();        // ⬅️ OVO TI FALI
+  const news = loadNews();        // â¬…ï¸ OVO TI FALI
   const images = loadGallery();
 
   res.render('admin', {
     user: req.user,
     logs: logs,
-    news: news,                   // ⬅️ OVO MORA BITI POSLANO
+    news: news,                   // â¬…ï¸ OVO MORA BITI POSLANO
     discordMembers: discordMemberCount,
     imagesCount: images.length,
     newsCount: news.length
@@ -380,7 +380,7 @@ app.post('/admin/rules', requireAdmin, (req, res) => {
   const content = req.body.content || '';
   saveRules({ content });
 
-  logAction('Pravila uređena', req.user.username);
+  logAction('Pravila ureÄ‘ena', req.user.username);
   res.redirect('/admin');
 });
 
@@ -408,9 +408,9 @@ app.post('/admin/blacklist/remove', requireAdmin, (req, res) => {
 
 app.get('/statistika', async (req, res) => {
   const stats = {
-    serverStatus: 'Online (ručno / G-Portal)',
-    playersOnline: '—',
-    maxPlayers: '—',
+    serverStatus: 'Online (ruÄno / G-Portal)',
+    playersOnline: 'â€”',
+    maxPlayers: 'â€”',
     discordMembers: discordMemberCount,
   };
 
@@ -457,7 +457,7 @@ app.post('/upload', async (req, res) => {
   if (!isPlayer) return res.redirect('/no-permission');
 
   upload.single('image')(req, res, function (err) {
-    if (err) return res.send('Greška.');
+    if (err) return res.send('GreÅ¡ka.');
 
     const gallery = loadGallery();
 
@@ -478,7 +478,7 @@ app.post('/upload', async (req, res) => {
 
 function sanitizeComment(text) {
   const t = String(text || '').slice(0, 300); // max 300 znakova
-  // osnovno “čišćenje” (nije savršeno, ali je ok za start)
+  // osnovno â€œÄiÅ¡Ä‡enjeâ€ (nije savrÅ¡eno, ali je ok za start)
   return t.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
@@ -561,4 +561,6 @@ app.get('/logout', (req, res) => {
 
 /* ===== START ===== */
 
-app.listen(3000, () => console.log('🚜 FS25 Web pokrenut na portu 3000'));
+const PORT = Number(process.env.PORT) || 3000;
+app.listen(PORT, () => console.log('FS25 Web pokrenut na portu ' + PORT));
+
