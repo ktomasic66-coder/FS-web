@@ -4,6 +4,61 @@
     <title>Slavonska Ravnica | FS25 Server</title>
     <link rel="icon" type="image/png" href="/images/logo.png">
     <link rel="stylesheet" href="/style.css">
+    <style>
+      .news-modal-overlay {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 99999;
+      }
+
+      .news-modal-overlay.open { display: flex; }
+
+      .news-modal {
+        position: relative;
+        width: min(760px, 100%);
+        max-height: 88vh;
+        overflow-y: auto;
+        background: rgba(5, 18, 14, 0.96);
+        border: 1px solid #00ff9d;
+        border-radius: 18px;
+        box-shadow: 0 0 35px rgba(0, 255, 157, 0.15);
+        padding: 24px 22px;
+        color: #e9fff6;
+        transform: translateY(34px) scale(0.98);
+        opacity: 0;
+        transition: transform 220ms ease, opacity 220ms ease;
+      }
+
+      .news-modal-overlay.show .news-modal {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+
+      .news-modal-close {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 34px;
+        height: 34px;
+        border: 1px solid rgba(0, 255, 157, 0.35);
+        border-radius: 10px;
+        background: transparent;
+        color: #d8fff0;
+        cursor: pointer;
+        font-size: 20px;
+        line-height: 1;
+      }
+
+      .news-modal-content {
+        white-space: pre-line;
+        line-height: 1.7;
+      }
+    </style>
 </head>
 
 <body>
@@ -83,7 +138,7 @@
 
 <div id="newsModalOverlay" class="news-modal-overlay">
   <div class="news-modal" role="dialog" aria-modal="true" aria-labelledby="newsModalTitle">
-    <button id="newsModalClose" class="news-modal-close" type="button" aria-label="Zatvori">x</button>
+    <button id="newsModalClose" class="news-modal-close" type="button" aria-label="Zatvori">&times;</button>
     <h3 id="newsModalTitle"></h3>
     <p id="newsModalContent" class="news-modal-content"></p>
     <div class="news-modal-meta">
@@ -188,6 +243,7 @@ const newsModalContent = document.getElementById("newsModalContent");
 const newsModalAuthor = document.getElementById("newsModalAuthor");
 const newsModalDate = document.getElementById("newsModalDate");
 const newsModalClose = document.getElementById("newsModalClose");
+const newsModal = newsModalOverlay.querySelector(".news-modal");
 
 function openNewsModal(index) {
   const post = NEWS_DATA[index];
@@ -198,10 +254,12 @@ function openNewsModal(index) {
   newsModalAuthor.textContent = post.author || "";
   newsModalDate.textContent = post.date || "";
   newsModalOverlay.classList.add("open");
+  requestAnimationFrame(() => newsModalOverlay.classList.add("show"));
 }
 
 function closeNewsModal() {
-  newsModalOverlay.classList.remove("open");
+  newsModalOverlay.classList.remove("show");
+  setTimeout(() => newsModalOverlay.classList.remove("open"), 220);
 }
 
 document.querySelectorAll(".news-card").forEach((card) => {
@@ -215,6 +273,7 @@ document.querySelectorAll(".news-card").forEach((card) => {
 });
 
 newsModalClose.addEventListener("click", closeNewsModal);
+newsModal.addEventListener("click", (e) => e.stopPropagation());
 newsModalOverlay.addEventListener("click", (e) => {
   if (e.target === newsModalOverlay) closeNewsModal();
 });
