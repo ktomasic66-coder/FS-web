@@ -633,6 +633,7 @@ body::before {
   background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
   opacity: 0;
   transition: 0.4s ease;
+  pointer-events: none;
 }
 
 .gallery-card:hover::after {
@@ -662,6 +663,7 @@ body::before {
   cursor: pointer;
   font-weight: 600;
   transition: 0.3s ease;
+  z-index: 20;
 }
 
 .delete-btn:hover {

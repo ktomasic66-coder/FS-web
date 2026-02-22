@@ -777,27 +777,32 @@ app.post('/comment/:image', async (req, res) => {
 /* ===== DELETE (ADMIN+) ===== */
 
 async function handleDeleteImage(req, res, filenameRaw) {
-  if (!req.user) return res.redirect('/');
+  try {
+    if (!req.user) return res.redirect('/');
 
-  const roles = req.user.roles?.length ? req.user.roles : await getMemberRoles(req.user.id);
-  const isAdmin = isGalleryAdminByRoles(roles);
+    const roles = req.user.roles?.length ? req.user.roles : await getMemberRoles(req.user.id);
+    const isAdmin = isGalleryAdminByRoles(roles);
 
-  if (!isAdmin) return res.redirect('/no-permission');
+    if (!isAdmin) return res.redirect('/no-permission');
 
-  const filename = String(filenameRaw || '').trim();
-  if (!filename) return res.redirect('/galerija');
+    const filename = String(filenameRaw || '').trim();
+    if (!filename) return res.redirect('/galerija');
 
-  const imagePath = path.join(__dirname, 'public/uploads', filename);
+    const imagePath = path.join(__dirname, 'public/uploads', filename);
 
-  // backup prije brisanja
-  backupGallery();
+    // backup prije brisanja
+    backupGallery();
 
-  if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+    if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
 
-  await deleteGalleryImageByFilename(filename);
+    await deleteGalleryImageByFilename(filename);
 
-  logAction(`Obrisana slika: ${filename}`, req.user.username);
-  res.redirect('/galerija');
+    logAction(`Obrisana slika: ${filename}`, req.user.username);
+    return res.redirect('/galerija');
+  } catch (err) {
+    console.log('DELETE IMAGE ERROR:', err.message);
+    return res.redirect('/galerija');
+  }
 }
 
 app.post('/delete/:image', async (req, res) => {
