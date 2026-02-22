@@ -356,7 +356,12 @@ async function addGalleryImage(item) {
   }
 
   await dbPool.query(
-    'INSERT INTO gallery_images (filename, uploader_id, uploader_name, uploader_avatar) VALUES (?, ?, ?, ?)',
+    `INSERT INTO gallery_images (filename, uploader_id, uploader_name, uploader_avatar)
+     VALUES (?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+       uploader_id = VALUES(uploader_id),
+       uploader_name = VALUES(uploader_name),
+       uploader_avatar = VALUES(uploader_avatar)`,
     [item.filename, item.uploaderId, item.uploaderName, item.uploaderAvatar || null]
   );
 }
@@ -388,6 +393,8 @@ async function deleteGalleryImageByFilename(filename) {
     writeJsonSafe(DATA_FILE, gallery);
     return;
   }
+  // Brisi komentare eksplicitno pa sliku (radi i ako FK cascade nije aktivan).
+  await dbPool.query('DELETE FROM gallery_comments WHERE image_filename = ?', [filename]);
   await dbPool.query('DELETE FROM gallery_images WHERE filename = ?', [filename]);
 }
 
@@ -761,14 +768,18 @@ app.post('/upload', async (req, res) => {
 
   upload.single('image')(req, res, async function (err) {
     if (err) return res.send('GreÅ¡ka.');
-
-    await addGalleryImage({
-      filename: req.file.filename,
-      uploaderId: req.user.id,
-      uploaderName: req.user.username,
-      uploaderAvatar: req.user.avatar,
-    });
-    res.redirect('/galerija');
+    try {
+      await addGalleryImage({
+        filename: req.file.filename,
+        uploaderId: req.user.id,
+        uploaderName: req.user.username,
+        uploaderAvatar: req.user.avatar,
+      });
+      return res.redirect('/galerija');
+    } catch (e) {
+      console.log('UPLOAD IMAGE ERROR:', e.message);
+      return res.redirect('/galerija');
+    }
   });
 });
 
@@ -826,6 +837,7 @@ async function handleDeleteImage(req, res, filenameRaw) {
     return res.redirect('/galerija');
   } catch (err) {
     console.log('DELETE IMAGE ERROR:', err.message);
+    console.log('DELETE IMAGE TARGET:', filenameRaw);
     return res.redirect('/galerija');
   }
 }
