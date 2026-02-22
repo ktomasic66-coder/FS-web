@@ -651,7 +651,7 @@ body::before {
 }
 
 
-.delete-btn {
+.gallery-delete-btn {
   position: absolute;
   top: 12px;
   right: 12px;
@@ -666,7 +666,7 @@ body::before {
   z-index: 20;
 }
 
-.delete-btn:hover {
+.gallery-delete-btn:hover {
   transform: scale(1.1);
   box-shadow: 0 0 20px rgba(255,0,0,0.6);
 }

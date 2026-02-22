@@ -182,15 +182,40 @@ class FileSessionStore extends session.Store {
 
 /* ----- Gallery ----- */
 async function initMySql() {
-  if (!process.env.MYSQL_URL || !mysql) return;
+  if (!mysql) {
+    console.log('MySQL driver nije dostupan, fallback na JSON.');
+    return;
+  }
+
+  const mysqlUrl = process.env.MYSQL_URL || process.env.DATABASE_URL || '';
+  const mysqlHost = process.env.MYSQLHOST || '';
+  const mysqlPort = Number(process.env.MYSQLPORT || 3306);
+  const mysqlUser = process.env.MYSQLUSER || '';
+  const mysqlPassword = process.env.MYSQLPASSWORD || '';
+  const mysqlDatabase = process.env.MYSQLDATABASE || '';
+
+  if (!mysqlUrl && !mysqlHost) {
+    console.log('MYSQL_URL/MYSQLHOST nije postavljen, fallback na JSON.');
+    return;
+  }
 
   try {
-    dbPool = mysql.createPool({
-      uri: process.env.MYSQL_URL,
-      connectionLimit: 8,
-      waitForConnections: true,
-      queueLimit: 0,
-    });
+    if (mysqlUrl) {
+      dbPool = mysql.createPool(mysqlUrl);
+    } else {
+      dbPool = mysql.createPool({
+        host: mysqlHost,
+        port: mysqlPort,
+        user: mysqlUser,
+        password: mysqlPassword,
+        database: mysqlDatabase,
+        connectionLimit: 8,
+        waitForConnections: true,
+        queueLimit: 0,
+      });
+    }
+
+    await dbPool.query('SELECT 1');
 
     await dbPool.query(`
       CREATE TABLE IF NOT EXISTS news (

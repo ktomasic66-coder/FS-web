@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <title>Galerija</title>
@@ -13,7 +13,7 @@
         <span>Slavonska Ravnica</span>
     </div>
     <ul>
-        <li><a href="/">Početna</a></li>
+        <li><a href="/">PoÄetna</a></li>
         <li><a href="/galerija">Galerija</a></li>
         <li><a href="/pravila">Pravila</a></li>
         <li><a href="/statistika">Statistika</a></li>
@@ -29,7 +29,7 @@
 
 <div class="section">
 
-<h1 class="gallery-title">Galerija Zajednice 🚜</h1>
+<h1 class="gallery-title">Galerija Zajednice ðŸšœ</h1>
 
 <% if(user && canUpload){ %>
 <form action="/upload" method="POST" enctype="multipart/form-data" class="upload-form">
@@ -57,7 +57,7 @@
         <% if (isAdmin) { %>
         <form action="/delete" method="POST" onsubmit="return confirm('Obrisati sliku?')">
             <input type="hidden" name="image" value="<%= img.filename %>">
-            <button type="submit" class="delete-btn">Obriši</button>
+            <button type="submit" class="gallery-delete-btn">ObriÅ¡i</button>
         </form>
         <% } %>
 
@@ -116,3 +116,4 @@ function closeLightbox(){
 
 </body>
 </html>
+
