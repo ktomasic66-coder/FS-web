@@ -9,10 +9,18 @@ const DiscordStrategy = require('passport-discord').Strategy;
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
+let mysql = null;
+try {
+  mysql = require('mysql2/promise');
+} catch {
+  mysql = null;
+}
 
 const { Client, GatewayIntentBits } = require('discord.js');
 
 const app = express();
+let dbPool = null;
+let useMySql = false;
 
 /* ================= PATHS / FILES ================= */
 
@@ -173,28 +181,229 @@ class FileSessionStore extends session.Store {
 }
 
 /* ----- Gallery ----- */
+async function initMySql() {
+  if (!process.env.MYSQL_URL || !mysql) return;
 
-function loadGallery() {
-  const data = readJsonSafe(DATA_FILE, []);
-  // filtriraj samo slike koje stvarno postoje
-  return data.filter((img) => {
-    const imagePath = path.join(__dirname, 'public/uploads', img.filename);
-    return fs.existsSync(imagePath);
-  });
+  try {
+    dbPool = mysql.createPool({
+      uri: process.env.MYSQL_URL,
+      connectionLimit: 8,
+      waitForConnections: true,
+      queueLimit: 0,
+    });
+
+    await dbPool.query(`
+      CREATE TABLE IF NOT EXISTS news (
+        id BIGINT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        author VARCHAR(120) NOT NULL,
+        date_text VARCHAR(120) NOT NULL
+      )
+    `);
+
+    await dbPool.query(`
+      CREATE TABLE IF NOT EXISTS gallery_images (
+        filename VARCHAR(255) PRIMARY KEY,
+        uploader_id VARCHAR(64) NOT NULL,
+        uploader_name VARCHAR(120) NOT NULL,
+        uploader_avatar VARCHAR(255) DEFAULT NULL
+      )
+    `);
+
+    await dbPool.query(`
+      CREATE TABLE IF NOT EXISTS gallery_comments (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        image_filename VARCHAR(255) NOT NULL,
+        user_name VARCHAR(120) NOT NULL,
+        text TEXT NOT NULL,
+        date_text VARCHAR(120) NOT NULL,
+        CONSTRAINT fk_gallery_image
+          FOREIGN KEY (image_filename) REFERENCES gallery_images(filename)
+          ON DELETE CASCADE
+      )
+    `);
+
+    useMySql = true;
+    await migrateNewsAndGalleryIfNeeded();
+    console.log('MySQL storage aktivan (news + gallery).');
+  } catch (err) {
+    console.log('MySQL init error, fallback na JSON:', err.message);
+    useMySql = false;
+    dbPool = null;
+  }
 }
 
-function saveGallery(data) {
-  writeJsonSafe(DATA_FILE, data);
+async function migrateNewsAndGalleryIfNeeded() {
+  if (!useMySql || !dbPool) return;
+
+  const [newsCountRows] = await dbPool.query('SELECT COUNT(*) AS c FROM news');
+  if (newsCountRows[0].c === 0) {
+    const newsFromFile = readJsonSafe(NEWS_FILE, []);
+    for (const post of newsFromFile) {
+      await dbPool.query(
+        'INSERT INTO news (id, title, content, author, date_text) VALUES (?, ?, ?, ?, ?)',
+        [
+          Number(post.id) || Date.now(),
+          String(post.title || ''),
+          String(post.content || ''),
+          String(post.author || 'unknown'),
+          String(post.date || ''),
+        ]
+      );
+    }
+  }
+
+  const [galleryCountRows] = await dbPool.query('SELECT COUNT(*) AS c FROM gallery_images');
+  if (galleryCountRows[0].c === 0) {
+    const galleryFromFile = readJsonSafe(DATA_FILE, []);
+    for (const image of galleryFromFile) {
+      await dbPool.query(
+        'INSERT INTO gallery_images (filename, uploader_id, uploader_name, uploader_avatar) VALUES (?, ?, ?, ?)',
+        [
+          String(image.filename || ''),
+          String(image.uploaderId || ''),
+          String(image.uploaderName || ''),
+          image.uploaderAvatar ? String(image.uploaderAvatar) : null,
+        ]
+      );
+
+      const comments = Array.isArray(image.comments) ? image.comments : [];
+      for (const comment of comments) {
+        await dbPool.query(
+          'INSERT INTO gallery_comments (image_filename, user_name, text, date_text) VALUES (?, ?, ?, ?)',
+          [
+            String(image.filename || ''),
+            String(comment.user || ''),
+            String(comment.text || ''),
+            String(comment.date || ''),
+          ]
+        );
+      }
+    }
+  }
+}
+
+async function loadGallery() {
+  if (!useMySql || !dbPool) {
+    const data = readJsonSafe(DATA_FILE, []);
+    return data.filter((img) => {
+      const imagePath = path.join(__dirname, 'public/uploads', img.filename);
+      return fs.existsSync(imagePath);
+    });
+  }
+
+  const [imageRows] = await dbPool.query(
+    'SELECT filename, uploader_id, uploader_name, uploader_avatar FROM gallery_images'
+  );
+  const [commentRows] = await dbPool.query(
+    'SELECT image_filename, user_name, text, date_text FROM gallery_comments ORDER BY id ASC'
+  );
+
+  const commentsByImage = new Map();
+  for (const row of commentRows) {
+    const existing = commentsByImage.get(row.image_filename) || [];
+    existing.push({
+      user: row.user_name,
+      text: row.text,
+      date: row.date_text,
+    });
+    commentsByImage.set(row.image_filename, existing);
+  }
+
+  return imageRows
+    .map((row) => ({
+      filename: row.filename,
+      uploaderId: row.uploader_id,
+      uploaderName: row.uploader_name,
+      uploaderAvatar: row.uploader_avatar,
+      comments: commentsByImage.get(row.filename) || [],
+    }))
+    .filter((img) => fs.existsSync(path.join(__dirname, 'public/uploads', img.filename)));
+}
+
+async function addGalleryImage(item) {
+  if (!useMySql || !dbPool) {
+    const gallery = readJsonSafe(DATA_FILE, []);
+    gallery.push(item);
+    writeJsonSafe(DATA_FILE, gallery);
+    return;
+  }
+
+  await dbPool.query(
+    'INSERT INTO gallery_images (filename, uploader_id, uploader_name, uploader_avatar) VALUES (?, ?, ?, ?)',
+    [item.filename, item.uploaderId, item.uploaderName, item.uploaderAvatar || null]
+  );
+}
+
+async function addGalleryComment(filename, comment) {
+  if (!useMySql || !dbPool) {
+    const gallery = readJsonSafe(DATA_FILE, []);
+    const image = gallery.find((img) => img.filename === filename);
+    if (!image) return false;
+    image.comments.push(comment);
+    writeJsonSafe(DATA_FILE, gallery);
+    return true;
+  }
+
+  const [rows] = await dbPool.query('SELECT filename FROM gallery_images WHERE filename = ?', [filename]);
+  if (!rows.length) return false;
+
+  await dbPool.query(
+    'INSERT INTO gallery_comments (image_filename, user_name, text, date_text) VALUES (?, ?, ?, ?)',
+    [filename, comment.user, comment.text, comment.date]
+  );
+  return true;
+}
+
+async function deleteGalleryImageByFilename(filename) {
+  if (!useMySql || !dbPool) {
+    let gallery = readJsonSafe(DATA_FILE, []);
+    gallery = gallery.filter((img) => img.filename !== filename);
+    writeJsonSafe(DATA_FILE, gallery);
+    return;
+  }
+  await dbPool.query('DELETE FROM gallery_images WHERE filename = ?', [filename]);
 }
 
 /* ----- News ----- */
 
-function loadNews() {
-  return readJsonSafe(NEWS_FILE, []);
+async function loadNews() {
+  if (!useMySql || !dbPool) {
+    return readJsonSafe(NEWS_FILE, []);
+  }
+
+  const [rows] = await dbPool.query(
+    'SELECT id, title, content, author, date_text AS date FROM news ORDER BY id DESC'
+  );
+  return rows;
 }
 
-function saveNews(data) {
-  writeJsonSafe(NEWS_FILE, data);
+async function addNews(item) {
+  if (!useMySql || !dbPool) {
+    const news = readJsonSafe(NEWS_FILE, []);
+    news.unshift(item);
+    writeJsonSafe(NEWS_FILE, news);
+    return;
+  }
+
+  await dbPool.query(
+    'INSERT INTO news (id, title, content, author, date_text) VALUES (?, ?, ?, ?, ?)',
+    [item.id, item.title, item.content, item.author, item.date]
+  );
+}
+
+async function deleteNewsById(id) {
+  if (!useMySql || !dbPool) {
+    let news = readJsonSafe(NEWS_FILE, []);
+    const before = news.length;
+    news = news.filter((n) => Number(n.id) !== Number(id));
+    writeJsonSafe(NEWS_FILE, news);
+    return before !== news.length;
+  }
+
+  const [result] = await dbPool.query('DELETE FROM news WHERE id = ?', [id]);
+  return result.affectedRows > 0;
 }
 
 /* ----- Rules ----- */
@@ -244,6 +453,7 @@ function removeFromBlacklist(userId) {
 /* ----- Backup ----- */
 
 function backupGallery() {
+  if (useMySql) return;
   if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
 
   const fileName = `backup-${Date.now()}.json`;
@@ -342,8 +552,8 @@ app.use(passport.session());
 
 /* ================= ROUTES ================= */
 
-app.get('/', (req, res) => {
-  const news = loadNews();
+app.get('/', async (req, res) => {
+  const news = await loadNews();
   res.render('index', { user: req.user, news });
 });
 
@@ -374,11 +584,11 @@ app.get('/profile', (req, res) => {
 
 /* ===== ADMIN PANEL ===== */
 
-app.get('/admin', requireAdmin, (req, res) => {
+app.get('/admin', requireAdmin, async (req, res) => {
 
   const logs = loadLogs();
-  const news = loadNews();        // â¬…ï¸ OVO TI FALI
-  const images = loadGallery();
+  const news = await loadNews();
+  const images = await loadGallery();
 
   res.render('admin', {
     user: req.user,
@@ -393,34 +603,28 @@ app.get('/admin', requireAdmin, (req, res) => {
 
 /* ===== ADMIN: NEWS ===== */
 
-app.post('/admin/news', requireAdmin, (req, res) => {
+app.post('/admin/news', requireAdmin, async (req, res) => {
   const title = (req.body.title || '').trim();
   const content = (req.body.content || '').trim();
 
   if (!title || !content) return res.redirect('/admin');
 
-  const news = loadNews();
-  news.unshift({
+  await addNews({
     id: Date.now(),
     title,
     content,
     date: new Date().toLocaleString(),
     author: req.user.username,
   });
-  saveNews(news);
 
   logAction(`News objava dodana: "${title}"`, req.user.username);
   res.redirect('/admin');
 });
 
-app.post('/admin/news/delete/:id', requireAdmin, (req, res) => {
+app.post('/admin/news/delete/:id', requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
-  let news = loadNews();
-  const before = news.length;
-  news = news.filter((n) => n.id !== id);
-  saveNews(news);
-
-  if (news.length !== before) logAction(`News obrisan (id=${id})`, req.user.username);
+  const deleted = await deleteNewsById(id);
+  if (deleted) logAction(`News obrisan (id=${id})`, req.user.username);
   res.redirect('/admin');
 });
 
@@ -487,7 +691,7 @@ app.get('/galerija', async (req, res) => {
       hasAnyRole(req.user, [ROLE_IDS.OWNER, ROLE_IDS.CO_OWNER, ROLE_IDS.ADMIN]);
   }
 
-  const gallery = loadGallery();
+  const gallery = await loadGallery();
 
   res.render('galerija', {
     user: req.user,
@@ -511,20 +715,15 @@ app.post('/upload', async (req, res) => {
 
   if (!isPlayer) return res.redirect('/no-permission');
 
-  upload.single('image')(req, res, function (err) {
+  upload.single('image')(req, res, async function (err) {
     if (err) return res.send('GreÅ¡ka.');
 
-    const gallery = loadGallery();
-
-    gallery.push({
+    await addGalleryImage({
       filename: req.file.filename,
       uploaderId: req.user.id,
       uploaderName: req.user.username,
       uploaderAvatar: req.user.avatar,
-      comments: [],
     });
-
-    saveGallery(gallery);
     res.redirect('/galerija');
   });
 });
@@ -537,28 +736,22 @@ function sanitizeComment(text) {
   return t.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-app.post('/comment/:image', (req, res) => {
+app.post('/comment/:image', async (req, res) => {
   if (!req.user) return res.redirect('/');
 
   if (isBlacklisted(req.user.id)) {
     return res.send('Blokiran si za komentare.');
   }
 
-  const gallery = loadGallery();
-  const image = gallery.find((img) => img.filename === req.params.image);
-  if (!image) return res.redirect('/galerija');
-
   const text = sanitizeComment(req.body.comment);
 
   if (!text.trim()) return res.redirect('/galerija');
-
-  image.comments.push({
+  const added = await addGalleryComment(req.params.image, {
     user: req.user.username,
     text,
     date: new Date().toLocaleString(),
   });
-
-  saveGallery(gallery);
+  if (!added) return res.redirect('/galerija');
   res.redirect('/galerija');
 });
 
@@ -582,9 +775,7 @@ app.post('/delete/:image', async (req, res) => {
 
   if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
 
-  let gallery = loadGallery();
-  gallery = gallery.filter((img) => img.filename !== filename);
-  saveGallery(gallery);
+  await deleteGalleryImageByFilename(filename);
 
   logAction(`Obrisana slika: ${filename}`, req.user.username);
   res.redirect('/galerija');
@@ -617,5 +808,7 @@ app.get('/logout', (req, res) => {
 /* ===== START ===== */
 
 const PORT = Number(process.env.PORT) || 3000;
-app.listen(PORT, () => console.log('FS25 Web pokrenut na portu ' + PORT));
+initMySql().finally(() => {
+  app.listen(PORT, () => console.log('FS25 Web pokrenut na portu ' + PORT));
+});
 
