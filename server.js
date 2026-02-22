@@ -491,6 +491,12 @@ function hasAnyRole(user, roleIds) {
   return roles.some((r) => roleIds.includes(r.id));
 }
 
+function isGalleryAdminByRoles(roles) {
+  const ids = (roles || []).map((r) => r.id);
+  const adminIds = [ADMIN_ROLE_ID, ROLE_IDS.ADMIN, ROLE_IDS.CO_OWNER, ROLE_IDS.OWNER].filter(Boolean);
+  return ids.some((id) => adminIds.includes(id));
+}
+
 function canUploadWithRoles(user, roles) {
   const roleIds = (roles || []).map((r) => r.id);
   const uploadAllowedRoleIds = [
@@ -701,9 +707,7 @@ app.get('/galerija', async (req, res) => {
   if (req.user) {
     roles = req.user.roles?.length ? req.user.roles : await getMemberRoles(req.user.id);
     canUpload = canUploadWithRoles(req.user, roles);
-    isAdmin =
-      roles.some((r) => r.id === ADMIN_ROLE_ID) ||
-      hasAnyRole(req.user, [ROLE_IDS.OWNER, ROLE_IDS.CO_OWNER, ROLE_IDS.ADMIN]);
+    isAdmin = isGalleryAdminByRoles(roles);
   }
 
   const gallery = await loadGallery();
@@ -772,17 +776,17 @@ app.post('/comment/:image', async (req, res) => {
 
 /* ===== DELETE (ADMIN+) ===== */
 
-app.post('/delete/:image', async (req, res) => {
+async function handleDeleteImage(req, res, filenameRaw) {
   if (!req.user) return res.redirect('/');
 
   const roles = req.user.roles?.length ? req.user.roles : await getMemberRoles(req.user.id);
-  const isAdmin =
-    roles.some((r) => r.id === ADMIN_ROLE_ID) ||
-    hasAnyRole(req.user, [ROLE_IDS.OWNER, ROLE_IDS.CO_OWNER, ROLE_IDS.ADMIN]);
+  const isAdmin = isGalleryAdminByRoles(roles);
 
   if (!isAdmin) return res.redirect('/no-permission');
 
-  const filename = req.params.image;
+  const filename = String(filenameRaw || '').trim();
+  if (!filename) return res.redirect('/galerija');
+
   const imagePath = path.join(__dirname, 'public/uploads', filename);
 
   // backup prije brisanja
@@ -794,6 +798,14 @@ app.post('/delete/:image', async (req, res) => {
 
   logAction(`Obrisana slika: ${filename}`, req.user.username);
   res.redirect('/galerija');
+}
+
+app.post('/delete/:image', async (req, res) => {
+  return handleDeleteImage(req, res, req.params.image);
+});
+
+app.post('/delete', async (req, res) => {
+  return handleDeleteImage(req, res, req.body.image);
 });
 
 /* ===== AUTH ===== */
