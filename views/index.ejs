@@ -62,8 +62,8 @@
     <p class="no-news">Nema objava.</p>
   <% } else { %>
     <div class="news-grid">
-      <% news.slice(0,4).forEach(post => { %>
-        <div class="news-card">
+      <% news.slice(0,4).forEach((post, idx) => { %>
+        <div class="news-card" role="button" tabindex="0" data-news-index="<%= idx %>">
           <h3><%= post.title %></h3>
 
           <p class="news-content">
@@ -79,6 +79,18 @@
     </div>
   <% } %>
 </section>
+</div>
+
+<div id="newsModalOverlay" class="news-modal-overlay">
+  <div class="news-modal" role="dialog" aria-modal="true" aria-labelledby="newsModalTitle">
+    <button id="newsModalClose" class="news-modal-close" type="button" aria-label="Zatvori">x</button>
+    <h3 id="newsModalTitle"></h3>
+    <p id="newsModalContent" class="news-modal-content"></p>
+    <div class="news-modal-meta">
+      <span id="newsModalAuthor"></span>
+      <span id="newsModalDate"></span>
+    </div>
+  </div>
 </div>
 
 <!-- TKO SMO MI -->
@@ -167,6 +179,47 @@ particlesJS("particles-js", {
     move: { speed: 1 },
     line_linked: { enable: true, opacity: 0.2 },
   }
+});
+
+const NEWS_DATA = <%- JSON.stringify((news || []).slice(0,4)) %>;
+const newsModalOverlay = document.getElementById("newsModalOverlay");
+const newsModalTitle = document.getElementById("newsModalTitle");
+const newsModalContent = document.getElementById("newsModalContent");
+const newsModalAuthor = document.getElementById("newsModalAuthor");
+const newsModalDate = document.getElementById("newsModalDate");
+const newsModalClose = document.getElementById("newsModalClose");
+
+function openNewsModal(index) {
+  const post = NEWS_DATA[index];
+  if (!post) return;
+
+  newsModalTitle.textContent = post.title || "";
+  newsModalContent.textContent = post.content || "";
+  newsModalAuthor.textContent = post.author || "";
+  newsModalDate.textContent = post.date || "";
+  newsModalOverlay.classList.add("open");
+}
+
+function closeNewsModal() {
+  newsModalOverlay.classList.remove("open");
+}
+
+document.querySelectorAll(".news-card").forEach((card) => {
+  card.addEventListener("click", () => openNewsModal(Number(card.dataset.newsIndex)));
+  card.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openNewsModal(Number(card.dataset.newsIndex));
+    }
+  });
+});
+
+newsModalClose.addEventListener("click", closeNewsModal);
+newsModalOverlay.addEventListener("click", (e) => {
+  if (e.target === newsModalOverlay) closeNewsModal();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeNewsModal();
 });
 </script>
 

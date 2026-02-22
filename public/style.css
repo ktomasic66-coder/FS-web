@@ -1172,6 +1172,7 @@ s input {
   border-radius: 20px;
   transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
   text-align:left;
+  cursor: pointer;
 }
 
 .news-card:hover{
@@ -1196,6 +1197,63 @@ s input {
     justify-content: space-between;
     font-size: 12px;
     opacity: 0.6;
+}
+
+.news-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 9999;
+}
+
+.news-modal-overlay.open {
+  display: flex;
+}
+
+.news-modal {
+  width: min(760px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: rgba(5, 18, 14, 0.95);
+  border: 1px solid #00ff9d;
+  border-radius: 18px;
+  box-shadow: 0 0 35px rgba(0, 255, 157, 0.15);
+  padding: 22px;
+  color: #e9fff6;
+}
+
+.news-modal h3 {
+  margin: 0 0 14px;
+  color: #00ff9d;
+  font-size: 28px;
+}
+
+.news-modal-content {
+  margin: 0 0 16px;
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
+.news-modal-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.news-modal-close {
+  float: right;
+  border: 1px solid rgba(0,255,157,0.35);
+  background: transparent;
+  color: #d8fff0;
+  border-radius: 10px;
+  padding: 6px 10px;
+  cursor: pointer;
 }
 
 .admin-news-item {
