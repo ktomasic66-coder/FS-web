@@ -491,6 +491,21 @@ function hasAnyRole(user, roleIds) {
   return roles.some((r) => roleIds.includes(r.id));
 }
 
+function canUploadWithRoles(user, roles) {
+  const roleIds = (roles || []).map((r) => r.id);
+  const uploadAllowedRoleIds = [
+    PLAYER_ROLE_ID,
+    ADMIN_ROLE_ID,
+    ROLE_IDS.PLAYER,
+    ROLE_IDS.ADMIN,
+    ROLE_IDS.CO_OWNER,
+    ROLE_IDS.OWNER,
+  ].filter(Boolean);
+
+  // De-dup i provjera
+  return roleIds.some((id) => uploadAllowedRoleIds.includes(id));
+}
+
 function requireAdmin(req, res, next) {
   if (!req.user) return res.redirect('/');
 
@@ -680,12 +695,12 @@ app.get('/statistika', async (req, res) => {
 
 app.get('/galerija', async (req, res) => {
   let roles = [];
-  let isPlayer = false;
+  let canUpload = false;
   let isAdmin = false;
 
   if (req.user) {
     roles = req.user.roles?.length ? req.user.roles : await getMemberRoles(req.user.id);
-    isPlayer = roles.some((r) => r.id === PLAYER_ROLE_ID);
+    canUpload = canUploadWithRoles(req.user, roles);
     isAdmin =
       roles.some((r) => r.id === ADMIN_ROLE_ID) ||
       hasAnyRole(req.user, [ROLE_IDS.OWNER, ROLE_IDS.CO_OWNER, ROLE_IDS.ADMIN]);
@@ -696,7 +711,7 @@ app.get('/galerija', async (req, res) => {
   res.render('galerija', {
     user: req.user,
     gallery,
-    isPlayer,
+    canUpload,
     isAdmin,
   });
 });
@@ -711,9 +726,9 @@ app.post('/upload', async (req, res) => {
   }
 
   const roles = req.user.roles?.length ? req.user.roles : await getMemberRoles(req.user.id);
-  const isPlayer = roles.some((r) => r.id === PLAYER_ROLE_ID);
+  const canUpload = canUploadWithRoles(req.user, roles);
 
-  if (!isPlayer) return res.redirect('/no-permission');
+  if (!canUpload) return res.redirect('/no-permission');
 
   upload.single('image')(req, res, async function (err) {
     if (err) return res.send('GreÅ¡ka.');

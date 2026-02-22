@@ -31,7 +31,7 @@
 
 <h1 class="gallery-title">Galerija Zajednice 🚜</h1>
 
-<% if(user && isPlayer){ %>
+<% if(user && canUpload){ %>
 <form action="/upload" method="POST" enctype="multipart/form-data" class="upload-form">
     <input type="file" name="image" required>
     <button class="btn-primary">Upload sliku</button>
