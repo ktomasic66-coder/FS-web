@@ -29,6 +29,36 @@ function fromPayload(payload) {
   };
 }
 
+function pickXmlValue(xmlText, keys) {
+  for (const key of keys) {
+    const pattern = new RegExp(`<${key}>([^<]+)</${key}>`, 'i');
+    const match = xmlText.match(pattern);
+    if (match && match[1]) return match[1].trim();
+  }
+  return null;
+}
+
+function fromXml(xmlText) {
+  if (!xmlText || typeof xmlText !== 'string') return null;
+
+  const playersRaw = pickXmlValue(xmlText, ['players', 'numplayers', 'player_count']);
+  const maxPlayersRaw = pickXmlValue(xmlText, ['maxplayers', 'max_players', 'slots']);
+  const statusRaw = pickXmlValue(xmlText, ['status', 'online']);
+
+  const players = toValidCount(playersRaw);
+  const maxPlayers = toValidCount(maxPlayersRaw);
+  if (players === null || maxPlayers === null) return null;
+
+  const normalized = String(statusRaw || 'online').toLowerCase();
+  const isOnline = !['0', 'false', 'offline'].includes(normalized);
+
+  return {
+    serverStatus: isOnline ? 'Online' : 'Offline',
+    playersOnline: players,
+    maxPlayers: maxPlayers,
+  };
+}
+
 async function getStatsFromApi() {
   const url = process.env.PLAYER_API_URL;
   if (!url) return null;
@@ -40,8 +70,34 @@ async function getStatsFromApi() {
   try {
     const response = await fetch(url, { signal: controller.signal });
     if (!response.ok) return null;
-    const payload = await response.json();
-    return fromPayload(payload);
+    const bodyText = await response.text();
+
+    try {
+      const payload = JSON.parse(bodyText);
+      return fromPayload(payload);
+    } catch {
+      return fromXml(bodyText);
+    }
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function getStatsFromXmlApi() {
+  const url = process.env.GPORTAL_XML_URL || process.env.PLAYER_XML_URL;
+  if (!url) return null;
+
+  const timeoutMs = Number(process.env.PLAYER_API_TIMEOUT_MS || 3500);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) return null;
+    const xmlText = await response.text();
+    return fromXml(xmlText);
   } catch {
     return null;
   } finally {
@@ -75,10 +131,24 @@ async function getStatsFromSteamQuery() {
 
 async function getPlayerStats() {
   const apiStats = await getStatsFromApi();
-  if (apiStats) return apiStats;
+  if (apiStats) {
+    console.log('[stats] source=PLAYER_API_URL');
+    return apiStats;
+  }
+
+  const xmlStats = await getStatsFromXmlApi();
+  if (xmlStats) {
+    console.log('[stats] source=GPORTAL_XML_URL');
+    return xmlStats;
+  }
 
   const steamStats = await getStatsFromSteamQuery();
-  if (steamStats) return steamStats;
+  if (steamStats) {
+    console.log('[stats] source=STEAM_QUERY');
+    return steamStats;
+  }
+
+  console.log('[stats] source=FALLBACK');
 
   return { ...FALLBACK };
 }
