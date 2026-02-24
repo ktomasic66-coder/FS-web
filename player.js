@@ -41,16 +41,41 @@ function pickXmlValue(xmlText, keys) {
 function fromXml(xmlText) {
   if (!xmlText || typeof xmlText !== 'string') return null;
 
-  const playersRaw = pickXmlValue(xmlText, ['players', 'numplayers', 'player_count']);
-  const maxPlayersRaw = pickXmlValue(xmlText, ['maxplayers', 'max_players', 'slots']);
+  const playersRaw = pickXmlValue(xmlText, [
+    'players',
+    'numplayers',
+    'player_count',
+    'currentplayers',
+    'players_online',
+  ]);
+  const maxPlayersRaw = pickXmlValue(xmlText, [
+    'maxplayers',
+    'max_players',
+    'slots',
+    'maxplayer',
+    'player_slots',
+  ]);
   const statusRaw = pickXmlValue(xmlText, ['status', 'online']);
 
   const players = toValidCount(playersRaw);
-  const maxPlayers = toValidCount(maxPlayersRaw);
+  const parsedMaxPlayers = toValidCount(maxPlayersRaw);
+  let maxPlayers = parsedMaxPlayers;
+  const fallbackMax = toValidCount(process.env.DEFAULT_MAX_PLAYERS || process.env.MAX_PLAYERS);
+
+  if (maxPlayers === null || maxPlayers === 0) {
+    if (fallbackMax !== null && fallbackMax > 0) maxPlayers = fallbackMax;
+  }
+
   if (players === null || maxPlayers === null) return null;
 
-  const normalized = String(statusRaw || 'online').toLowerCase();
-  const isOnline = !['0', 'false', 'offline'].includes(normalized);
+  let isOnline = true;
+  if (statusRaw) {
+    const normalized = String(statusRaw).toLowerCase();
+    isOnline = !['0', 'false', 'offline'].includes(normalized);
+  } else {
+    // If API does not include a status flag, treat 0/0 as offline.
+    isOnline = !(players === 0 && (parsedMaxPlayers === 0 || parsedMaxPlayers === null));
+  }
 
   return {
     serverStatus: isOnline ? 'Online' : 'Offline',
