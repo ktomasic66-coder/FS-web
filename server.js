@@ -9,6 +9,7 @@ const DiscordStrategy = require('passport-discord').Strategy;
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
+const { getPlayerStats } = require('./player');
 let mysql = null;
 try {
   mysql = require('mysql2/promise');
@@ -719,10 +720,12 @@ app.post('/admin/blacklist/remove', requireAdmin, (req, res) => {
 /* ===== STATISTIKA (G-Portal) ===== */
 
 app.get('/statistika', async (req, res) => {
+  const playerStats = await getPlayerStats();
+
   const stats = {
-    serverStatus: 'Online (ruÄno / G-Portal)',
-    playersOnline: 'â€”',
-    maxPlayers: 'â€”',
+    serverStatus: playerStats.serverStatus,
+    playersOnline: playerStats.playersOnline,
+    maxPlayers: playerStats.maxPlayers,
     discordMembers: discordMemberCount,
   };
 
