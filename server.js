@@ -7,10 +7,10 @@ const mongoose = require('mongoose');
 // ===== MONGODB CONNECTION =====
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://mongo:OOvotyonHPYWjWuBLnbiBSUskMFrATIU@caboose.proxy.rlwy.net:40886';
 mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.log('MongoDB connection error:', err));
+  .then(() => console.log('MongoDB connected (Slavonska Ravnica)'))
+  .catch(err => console.log('MongoDB connection error (Slavonska Ravnica):', err));
 
-// ===== FARM MODEL =====
+// ===== FARM MODEL (Slavonska Ravnica) =====
 const farmSchema = new mongoose.Schema({
   userId: String,
   farmName: String,
