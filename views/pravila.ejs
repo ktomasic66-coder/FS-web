@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pravila | Slavonska Ravnica</title>
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+
+<nav class="navbar">
+    <div class="logo">
+        <img src="/images/logo.png" alt="SR Logo">
+        <span>Slavonska Ravnica</span>
+    </div>
+
+    <ul>
+        <li><a href="/">Početna</a></li>
+        <li><a href="/galerija">Galerija</a></li>
+        <li><a href="/pravila">Pravila</a></li>
+        <li><a href="/statistika">Statistika</a></li>
+        <li><a href="/moja-farma">Moja Farma</a></li>
+
+        <% if(user){ %>
+            <li><a href="/profile">Profil</a></li>
+            <li><a href="/admin">Admin</a></li>
+            <li><a href="/logout">Logout</a></li>
+        <% } else { %>
+            <li><a href="/auth/discord">Login</a></li>
+        <% } %>
+    </ul>
+</nav>
+
+<section class="rules-section">
+    <h1>Pravila Ponašanja</h1>
+    <p class="rules-sub">
+        Ova pravila važe za sve članove servera bez izuzetka.
+    </p>
+
+    <div class="rules-container">
+
+        <div class="rule-card">
+            <span>01</span>
+            <p>Poštuj sve članove bez obzira na godine, spol ili mišljenje.</p>
+        </div>
+
+        <div class="rule-card">
+            <span>02</span>
+            <p>Zabranjeno je vrijeđanje, omalovažavanje i provociranje drugih članova.</p>
+        </div>
+
+        <div class="rule-card">
+            <span>03</span>
+            <p>Bez rasizma, nacionalizma, homofobije i političkih tema.</p>
+        </div>
+
+        <div class="rule-card">
+            <span>04</span>
+            <p>Zabranjeno spamovanje, floodanje i nepotrebno tagovanje članova ili administracije.</p>
+        </div>
+
+        <div class="rule-card">
+            <span>05</span>
+            <p>Ne koristi CAPS LOCK u dužim porukama i ne narušavaj komunikaciju.</p>
+        </div>
+
+        <div class="rule-card">
+            <span>06</span>
+            <p>Bez reklamiranja drugih servera, Discorda, stranica ili modova bez dozvole admina.</p>
+        </div>
+
+        <div class="rule-card">
+            <span>07</span>
+            <p>Poštuj administraciju i njihove odluke — ako imaš problem, prijavi kulturno.</p>
+        </div>
+
+        <div class="rule-card">
+            <span>08</span>
+            <p>Koristi zdrav razum. Ponašaj se onako kako bi želio da se drugi ponašaju prema tebi.</p>
+        </div>
+
+    </div>
+
+    <div class="rules-warning">
+        Kršenje pravila može rezultirati upozorenjem, mute-om ili trajnim banom.
+    </div>
+
+</section>
+
+</body>
+</html>
