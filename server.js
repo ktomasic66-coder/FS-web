@@ -16,13 +16,14 @@ const farmSchema = new mongoose.Schema({
   userId: String,
   farmName: String,
   balance: Number,
-  equipment: [String],
   animals: [String],
-  productions: [String],
   storage: [String],
-  cropCalendar: [String],
-});
-const Farm = mongoose.model('Farm', farmSchema);
+  require('dotenv').config();
+
+  let mainGuild = null;
+
+  const express = require('express');
+  const mongoose = require('mongoose');
 =======
 >>>>>>> bcdb49972e01f31a0f446238948c91b1653ab312
 const session = require('express-session');
