@@ -3,6 +3,25 @@
 let mainGuild = null;
 
 const express = require('express');
+const mongoose = require('mongoose');
+// ===== MONGODB CONNECTION =====
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://mongo:OOvotyonHPYWjWuBLnbiBSUskMFrATIU@caboose.proxy.rlwy.net:40886';
+mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.log('MongoDB connection error:', err));
+
+// ===== FARM MODEL =====
+const farmSchema = new mongoose.Schema({
+  userId: String,
+  farmName: String,
+  balance: Number,
+  equipment: [String],
+  animals: [String],
+  productions: [String],
+  storage: [String],
+  cropCalendar: [String],
+});
+const Farm = mongoose.model('Farm', farmSchema);
 const session = require('express-session');
 const passport = require('passport');
 const DiscordStrategy = require('passport-discord').Strategy;
@@ -734,8 +753,12 @@ app.get('/statistika', async (req, res) => {
 
 /* ===== GALERIJA ===== */
 
-app.get('/moja-farma', (req, res) => {
-  res.render('moja-farma', { user: req.user });
+app.get('/moja-farma', async (req, res) => {
+  let farm = null;
+  if (req.user) {
+    farm = await Farm.findOne({ userId: req.user.id });
+  }
+  res.render('moja-farma', { user: req.user, farm });
 });
 
 app.get('/galerija', async (req, res) => {
