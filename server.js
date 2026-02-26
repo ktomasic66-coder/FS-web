@@ -4,6 +4,7 @@ let mainGuild = null;
 
 const express = require('express');
 const mongoose = require('mongoose');
+const mongoose = require('mongoose');
 // ===== MONGODB CONNECTION =====
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://mongo:OOvotyonHPYWjWuBLnbiBSUskMFrATIU@caboose.proxy.rlwy.net:40886';
 mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -22,6 +23,8 @@ const farmSchema = new mongoose.Schema({
   cropCalendar: [String],
 });
 const Farm = mongoose.model('Farm', farmSchema);
+=======
+>>>>>>> bcdb49972e01f31a0f446238948c91b1653ab312
 const session = require('express-session');
 const passport = require('passport');
 const DiscordStrategy = require('passport-discord').Strategy;
@@ -756,11 +759,16 @@ app.get('/statistika', async (req, res) => {
 app.get('/moja-farma', async (req, res) => {
   let farm = null;
   if (req.user) {
+app.get('/moja-farma', async (req, res) => {
+  let farm = null;
+  if (req.user) {
     farm = await Farm.findOne({ userId: req.user.id });
   }
   res.render('moja-farma', { user: req.user, farm });
 });
 
+=======
+>>>>>>> bcdb49972e01f31a0f446238948c91b1653ab312
 app.get('/galerija', async (req, res) => {
   let roles = [];
   let canUpload = false;
