@@ -1,10 +1,10 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 
 let mainGuild = null;
 
 const express = require('express');
 const mongoose = require('mongoose');
-const mongoose = require('mongoose');
+
 // ===== MONGODB CONNECTION =====
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://mongo:OOvotyonHPYWjWuBLnbiBSUskMFrATIU@caboose.proxy.rlwy.net:40886';
 mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -18,14 +18,12 @@ const farmSchema = new mongoose.Schema({
   balance: Number,
   animals: [String],
   storage: [String],
-  require('dotenv').config();
+  equipment: [String],
+  productions: [String],
+  cropCalendar: [String],
+});
+const Farm = mongoose.models.Farm || mongoose.model('Farm', farmSchema);
 
-  let mainGuild = null;
-
-  const express = require('express');
-  const mongoose = require('mongoose');
-=======
->>>>>>> bcdb49972e01f31a0f446238948c91b1653ab312
 const session = require('express-session');
 const passport = require('passport');
 const DiscordStrategy = require('passport-discord').Strategy;
@@ -109,16 +107,16 @@ const discordClient = new Client({
 let discordMemberCount = 0;
 
 discordClient.once('clientReady', async () => {
-  console.log(`ðŸ¤– Bot prijavljen kao ${discordClient.user.tag}`);
+  console.log(`🤖 Bot prijavljen kao ${discordClient.user.tag}`);
 
   try {
     mainGuild = await discordClient.guilds.fetch(GUILD_ID);
     await mainGuild.members.fetch(); // cache members
     discordMemberCount = mainGuild.memberCount;
 
-    console.log('ðŸ“Š Discord Älanovi:', discordMemberCount);
+    console.log('📊 Discord članovi:', discordMemberCount);
   } catch (err) {
-    console.log('âŒ Guild error:', err.message);
+    console.log('❌ Guild error:', err.message);
   }
 });
 
@@ -670,7 +668,7 @@ app.get('/admin', requireAdmin, async (req, res) => {
   res.render('admin', {
     user: req.user,
     logs: logs,
-    news: news,                   // â¬…ï¸ OVO MORA BITI POSLANO
+    news: news,                   // ⬅️ OVO MORA BITI POSLANO
     discordMembers: discordMemberCount,
     imagesCount: images.length,
     newsCount: news.length
@@ -716,7 +714,7 @@ app.post('/admin/rules', requireAdmin, (req, res) => {
   const content = req.body.content || '';
   saveRules({ content });
 
-  logAction('Pravila ureÄ‘ena', req.user.username);
+  logAction('Pravila uređena', req.user.username);
   res.redirect('/admin');
 });
 
@@ -760,16 +758,11 @@ app.get('/statistika', async (req, res) => {
 app.get('/moja-farma', async (req, res) => {
   let farm = null;
   if (req.user) {
-app.get('/moja-farma', async (req, res) => {
-  let farm = null;
-  if (req.user) {
     farm = await Farm.findOne({ userId: req.user.id });
   }
   res.render('moja-farma', { user: req.user, farm });
 });
 
-=======
->>>>>>> bcdb49972e01f31a0f446238948c91b1653ab312
 app.get('/galerija', async (req, res) => {
   let roles = [];
   let canUpload = false;
@@ -806,7 +799,7 @@ app.post('/upload', async (req, res) => {
   if (!canUpload) return res.redirect('/no-permission');
 
   upload.single('image')(req, res, async function (err) {
-    if (err) return res.send('GreÅ¡ka.');
+    if (err) return res.send('Greška.');
     try {
       await addGalleryImage({
         filename: req.file.filename,
@@ -826,7 +819,7 @@ app.post('/upload', async (req, res) => {
 
 function sanitizeComment(text) {
   const t = String(text || '').slice(0, 300); // max 300 znakova
-  // osnovno â€œÄiÅ¡Ä‡enjeâ€ (nije savrÅ¡eno, ali je ok za start)
+  // osnovno “čišćenje” (nije savršeno, ali je ok za start)
   return t.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
