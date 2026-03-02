@@ -17,6 +17,7 @@
     "ejs": "^4.0.1",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
+    "mongoose": "^8.12.1",
     "multer": "^2.0.2",
     "mysql2": "^3.17.4",
     "node-fetch": "^2.7.0",
