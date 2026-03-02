@@ -7,7 +7,7 @@ const mongoose = require('mongoose');
 
 // ===== MONGODB CONNECTION =====
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://mongo:OOvotyonHPYWjWuBLnbiBSUskMFrATIU@caboose.proxy.rlwy.net:40886';
-mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 10000 })
   .then(() => console.log('MongoDB connected (Slavonska Ravnica)'))
   .catch(err => console.log('MongoDB connection error (Slavonska Ravnica):', err));
 
@@ -758,7 +758,11 @@ app.get('/statistika', async (req, res) => {
 app.get('/moja-farma', async (req, res) => {
   let farm = null;
   if (req.user) {
-    farm = await Farm.findOne({ userId: req.user.id });
+    try {
+      farm = await Farm.findOne({ userId: req.user.id });
+    } catch (err) {
+      console.error('Greška pri dohvaćanju farme:', err.message);
+    }
   }
   res.render('moja-farma', { user: req.user, farm });
 });
