@@ -6,7 +6,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 
 // ===== MONGODB CONNECTION =====
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://mongo:OOvotyonHPYWjWuBLnbiBSUskMFrATIU@caboose.proxy.rlwy.net:40886';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://mongo:OOvotyonHPYWjWuBLnbiBSUskMFrATIU@mongodb.railway.internal:27017';
 mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 10000 })
   .then(() => console.log('MongoDB connected (Slavonska Ravnica)'))
   .catch(err => console.log('MongoDB connection error (Slavonska Ravnica):', err));
