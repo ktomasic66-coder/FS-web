@@ -2,89 +2,203 @@
 <html lang="hr">
 <head>
     <meta charset="UTF-8">
-    <title>Moja Farma</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moja Farma | Slavonska Ravnica</title>
+    <link rel="icon" type="image/png" href="/images/logo.png">
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <nav>
-        <ul>
-            <li><a href="/">Početna</a></li>
-            <li><a href="/galerija">Galerija</a></li>
-            <li><a href="/pravila">Pravila</a></li>
-            <li><a href="/statistika">Statistika</a></li>
-            <li><a href="/moja-farma">Moja Farma</a></li>
+
+<div id="particles-js"></div>
+
+<nav class="navbar">
+    <div class="logo">
+        <img src="/images/logo.png" alt="SR Logo">
+        <span>Slavonska Ravnica</span>
+    </div>
+    <ul>
+        <li><a href="/">Početna</a></li>
+        <li><a href="/galerija">Galerija</a></li>
+        <li><a href="/pravila">Pravila</a></li>
+        <li><a href="/statistika">Statistika</a></li>
+        <li><a href="/moja-farma">Moja Farma</a></li>
+        <% if(user){ %>
             <li><a href="/profile">Profil</a></li>
             <li><a href="/admin">Admin</a></li>
             <li><a href="/logout">Logout</a></li>
-        </ul>
-    </nav>
-    <main>
-        <h1>Moja Farma</h1>
-        <% if (user && farm) { %>
-            <h2>Ime farme: <%= farm.farmName %></h2>
-            <p>Stanje računa: <%= farm.balance %> €</p>
-            <h3>Oprema</h3>
-            <ul>
-                <% farm.equipment.forEach(function(eq){ %>
-                    <li><%= eq %></li>
-                <% }) %>
-            </ul>
-            <h3>Životinje</h3>
-            <ul>
-                <% farm.animals.forEach(function(an){ %>
-                    <li><%= an %></li>
-                <% }) %>
-            </ul>
-            <h3>Proizvodnja</h3>
-            <ul>
-                <% farm.productions.forEach(function(pr){ %>
-                    <li><%= pr %></li>
-                <% }) %>
-            </ul>
-            <h3>Skladište</h3>
-            <ul>
-                <% farm.storage.forEach(function(st){ %>
-                    <li><%= st %></li>
-                <% }) %>
-            </ul>
-            <h3>Kalendar usjeva</h3>
-            <ul>
-                <% farm.cropCalendar.forEach(function(cc){ %>
-                    <li><%= cc %></li>
-                <% }) %>
-            </ul>
-        <% } else if (user) { %>
-            <p>Nemate još kreiranu farmu. Javite se adminu ili kreirajte farmu putem bota.</p>
         <% } else { %>
-            <p>Za prikaz vaše farme morate biti prijavljeni.</p>
+            <li><a href="/auth/discord">Login</a></li>
         <% } %>
-    <section style="margin-top:40px;">
-        <h2>Što je Slavonska Ravnica?</h2>
-        <p>Slavonska Ravnica je zajednica Farming Simulator 25 multiplayer servera koji mogu međusobno komunicirati i s ovom web stranicom, omogućujući nevjerojatne mogućnosti.</p>
-        <h2>Kako se pridružiti?</h2>
-        <p>Jednostavno! Pročitajte <a href="/pravila">pravila</a>, prijavite se i ispunite prijavu. Proces je brz i jednostavan.</p>
-        <h2>Uloge na farmi</h2>
-        <h3>Radnik na farmi</h3>
-        <p>Želite pomoći drugim igračima i zaraditi nešto novca prije nego postanete upravitelj farme? Možete pomagati upraviteljima ili preuzimati ugovore na bilo kojem Slavonska Ravnica serveru.</p>
-        <h3>Upravitelj farme</h3>
-        <p>Želite imati vlastitu farmu i graditi svoje poljoprivredno carstvo? Kao upravitelj farme možete započeti na jednom od naših servera i pratiti financije, opremu, životinje, proizvodnju, skladište i kalendar usjeva.</p>
-        <h2>SR Banka</h2>
-        <p>SR Banka je virtualni bankovni sustav koji omogućuje prijenos novca iz igre na vaš web račun. Novac možete slati drugim igračima, vraćati na farmu ili trošiti unutar web svijeta.</p>
-        <h2>Instant prijenosi novca</h2>
-        <p>Prijenos novca između vaše farme u igri i SR Bank računa traje manje od 10 sekundi.</p>
-        <h2>Discord i in-game chat sinkronizacija</h2>
-        <p>Razgovarajte s drugim igračima putem in-game chata i Discord kanala servera. Poruke se automatski šalju između oba sustava.</p>
-        <h2>Auto Upravitelj Farme</h2>
-        <p>Kada postanete upravitelj farme, svaki put kad se pridružite toj farmi, automatski dobivate upraviteljske ovlasti.</p>
-        <h2>Napredne mogućnosti</h2>
-        <ul>
-            <li>Skladištenje vozila</li>
-            <li>Online upravljanje zemljištem</li>
-            <li>Skladištenje i prodaja usjeva/proizvoda putem web CO-OP-a</li>
-            <li>I još mnogo toga...</li>
-        </ul>
-        <p>Za više informacija posjetite naš <a href="https://discord.gg/joinFSG">Discord</a>.</p>
-    </section>
-    </main>
+    </ul>
+</nav>
+
+<% if (user && farm) { %>
+
+<!-- HERO - Farm Name & Balance -->
+<section class="farm-hero">
+    <div class="farm-hero-content">
+        <h1 class="farm-title"><%= farm.farmName %></h1>
+        <p class="farm-subtitle">Upravljanje farmom</p>
+        <div class="farm-balance-card">
+            <span class="farm-balance-label">Stanje računa</span>
+            <span class="farm-balance-amount"><%= farm.balance.toLocaleString('hr-HR') %> €</span>
+        </div>
+    </div>
+</section>
+
+<!-- FARM CATEGORIES -->
+<section class="farm-section">
+    <div class="farm-grid">
+
+        <!-- Oprema -->
+        <div class="farm-card">
+            <div class="farm-card-header">
+                <span class="farm-card-icon">🚜</span>
+                <h2>Oprema</h2>
+            </div>
+            <div class="farm-card-body">
+                <% if(farm.equipment && farm.equipment.length > 0) { %>
+                    <ul class="farm-list">
+                        <% farm.equipment.forEach(function(eq){ %>
+                            <li><span class="farm-list-dot"></span><%= eq %></li>
+                        <% }) %>
+                    </ul>
+                <% } else { %>
+                    <p class="farm-empty">Nema opreme</p>
+                <% } %>
+            </div>
+            <div class="farm-card-count"><%= farm.equipment ? farm.equipment.length : 0 %> stavki</div>
+        </div>
+
+        <!-- Životinje -->
+        <div class="farm-card">
+            <div class="farm-card-header">
+                <span class="farm-card-icon">🐄</span>
+                <h2>Životinje</h2>
+            </div>
+            <div class="farm-card-body">
+                <% if(farm.animals && farm.animals.length > 0) { %>
+                    <ul class="farm-list">
+                        <% farm.animals.forEach(function(an){ %>
+                            <li><span class="farm-list-dot"></span><%= an %></li>
+                        <% }) %>
+                    </ul>
+                <% } else { %>
+                    <p class="farm-empty">Nema životinja</p>
+                <% } %>
+            </div>
+            <div class="farm-card-count"><%= farm.animals ? farm.animals.length : 0 %> stavki</div>
+        </div>
+
+        <!-- Proizvodnja -->
+        <div class="farm-card">
+            <div class="farm-card-header">
+                <span class="farm-card-icon">🏭</span>
+                <h2>Proizvodnja</h2>
+            </div>
+            <div class="farm-card-body">
+                <% if(farm.productions && farm.productions.length > 0) { %>
+                    <ul class="farm-list">
+                        <% farm.productions.forEach(function(pr){ %>
+                            <li><span class="farm-list-dot"></span><%= pr %></li>
+                        <% }) %>
+                    </ul>
+                <% } else { %>
+                    <p class="farm-empty">Nema proizvodnje</p>
+                <% } %>
+            </div>
+            <div class="farm-card-count"><%= farm.productions ? farm.productions.length : 0 %> stavki</div>
+        </div>
+
+        <!-- Skladište -->
+        <div class="farm-card">
+            <div class="farm-card-header">
+                <span class="farm-card-icon">📦</span>
+                <h2>Skladište</h2>
+            </div>
+            <div class="farm-card-body">
+                <% if(farm.storage && farm.storage.length > 0) { %>
+                    <ul class="farm-list">
+                        <% farm.storage.forEach(function(st){ %>
+                            <li><span class="farm-list-dot"></span><%= st %></li>
+                        <% }) %>
+                    </ul>
+                <% } else { %>
+                    <p class="farm-empty">Skladište je prazno</p>
+                <% } %>
+            </div>
+            <div class="farm-card-count"><%= farm.storage ? farm.storage.length : 0 %> stavki</div>
+        </div>
+
+        <!-- Kalendar usjeva -->
+        <div class="farm-card farm-card-wide">
+            <div class="farm-card-header">
+                <span class="farm-card-icon">🌾</span>
+                <h2>Kalendar usjeva</h2>
+            </div>
+            <div class="farm-card-body">
+                <% if(farm.cropCalendar && farm.cropCalendar.length > 0) { %>
+                    <ul class="farm-list farm-list-crops">
+                        <% farm.cropCalendar.forEach(function(cc){ %>
+                            <li><span class="farm-list-dot"></span><%= cc %></li>
+                        <% }) %>
+                    </ul>
+                <% } else { %>
+                    <p class="farm-empty">Nema usjeva u kalendaru</p>
+                <% } %>
+            </div>
+            <div class="farm-card-count"><%= farm.cropCalendar ? farm.cropCalendar.length : 0 %> usjeva</div>
+        </div>
+
+    </div>
+</section>
+
+<% } else if (user) { %>
+
+<!-- No Farm State -->
+<section class="farm-hero">
+    <div class="farm-hero-content">
+        <h1 class="farm-title">Moja Farma</h1>
+        <p class="farm-subtitle">Nemate još kreiranu farmu</p>
+        <div class="farm-no-data">
+            <span class="farm-no-data-icon">🌱</span>
+            <p>Javite se adminu ili kreirajte farmu putem Discord bota da započnete svoje poljoprivredno carstvo.</p>
+            <a href="https://discord.gg/joinFSG" class="btn-primary" target="_blank">Pridružite se Discordu</a>
+        </div>
+    </div>
+</section>
+
+<% } else { %>
+
+<!-- Not Logged In State -->
+<section class="farm-hero">
+    <div class="farm-hero-content">
+        <h1 class="farm-title">Moja Farma</h1>
+        <p class="farm-subtitle">Prijavite se za pristup vašoj farmi</p>
+        <div class="farm-no-data">
+            <span class="farm-no-data-icon">🔒</span>
+            <p>Za prikaz vaše farme morate biti prijavljeni putem Discorda.</p>
+            <a href="/auth/discord" class="btn-primary">Prijava putem Discorda</a>
+        </div>
+    </div>
+</section>
+
+<% } %>
+
+<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+<script>
+particlesJS('particles-js', {
+    particles: {
+        number: { value: 60 },
+        color: { value: '#00ff7a' },
+        shape: { type: 'circle' },
+        opacity: { value: 0.3 },
+        size: { value: 3 },
+        move: { enable: true, speed: 1 },
+        line_linked: { enable: true, color: '#00ff7a', opacity: 0.1 }
+    }
+});
+</script>
+
 </body>
 </html>
