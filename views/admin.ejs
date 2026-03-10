@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Panel</title>
+  <link rel="icon" type="image/png" href="/images/logo.png">
+  <link rel="stylesheet" href="/style.css">
+
+  <script>
+    function togglePanel(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.toggle("open");
+    }
+  </script>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="logo">
+    <img src="/images/logo.png" alt="SR Logo">
+    <span>Slavonska Ravnica</span>
+  </div>
+  <ul>
+    <li><a href="/">Pocetna</a></li>
+    <li><a href="/galerija">Galerija</a></li>
+    <li><a href="/pravila">Pravila</a></li>
+    <li><a href="/statistika">Statistika</a></li>
+    <li><a href="/moja-farma">Moja Farma</a></li>
+    <li><a href="/profile">Profil</a></li>
+    <li><a href="/logout">Logout</a></li>
+  </ul>
+</nav>
+
+<section class="admin-shell">
+  <div class="admin-topbar">
+    <div>
+      <p class="admin-kicker">Kontrolni centar</p>
+      <h1>Admin Panel</h1>
+      <p class="admin-subtitle">Upravljanje novostima, pravilima, blacklistom i logovima na jednom mjestu.</p>
+    </div>
+  </div>
+
+  <div class="admin-stats-grid">
+    <div class="admin-stat-card">
+      <span class="admin-stat-label">Discord clanovi</span>
+      <strong><%= discordMembers %></strong>
+    </div>
+    <div class="admin-stat-card">
+      <span class="admin-stat-label">Ukupno slika</span>
+      <strong><%= imagesCount %></strong>
+    </div>
+    <div class="admin-stat-card">
+      <span class="admin-stat-label">Objave</span>
+      <strong><%= newsCount %></strong>
+    </div>
+    <div class="admin-stat-card admin-stat-card-alert">
+      <span class="admin-stat-label">Blacklist</span>
+      <strong><%= blacklist ? blacklist.length : 0 %></strong>
+    </div>
+  </div>
+
+  <div class="admin-wrapper">
+
+    <div class="admin-section">
+      <div class="admin-header" onclick="togglePanel('news')">
+        <div>
+          <span class="admin-header-label">Novosti</span>
+          <small>Dodaj i brisi objave</small>
+        </div>
+        <span class="admin-header-count"><%= newsCount %></span>
+      </div>
+
+      <div id="news" class="admin-content open">
+        <form method="POST" action="/admin/news" class="admin-form">
+          <input type="text" name="title" placeholder="Naslov" required>
+          <textarea name="content" placeholder="Sadrzaj..." required></textarea>
+          <button type="submit" class="admin-action-btn">Objavi</button>
+        </form>
+
+        <div class="admin-divider"></div>
+
+        <h3 class="admin-content-title">Postojece objave</h3>
+
+        <% if (news && news.length > 0) { %>
+          <div class="admin-list">
+            <% news.forEach(post => { %>
+              <div class="admin-news-item">
+                <div class="news-left">
+                  <strong><%= post.title %></strong>
+                  <small><%= post.date %></small>
+                </div>
+
+                <form method="POST" action="/admin/news/delete/<%= post.id %>" onsubmit="return confirm('Obrisati ovu objavu?')">
+                  <button type="submit" class="admin-danger-btn">Obrisi</button>
+                </form>
+              </div>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <p class="admin-empty">Nema objava.</p>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-header" onclick="togglePanel('rules')">
+        <div>
+          <span class="admin-header-label">Pravila</span>
+          <small>Azuriraj tekst pravila</small>
+        </div>
+        <span class="admin-header-icon">TXT</span>
+      </div>
+
+      <div id="rules" class="admin-content">
+        <form method="POST" action="/admin/rules" class="admin-form">
+          <textarea name="content" placeholder="Upisi pravila..."></textarea>
+          <button type="submit" class="admin-action-btn">Spremi</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-header" onclick="togglePanel('blacklist')">
+        <div>
+          <span class="admin-header-label">Blacklist</span>
+          <small>Dodaj i ukloni blokirane korisnike</small>
+        </div>
+        <span class="admin-header-count"><%= blacklist ? blacklist.length : 0 %></span>
+      </div>
+
+      <div id="blacklist" class="admin-content">
+        <div class="admin-blacklist-layout">
+          <div class="admin-blacklist-actions">
+            <form method="POST" action="/admin/blacklist/add" class="admin-form compact-form">
+              <label class="admin-field-label">Dodaj korisnika</label>
+              <input type="text" name="userId" placeholder="Discord User ID" required>
+              <button type="submit" class="admin-action-btn">Dodaj u blacklist</button>
+            </form>
+
+            <form method="POST" action="/admin/blacklist/remove" class="admin-form compact-form">
+              <label class="admin-field-label">Makni korisnika</label>
+              <input type="text" name="userId" placeholder="Discord User ID" required>
+              <button type="submit" class="admin-secondary-btn">Ukloni iz blackliste</button>
+            </form>
+          </div>
+
+          <div class="admin-blacklist-list">
+            <div class="admin-content-title-row">
+              <h3 class="admin-content-title">Trenutno blokirani</h3>
+              <span class="admin-pill"><%= blacklist ? blacklist.length : 0 %></span>
+            </div>
+
+            <% if (blacklist && blacklist.length > 0) { %>
+              <div class="admin-list">
+                <% blacklist.forEach(userId => { %>
+                  <div class="admin-blacklist-item">
+                    <code><%= userId %></code>
+                    <form method="POST" action="/admin/blacklist/remove">
+                      <input type="hidden" name="userId" value="<%= userId %>">
+                      <button type="submit" class="admin-danger-btn">Makni</button>
+                    </form>
+                  </div>
+                <% }) %>
+              </div>
+            <% } else { %>
+              <p class="admin-empty">Blacklist je trenutno prazna.</p>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-header" onclick="togglePanel('logs')">
+        <div>
+          <span class="admin-header-label">Admin logovi</span>
+          <small>Zadnjih 20 akcija</small>
+        </div>
+        <span class="admin-header-icon">LOG</span>
+      </div>
+
+      <div id="logs" class="admin-content">
+        <% if (!logs || logs.length === 0) { %>
+          <p class="admin-empty">Nema logova.</p>
+        <% } else { %>
+          <div class="admin-list">
+            <% logs.slice(0,20).forEach(log => { %>
+              <div class="log-entry">
+                <strong><%= log.admin %></strong> - <%= log.action %>
+                <div class="log-date"><%= log.date %></div>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+</body>
+</html>

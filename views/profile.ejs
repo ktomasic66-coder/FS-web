@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Moj Profil</title>
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">
+        <img src="/images/logo.png" alt="SR Logo">
+        <span>Slavonska Ravnica</span>
+    </div>
+    <ul>
+        <li><a href="/">Početna</a></li>
+        <li><a href="/galerija">Galerija</a></li>
+        <li><a href="/pravila">Pravila</a></li>
+        <li><a href="/statistika">Statistika</a></li>
+        <li><a href="/moja-farma">Moja Farma</a></li>
+        <li><a href="/profile">Profil</a></li>
+        <li><a href="/admin">Admin</a></li>
+        <li><a href="/logout">Logout</a></li>
+    </ul>
+</nav>
+
+<div class="hero">
+
+    <div class="profile-wrapper">
+
+        <div class="profile-left">
+            <h1>Moj Profil</h1>
+        </div>
+
+        <div class="profile-card">
+
+            <img 
+              class="profile-avatar"
+              src="https://cdn.discordapp.com/avatars/<%= user.id %>/<%= user.avatar %>.png"
+            >
+
+            <h2><%= user.username %></h2>
+
+            <!-- SPECIFIČNE BADGE ROLE -->
+            <div class="special-badges">
+
+                <% if(isAdmin){ %>
+                    <span class="badge badge-admin">👑 Admin</span>
+                <% } %>
+
+                <% if(isPlayer){ %>
+                    <span class="badge badge-player">🚜 Player</span>
+                <% } %>
+
+            </div>
+
+            <!-- SVE ROLE -->
+            <div class="all-roles">
+                <% if (roles && roles.length > 0) { %>
+                    <% roles.forEach(role => { %>
+                        <span 
+                            class="role-pill"
+                            style="background:<%= role.color !== '#000000' ? role.color : '#444' %>">
+                            <%= role.name %>
+                        </span>
+                    <% }) %>
+                <% } else { %>
+                    <span style="opacity:0.6;">Nema dodatnih rola</span>
+                <% } %>
+            </div>
+
+            <p class="discord-id">
+                Discord ID: <%= user.id %>
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Statistika Servera</title>
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">
+        <img src="/images/logo.png" alt="SR Logo">
+        <span>Slavonska Ravnica</span>
+    </div>
+    <ul>
+        <li><a href="/">Početna</a></li>
+        <li><a href="/galerija">Galerija</a></li>
+        <li><a href="/pravila">Pravila</a></li>
+        <li><a href="/statistika">Statistika</a></li>
+        <li><a href="/moja-farma">Moja Farma</a></li>
+        <% if(user){ %>
+            <li><a href="/profile">Profil</a></li>
+            <li><a href="/admin">Admin</a></li>
+            <li><a href="/logout">Logout</a></li>
+        <% } else { %>
+            <li><a href="/auth/discord">Login</a></li>
+        <% } %>
+    </ul>
+</nav>
+
+<div class="hero">
+    <h1>Statistika Servera</h1>
+
+    <div class="stats-container">
+
+        <div class="stat-card">
+            <h2>Status Servera</h2>
+            <p class="status <%= stats.serverStatus.toLowerCase() %>">
+                <%= stats.serverStatus %>
+            </p>
+        </div>
+
+        <div class="stat-card">
+            <h2>Igrači Online</h2>
+            <p><%= stats.playersOnline %> / <%= stats.maxPlayers %></p>
+        </div>
+
+        <div class="stat-card">
+            <h2>Discord Članovi</h2>
+            <p><%= stats.discordMembers %></p>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>
