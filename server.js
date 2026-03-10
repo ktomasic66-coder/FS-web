@@ -463,11 +463,80 @@ async function deleteNewsById(id) {
 /* ----- Rules ----- */
 
 function loadRules() {
-  return readJsonSafe(RULES_FILE, { content: '' });
+  const raw = readJsonSafe(RULES_FILE, null);
+  const fallback = {
+    title: 'Pravila Ponasanja',
+    subtitle: 'Ova pravila vaze za sve clanove servera bez izuzetka.',
+    warning: 'Krsenje pravila moze rezultirati upozorenjem, mute-om ili trajnim banom.',
+    items: [],
+  };
+
+  if (!raw || typeof raw !== 'object') return fallback;
+
+  if (Array.isArray(raw.items)) {
+    return {
+      title: String(raw.title || fallback.title),
+      subtitle: String(raw.subtitle || fallback.subtitle),
+      warning: String(raw.warning || fallback.warning),
+      items: raw.items
+        .map((item, index) => ({
+          id: Number(item.id) || Date.now() + index,
+          text: String(item.text || '').trim(),
+        }))
+        .filter((item) => item.text),
+    };
+  }
+
+  const legacyLines = String(raw.content || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return {
+    ...fallback,
+    items: legacyLines.map((text, index) => ({
+      id: Date.now() + index,
+      text,
+    })),
+  };
 }
 
 function saveRules(data) {
   writeJsonSafe(RULES_FILE, data);
+}
+
+function addRule(text) {
+  const rules = loadRules();
+  rules.items.push({
+    id: Date.now(),
+    text,
+  });
+  saveRules(rules);
+}
+
+function updateRuleById(id, text) {
+  const rules = loadRules();
+  const rule = rules.items.find((item) => Number(item.id) === Number(id));
+  if (!rule) return false;
+  rule.text = text;
+  saveRules(rules);
+  return true;
+}
+
+function deleteRuleById(id) {
+  const rules = loadRules();
+  const before = rules.items.length;
+  rules.items = rules.items.filter((item) => Number(item.id) !== Number(id));
+  saveRules(rules);
+  return before !== rules.items.length;
+}
+
+function updateRulesMeta({ title, subtitle, warning }) {
+  const rules = loadRules();
+  rules.title = title || rules.title;
+  rules.subtitle = subtitle || rules.subtitle;
+  rules.warning = warning || rules.warning;
+  saveRules(rules);
 }
 
 /* ----- Logs ----- */
@@ -690,12 +759,14 @@ app.get('/admin', requireAdmin, async (req, res) => {
   const news = await loadNews();
   const images = await loadGallery();
   const blacklist = await resolveBlacklistEntries(loadBlacklist());
+  const rules = loadRules();
 
   res.render('admin', {
     user: req.user,
     logs: logs,
     news: news,                   // ⬅️ OVO MORA BITI POSLANO
     blacklist: blacklist,
+    rules: rules,
     discordMembers: discordMemberCount,
     imagesCount: images.length,
     newsCount: news.length
@@ -738,10 +809,39 @@ app.get('/pravila', (req, res) => {
 });
 
 app.post('/admin/rules', requireAdmin, (req, res) => {
-  const content = req.body.content || '';
-  saveRules({ content });
+  updateRulesMeta({
+    title: (req.body.title || '').trim(),
+    subtitle: (req.body.subtitle || '').trim(),
+    warning: (req.body.warning || '').trim(),
+  });
 
   logAction('Pravila uređena', req.user.username);
+  res.redirect('/admin');
+});
+
+app.post('/admin/rules/add', requireAdmin, (req, res) => {
+  const text = (req.body.text || '').trim();
+  if (!text) return res.redirect('/admin');
+
+  addRule(text);
+  logAction('Dodano novo pravilo', req.user.username);
+  res.redirect('/admin');
+});
+
+app.post('/admin/rules/update/:id', requireAdmin, (req, res) => {
+  const id = Number(req.params.id);
+  const text = (req.body.text || '').trim();
+  if (!text) return res.redirect('/admin');
+
+  const updated = updateRuleById(id, text);
+  if (updated) logAction(`Uredeno pravilo (id=${id})`, req.user.username);
+  res.redirect('/admin');
+});
+
+app.post('/admin/rules/delete/:id', requireAdmin, (req, res) => {
+  const id = Number(req.params.id);
+  const deleted = deleteRuleById(id);
+  if (deleted) logAction(`Obrisano pravilo (id=${id})`, req.user.username);
   res.redirect('/admin');
 });
 

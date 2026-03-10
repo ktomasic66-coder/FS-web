@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="/style.css">
 </head>
 
-<body>
+<body class="rules-page">
 
 <nav class="navbar">
     <div class="logo">
@@ -15,13 +15,13 @@
     </div>
 
     <ul>
-        <li><a href="/">Početna</a></li>
+        <li><a href="/">Pocetna</a></li>
         <li><a href="/galerija">Galerija</a></li>
         <li><a href="/pravila">Pravila</a></li>
         <li><a href="/statistika">Statistika</a></li>
         <li><a href="/moja-farma">Moja Farma</a></li>
 
-        <% if(user){ %>
+        <% if (user) { %>
             <li><a href="/profile">Profil</a></li>
             <li><a href="/admin">Admin</a></li>
             <li><a href="/logout">Logout</a></li>
@@ -31,61 +31,56 @@
     </ul>
 </nav>
 
-<section class="rules-section">
-    <h1>Pravila Ponašanja</h1>
-    <p class="rules-sub">
-        Ova pravila važe za sve članove servera bez izuzetka.
-    </p>
-
-    <div class="rules-container">
-
-        <div class="rule-card">
-            <span>01</span>
-            <p>Poštuj sve članove bez obzira na godine, spol ili mišljenje.</p>
-        </div>
-
-        <div class="rule-card">
-            <span>02</span>
-            <p>Zabranjeno je vrijeđanje, omalovažavanje i provociranje drugih članova.</p>
-        </div>
-
-        <div class="rule-card">
-            <span>03</span>
-            <p>Bez rasizma, nacionalizma, homofobije i političkih tema.</p>
-        </div>
-
-        <div class="rule-card">
-            <span>04</span>
-            <p>Zabranjeno spamovanje, floodanje i nepotrebno tagovanje članova ili administracije.</p>
-        </div>
-
-        <div class="rule-card">
-            <span>05</span>
-            <p>Ne koristi CAPS LOCK u dužim porukama i ne narušavaj komunikaciju.</p>
-        </div>
-
-        <div class="rule-card">
-            <span>06</span>
-            <p>Bez reklamiranja drugih servera, Discorda, stranica ili modova bez dozvole admina.</p>
-        </div>
-
-        <div class="rule-card">
-            <span>07</span>
-            <p>Poštuj administraciju i njihove odluke — ako imaš problem, prijavi kulturno.</p>
-        </div>
-
-        <div class="rule-card">
-            <span>08</span>
-            <p>Koristi zdrav razum. Ponašaj se onako kako bi želio da se drugi ponašaju prema tebi.</p>
-        </div>
-
+<section class="rules-hero">
+    <div class="rules-hero-inner">
+        <p class="rules-kicker">Server policy</p>
+        <h1><%= rules.title %></h1>
+        <p class="rules-sub"><%= rules.subtitle %></p>
     </div>
-
-    <div class="rules-warning">
-        Kršenje pravila može rezultirati upozorenjem, mute-om ili trajnim banom.
-    </div>
-
+    <div class="rules-orb rules-orb-one"></div>
+    <div class="rules-orb rules-orb-two"></div>
 </section>
+
+<section class="rules-showcase">
+    <% if (rules.items && rules.items.length > 0) { %>
+        <div class="rules-grid-modern">
+            <% rules.items.forEach((rule, index) => { %>
+                <article class="rules-card-modern">
+                    <div class="rules-card-top">
+                        <span class="rules-card-number"><%= String(index + 1).padStart(2, '0') %></span>
+                        <span class="rules-card-line"></span>
+                    </div>
+                    <p><%= rule.text %></p>
+                </article>
+            <% }) %>
+        </div>
+    <% } else { %>
+        <div class="rules-empty-state">
+            <strong>Pravila jos nisu dodana.</strong>
+            <p>Admin ih moze dodati i urediti unutar admin panela.</p>
+        </div>
+    <% } %>
+
+    <div class="rules-warning-banner">
+        <strong>Napomena</strong>
+        <p><%= rules.warning %></p>
+    </div>
+</section>
+
+<footer class="site-footer">
+    <div class="site-footer-inner">
+        <div>
+            <strong>Slavonska Ravnica</strong>
+            <p>Pravila i informacije za sve clanove zajednice.</p>
+        </div>
+        <div class="site-footer-links">
+            <a href="/">Pocetna</a>
+            <a href="/pravila">Pravila</a>
+            <a href="/galerija">Galerija</a>
+            <a href="/statistika">Statistika</a>
+        </div>
+    </div>
+</footer>
 
 </body>
 </html>

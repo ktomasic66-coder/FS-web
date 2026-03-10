@@ -106,16 +106,62 @@
       <div class="admin-header" onclick="togglePanel('rules')">
         <div>
           <span class="admin-header-label">Pravila</span>
-          <small>Azuriraj tekst pravila</small>
+          <small>Dodaj, uredi i obrisi pravila</small>
         </div>
-        <span class="admin-header-icon">TXT</span>
+        <span class="admin-header-count"><%= rules && rules.items ? rules.items.length : 0 %></span>
       </div>
 
       <div id="rules" class="admin-content">
-        <form method="POST" action="/admin/rules" class="admin-form">
-          <textarea name="content" placeholder="Upisi pravila..."></textarea>
-          <button type="submit" class="admin-action-btn">Spremi</button>
-        </form>
+        <div class="admin-rules-layout">
+          <div class="admin-rules-sidebar">
+            <form method="POST" action="/admin/rules" class="admin-form compact-form">
+              <label class="admin-field-label">Naslov sekcije</label>
+              <input type="text" name="title" value="<%= rules.title %>" placeholder="Naslov" required>
+
+              <label class="admin-field-label">Podnaslov</label>
+              <textarea name="subtitle" placeholder="Kratki opis..." required><%= rules.subtitle %></textarea>
+
+              <label class="admin-field-label">Upozorenje</label>
+              <textarea name="warning" placeholder="Zavrsna napomena..." required><%= rules.warning %></textarea>
+
+              <button type="submit" class="admin-secondary-btn">Spremi zaglavlje</button>
+            </form>
+
+            <form method="POST" action="/admin/rules/add" class="admin-form compact-form">
+              <label class="admin-field-label">Dodaj novo pravilo</label>
+              <textarea name="text" placeholder="Upisi novo pravilo..." required></textarea>
+              <button type="submit" class="admin-action-btn">Dodaj pravilo</button>
+            </form>
+          </div>
+
+          <div class="admin-rules-list">
+            <div class="admin-content-title-row">
+              <h3 class="admin-content-title">Aktivna pravila</h3>
+              <span class="admin-pill"><%= rules && rules.items ? rules.items.length : 0 %></span>
+            </div>
+
+            <% if (rules && rules.items && rules.items.length > 0) { %>
+              <div class="admin-list">
+                <% rules.items.forEach((rule, index) => { %>
+                  <div class="admin-rule-item">
+                    <div class="admin-rule-index"><%= String(index + 1).padStart(2, '0') %></div>
+                    <form method="POST" action="/admin/rules/update/<%= rule.id %>" class="admin-form admin-rule-form">
+                      <textarea name="text" required><%= rule.text %></textarea>
+                      <div class="admin-inline-actions">
+                        <button type="submit" class="admin-secondary-btn">Spremi izmjene</button>
+                      </div>
+                    </form>
+                    <form method="POST" action="/admin/rules/delete/<%= rule.id %>" onsubmit="return confirm('Obrisati ovo pravilo?')">
+                      <button type="submit" class="admin-danger-btn">Obrisi</button>
+                    </form>
+                  </div>
+                <% }) %>
+              </div>
+            <% } else { %>
+              <p class="admin-empty">Jos nema pravila. Dodaj prvo pravilo iz lijevog bloka.</p>
+            <% } %>
+          </div>
+        </div>
       </div>
     </div>
 
