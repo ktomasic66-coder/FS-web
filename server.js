@@ -504,6 +504,31 @@ function removeFromBlacklist(userId) {
   writeJsonSafe(BLACKLIST_FILE, list);
 }
 
+async function resolveBlacklistEntries(userIds) {
+  const ids = Array.isArray(userIds) ? userIds : [];
+
+  return Promise.all(ids.map(async (userId) => {
+    let username = null;
+
+    try {
+      if (mainGuild) {
+        const member = await mainGuild.members.fetch(userId);
+        username = member.displayName || member.user.globalName || member.user.username;
+      } else {
+        const user = await discordClient.users.fetch(userId);
+        username = user.globalName || user.username;
+      }
+    } catch {
+      username = null;
+    }
+
+    return {
+      userId,
+      username,
+    };
+  }));
+}
+
 /* ----- Backup ----- */
 
 function backupGallery() {
@@ -664,7 +689,7 @@ app.get('/admin', requireAdmin, async (req, res) => {
   const logs = loadLogs();
   const news = await loadNews();
   const images = await loadGallery();
-  const blacklist = loadBlacklist();
+  const blacklist = await resolveBlacklistEntries(loadBlacklist());
 
   res.render('admin', {
     user: req.user,

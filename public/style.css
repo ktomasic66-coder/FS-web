@@ -1925,6 +1925,17 @@ s input {
   color: #9fffd2;
 }
 
+.admin-blacklist-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-blacklist-meta strong {
+  font-size: 15px;
+  color: #ffffff;
+}
+
 .log-entry {
   align-items: flex-start;
   flex-direction: column;

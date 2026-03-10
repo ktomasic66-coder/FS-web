@@ -152,11 +152,14 @@
 
             <% if (blacklist && blacklist.length > 0) { %>
               <div class="admin-list">
-                <% blacklist.forEach(userId => { %>
+                <% blacklist.forEach(entry => { %>
                   <div class="admin-blacklist-item">
-                    <code><%= userId %></code>
+                    <div class="admin-blacklist-meta">
+                      <strong><%= entry.username || 'Nepoznat korisnik' %></strong>
+                      <code><%= entry.userId %></code>
+                    </div>
                     <form method="POST" action="/admin/blacklist/remove">
-                      <input type="hidden" name="userId" value="<%= userId %>">
+                      <input type="hidden" name="userId" value="<%= entry.userId %>">
                       <button type="submit" class="admin-danger-btn">Makni</button>
                     </form>
                   </div>
