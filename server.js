@@ -178,13 +178,35 @@ class FileSessionStore extends session.Store {
 }
 
 /* ----- Gallery ----- */
+async function ensureColumn(tableName, columnName, definition) {
+  if (!dbPool) return;
+
+  const [rows] = await dbPool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND COLUMN_NAME = ?
+     LIMIT 1`,
+    [tableName, columnName]
+  );
+
+  if (rows.length === 0) {
+    await dbPool.query(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition}`);
+  }
+}
+
 async function initMySql() {
   if (!mysql) {
     console.log('MySQL driver nije dostupan, fallback na JSON.');
     return;
   }
 
-  const mysqlUrl = process.env.MYSQL_URL || process.env.DATABASE_URL || '';
+  const mysqlUrl =
+    process.env.MYSQL_URL ||
+    process.env.MYSQL_PRIVATE_URL ||
+    process.env.MYSQL_PUBLIC_URL ||
+    '';
   const mysqlHost = process.env.MYSQLHOST || '';
   const mysqlPort = Number(process.env.MYSQLPORT || 3306);
   const mysqlUser = process.env.MYSQLUSER || '';
@@ -199,6 +221,7 @@ async function initMySql() {
   try {
     if (mysqlUrl) {
       dbPool = mysql.createPool(mysqlUrl);
+      console.log('MySQL init: koristim URL konekciju.');
     } else {
       dbPool = mysql.createPool({
         host: mysqlHost,
@@ -210,6 +233,7 @@ async function initMySql() {
         waitForConnections: true,
         queueLimit: 0,
       });
+      console.log(`MySQL init: koristim host konekciju (${mysqlHost}:${mysqlPort}/${mysqlDatabase}).`);
     }
 
     await dbPool.query('SELECT 1');
@@ -263,15 +287,8 @@ async function initMySql() {
       )
     `);
 
-    await dbPool.query(`
-      ALTER TABLE rules_items
-      ADD COLUMN IF NOT EXISTS title VARCHAR(255) DEFAULT NULL
-    `);
-
-    await dbPool.query(`
-      ALTER TABLE rules_items
-      ADD COLUMN IF NOT EXISTS content TEXT DEFAULT NULL
-    `);
+    await ensureColumn('rules_items', 'title', 'VARCHAR(255) DEFAULT NULL');
+    await ensureColumn('rules_items', 'content', 'TEXT DEFAULT NULL');
 
     await dbPool.query(`
       CREATE TABLE IF NOT EXISTS blacklist_entries (

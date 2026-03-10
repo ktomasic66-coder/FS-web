@@ -2098,12 +2098,6 @@ s input {
   margin-bottom: 20px;
 }
 
-.rules-card-number {
-  font-size: 28px;
-  font-weight: 900;
-  color: #00ff9d;
-}
-
 .rules-card-line {
   flex: 1;
   height: 1px;
@@ -2118,10 +2112,11 @@ s input {
 }
 
 .rules-card-modern h3 {
-  margin: 0 0 14px;
-  font-size: 28px;
+  margin: 0;
+  font-size: 30px;
   line-height: 1.2;
-  color: #ffffff;
+  color: #00ff9d;
+  font-weight: 900;
 }
 
 .rules-warning-banner {

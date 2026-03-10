@@ -48,10 +48,9 @@
             <% rules.items.forEach((rule, index) => { %>
                 <article class="rules-card-modern">
                     <div class="rules-card-top">
-                        <span class="rules-card-number"><%= String(index + 1).padStart(2, '0') %></span>
+                        <h3><%= rule.title %></h3>
                         <span class="rules-card-line"></span>
                     </div>
-                    <h3><%= rule.title %></h3>
                     <p><%= rule.content %></p>
                 </article>
             <% }) %>
