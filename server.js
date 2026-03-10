@@ -257,8 +257,20 @@ async function initMySql() {
       CREATE TABLE IF NOT EXISTS rules_items (
         id BIGINT PRIMARY KEY,
         sort_order INT NOT NULL,
-        text TEXT NOT NULL
+        title VARCHAR(255) DEFAULT NULL,
+        content TEXT DEFAULT NULL,
+        text TEXT DEFAULT NULL
       )
+    `);
+
+    await dbPool.query(`
+      ALTER TABLE rules_items
+      ADD COLUMN IF NOT EXISTS title VARCHAR(255) DEFAULT NULL
+    `);
+
+    await dbPool.query(`
+      ALTER TABLE rules_items
+      ADD COLUMN IF NOT EXISTS content TEXT DEFAULT NULL
     `);
 
     await dbPool.query(`
@@ -342,8 +354,14 @@ async function migrateDataToMySqlIfNeeded() {
     for (let i = 0; i < normalizedRules.items.length; i += 1) {
       const item = normalizedRules.items[i];
       await dbPool.query(
-        'INSERT INTO rules_items (id, sort_order, text) VALUES (?, ?, ?)',
-        [Number(item.id) || Date.now() + i, i, String(item.text || '')]
+        'INSERT INTO rules_items (id, sort_order, title, content, text) VALUES (?, ?, ?, ?, ?)',
+        [
+          Number(item.id) || Date.now() + i,
+          i,
+          String(item.title || ''),
+          String(item.content || ''),
+          String(item.text || [item.title, item.content].filter(Boolean).join('\n')),
+        ]
       );
     }
   }
@@ -545,6 +563,43 @@ function normalizeRulesData(raw) {
     return text;
   };
 
+  const normalizeRuleItem = (item, index) => {
+    if (!item) return null;
+
+    const legacyText = normalizeCroatianText(item.text || '');
+    const explicitTitle = normalizeCroatianText(item.title || '');
+    const explicitContent = normalizeCroatianText(item.content || '');
+
+    let title = explicitTitle;
+    let content = explicitContent;
+
+    if (!title && legacyText) {
+      const parts = legacyText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+      if (parts.length > 1) {
+        title = parts.shift();
+        content = parts.join('\n');
+      } else {
+        const colonIndex = legacyText.indexOf(':');
+        if (colonIndex > 0 && colonIndex < 80) {
+          title = legacyText.slice(0, colonIndex).trim();
+          content = legacyText.slice(colonIndex + 1).trim();
+        } else {
+          title = `Pravilo ${String(index + 1).padStart(2, '0')}`;
+          content = legacyText;
+        }
+      }
+    }
+
+    if (!title && !content) return null;
+
+    return {
+      id: Number(item.id) || Date.now() + index,
+      title: title || `Pravilo ${String(index + 1).padStart(2, '0')}`,
+      content: content || '',
+      text: [title, content].filter(Boolean).join('\n'),
+    };
+  };
+
   if (!raw || typeof raw !== 'object') return fallback;
 
   if (Array.isArray(raw.items)) {
@@ -553,11 +608,8 @@ function normalizeRulesData(raw) {
       subtitle: normalizeCroatianText(raw.subtitle || fallback.subtitle),
       warning: normalizeCroatianText(raw.warning || fallback.warning),
       items: raw.items
-        .map((item, index) => ({
-          id: Number(item.id) || Date.now() + index,
-          text: normalizeCroatianText(item.text || ''),
-        }))
-        .filter((item) => item.text),
+        .map((item, index) => normalizeRuleItem(item, index))
+        .filter(Boolean),
     };
   }
 
@@ -570,6 +622,8 @@ function normalizeRulesData(raw) {
     ...fallback,
     items: legacyLines.map((text, index) => ({
       id: Date.now() + index,
+      title: `Pravilo ${String(index + 1).padStart(2, '0')}`,
+      content: normalizeCroatianText(text),
       text: normalizeCroatianText(text),
     })),
   };
@@ -585,7 +639,7 @@ async function loadRules() {
     ['title', 'subtitle', 'warning']
   );
   const [itemRows] = await dbPool.query(
-    'SELECT id, text FROM rules_items ORDER BY sort_order ASC, id ASC'
+    'SELECT id, title, content, text FROM rules_items ORDER BY sort_order ASC, id ASC'
   );
 
   const meta = Object.fromEntries(metaRows.map((row) => [row.meta_key, row.meta_value]));
@@ -593,10 +647,14 @@ async function loadRules() {
     title: normalizeRulesData({ title: meta.title }).title,
     subtitle: normalizeRulesData({ subtitle: meta.subtitle }).subtitle,
     warning: normalizeRulesData({ warning: meta.warning }).warning,
-    items: itemRows.map((row) => ({
-      id: Number(row.id),
-      text: String(row.text || '').trim(),
-    })).filter((item) => item.text),
+    items: normalizeRulesData({
+      items: itemRows.map((row) => ({
+        id: Number(row.id),
+        title: row.title,
+        content: row.content,
+        text: row.text,
+      })),
+    }).items,
   };
 }
 
@@ -626,26 +684,36 @@ async function saveRules(data) {
   for (let i = 0; i < rules.items.length; i += 1) {
     const item = rules.items[i];
     await dbPool.query(
-      'INSERT INTO rules_items (id, sort_order, text) VALUES (?, ?, ?)',
-      [Number(item.id) || Date.now() + i, i, String(item.text || '')]
+      'INSERT INTO rules_items (id, sort_order, title, content, text) VALUES (?, ?, ?, ?, ?)',
+      [
+        Number(item.id) || Date.now() + i,
+        i,
+        String(item.title || ''),
+        String(item.content || ''),
+        String(item.text || [item.title, item.content].filter(Boolean).join('\n')),
+      ]
     );
   }
 }
 
-async function addRule(text) {
+async function addRule(title, content) {
   const rules = await loadRules();
   rules.items.push({
     id: Date.now(),
-    text,
+    title,
+    content,
+    text: [title, content].filter(Boolean).join('\n'),
   });
   await saveRules(rules);
 }
 
-async function updateRuleById(id, text) {
+async function updateRuleById(id, title, content) {
   const rules = await loadRules();
   const rule = rules.items.find((item) => Number(item.id) === Number(id));
   if (!rule) return false;
-  rule.text = text;
+  rule.title = title;
+  rule.content = content;
+  rule.text = [title, content].filter(Boolean).join('\n');
   await saveRules(rules);
   return true;
 }
@@ -997,20 +1065,22 @@ app.post('/admin/rules', requireAdmin, async (req, res) => {
 });
 
 app.post('/admin/rules/add', requireAdmin, async (req, res) => {
-  const text = (req.body.text || '').trim();
-  if (!text) return res.redirect('/admin');
+  const title = (req.body.ruleTitle || '').trim();
+  const content = (req.body.ruleContent || '').trim();
+  if (!title || !content) return res.redirect('/admin');
 
-  await addRule(text);
+  await addRule(title, content);
   await logAction('Dodano novo pravilo', req.user.username);
   res.redirect('/admin');
 });
 
 app.post('/admin/rules/update/:id', requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
-  const text = (req.body.text || '').trim();
-  if (!text) return res.redirect('/admin');
+  const title = (req.body.ruleTitle || '').trim();
+  const content = (req.body.ruleContent || '').trim();
+  if (!title || !content) return res.redirect('/admin');
 
-  const updated = await updateRuleById(id, text);
+  const updated = await updateRuleById(id, title, content);
   if (updated) await logAction(`Uredeno pravilo (id=${id})`, req.user.username);
   res.redirect('/admin');
 });

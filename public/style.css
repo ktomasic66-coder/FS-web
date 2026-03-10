@@ -1978,6 +1978,10 @@ s input {
   min-height: 110px;
 }
 
+.admin-rule-form input {
+  font-weight: 700;
+}
+
 .admin-inline-actions {
   display: flex;
   justify-content: flex-end;
@@ -2111,6 +2115,13 @@ s input {
   font-size: 18px;
   line-height: 1.8;
   color: rgba(255,255,255,0.92);
+}
+
+.rules-card-modern h3 {
+  margin: 0 0 14px;
+  font-size: 28px;
+  line-height: 1.2;
+  color: #ffffff;
 }
 
 .rules-warning-banner {

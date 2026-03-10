@@ -130,7 +130,8 @@
 
             <form method="POST" action="/admin/rules/add" class="admin-form compact-form">
               <label class="admin-field-label">Dodaj novo pravilo</label>
-              <textarea name="text" placeholder="Upisi novo pravilo..." required></textarea>
+              <input type="text" name="ruleTitle" placeholder="Naslov pravila..." required>
+              <textarea name="ruleContent" placeholder="Upisi objasnjenje pravila..." required></textarea>
               <button type="submit" class="admin-action-btn">Dodaj pravilo</button>
             </form>
           </div>
@@ -147,7 +148,8 @@
                   <div class="admin-rule-item">
                     <div class="admin-rule-index"><%= String(index + 1).padStart(2, '0') %></div>
                     <form method="POST" action="/admin/rules/update/<%= rule.id %>" class="admin-form admin-rule-form">
-                      <textarea name="text" required><%= rule.text %></textarea>
+                      <input type="text" name="ruleTitle" value="<%= rule.title %>" placeholder="Naslov pravila" required>
+                      <textarea name="ruleContent" required><%= rule.content %></textarea>
                       <div class="admin-inline-actions">
                         <button type="submit" class="admin-secondary-btn">Spremi izmjene</button>
                       </div>
