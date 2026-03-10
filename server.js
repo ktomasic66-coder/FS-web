@@ -430,10 +430,15 @@ async function migrateDataToMySqlIfNeeded() {
 async function loadGallery() {
   if (!useMySql || !dbPool) {
     const data = readJsonSafe(DATA_FILE, []);
-    return data.filter((img) => {
-      const imagePath = path.join(__dirname, 'public/uploads', img.filename);
-      return fs.existsSync(imagePath);
-    });
+    return data
+      .map((img) => ({
+        ...img,
+        comments: Array.isArray(img.comments) ? img.comments : [],
+      }))
+      .filter((img) => {
+        const imagePath = path.join(__dirname, 'public/uploads', img.filename);
+        return fs.existsSync(imagePath);
+      });
   }
 
   const [imageRows] = await dbPool.query(
@@ -468,7 +473,10 @@ async function loadGallery() {
 async function addGalleryImage(item) {
   if (!useMySql || !dbPool) {
     const gallery = readJsonSafe(DATA_FILE, []);
-    gallery.push(item);
+    gallery.push({
+      ...item,
+      comments: Array.isArray(item.comments) ? item.comments : [],
+    });
     writeJsonSafe(DATA_FILE, gallery);
     return;
   }
@@ -489,6 +497,7 @@ async function addGalleryComment(filename, comment) {
     const gallery = readJsonSafe(DATA_FILE, []);
     const image = gallery.find((img) => img.filename === filename);
     if (!image) return false;
+    if (!Array.isArray(image.comments)) image.comments = [];
     image.comments.push(comment);
     writeJsonSafe(DATA_FILE, gallery);
     return true;
