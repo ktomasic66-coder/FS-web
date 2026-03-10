@@ -525,23 +525,37 @@ async function deleteNewsById(id) {
 
 function normalizeRulesData(raw) {
   const fallback = {
-    title: 'Pravila Ponasanja',
-    subtitle: 'Ova pravila vaze za sve clanove servera bez izuzetka.',
-    warning: 'Krsenje pravila moze rezultirati upozorenjem, mute-om ili trajnim banom.',
+    title: 'Pravila Ponašanja',
+    subtitle: 'Ova pravila važe za sve članove servera bez izuzetka.',
+    warning: 'Kršenje pravila može rezultirati upozorenjem, mute-om ili trajnim banom.',
     items: [],
+  };
+
+  const normalizeCroatianText = (value) => {
+    const text = String(value || '').trim();
+
+    if (text === 'Pravila Ponasanja') return 'Pravila Ponašanja';
+    if (text === 'Ova pravila vaze za sve clanove servera bez izuzetka.') {
+      return 'Ova pravila važe za sve članove servera bez izuzetka.';
+    }
+    if (text === 'Krsenje pravila moze rezultirati upozorenjem, mute-om ili trajnim banom.') {
+      return 'Kršenje pravila može rezultirati upozorenjem, mute-om ili trajnim banom.';
+    }
+
+    return text;
   };
 
   if (!raw || typeof raw !== 'object') return fallback;
 
   if (Array.isArray(raw.items)) {
     return {
-      title: String(raw.title || fallback.title),
-      subtitle: String(raw.subtitle || fallback.subtitle),
-      warning: String(raw.warning || fallback.warning),
+      title: normalizeCroatianText(raw.title || fallback.title),
+      subtitle: normalizeCroatianText(raw.subtitle || fallback.subtitle),
+      warning: normalizeCroatianText(raw.warning || fallback.warning),
       items: raw.items
         .map((item, index) => ({
           id: Number(item.id) || Date.now() + index,
-          text: String(item.text || '').trim(),
+          text: normalizeCroatianText(item.text || ''),
         }))
         .filter((item) => item.text),
     };
@@ -556,7 +570,7 @@ function normalizeRulesData(raw) {
     ...fallback,
     items: legacyLines.map((text, index) => ({
       id: Date.now() + index,
-      text,
+      text: normalizeCroatianText(text),
     })),
   };
 }
@@ -576,9 +590,9 @@ async function loadRules() {
 
   const meta = Object.fromEntries(metaRows.map((row) => [row.meta_key, row.meta_value]));
   return {
-    title: String(meta.title || 'Pravila Ponasanja'),
-    subtitle: String(meta.subtitle || 'Ova pravila vaze za sve clanove servera bez izuzetka.'),
-    warning: String(meta.warning || 'Krsenje pravila moze rezultirati upozorenjem, mute-om ili trajnim banom.'),
+    title: normalizeRulesData({ title: meta.title }).title,
+    subtitle: normalizeRulesData({ subtitle: meta.subtitle }).subtitle,
+    warning: normalizeRulesData({ warning: meta.warning }).warning,
     items: itemRows.map((row) => ({
       id: Number(row.id),
       text: String(row.text || '').trim(),
