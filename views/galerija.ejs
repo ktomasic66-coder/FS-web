@@ -57,7 +57,7 @@
         <% gallery.forEach(function(img, index){ %>
         <% const avatarSrc = img.uploaderAvatar ? `https://cdn.discordapp.com/avatars/${img.uploaderId}/${img.uploaderAvatar}.png` : '/images/logo.png'; %>
         <% const previewComments = (img.comments || []).slice(0, 3); %>
-        <article class="gallery-card gallery-card-rich">
+        <article class="gallery-card gallery-card-rich" data-filename="<%= img.filename %>">
             <div class="gallery-card-media">
                 <img
                     src="/uploads/<%= img.filename %>"
@@ -89,6 +89,7 @@
                 <div class="gallery-reactions">
                     <form action="/react/<%= img.filename %>" method="POST">
                         <input type="hidden" name="reaction" value="like">
+                        <input type="hidden" name="returnTo" value="/galerija?open=<%= encodeURIComponent(img.filename) %>">
                         <button type="submit" class="reaction-btn">
                             <span>👍</span>
                             <strong><%= img.reactions?.like || 0 %></strong>
@@ -96,6 +97,7 @@
                     </form>
                     <form action="/react/<%= img.filename %>" method="POST">
                         <input type="hidden" name="reaction" value="heart">
+                        <input type="hidden" name="returnTo" value="/galerija?open=<%= encodeURIComponent(img.filename) %>">
                         <button type="submit" class="reaction-btn">
                             <span>❤</span>
                             <strong><%= img.reactions?.heart || 0 %></strong>
@@ -103,6 +105,7 @@
                     </form>
                     <form action="/react/<%= img.filename %>" method="POST">
                         <input type="hidden" name="reaction" value="sr">
+                        <input type="hidden" name="returnTo" value="/galerija?open=<%= encodeURIComponent(img.filename) %>">
                         <button type="submit" class="reaction-btn reaction-btn-logo">
                             <img src="/images/logo.png" alt="SR">
                             <strong><%= img.reactions?.sr || 0 %></strong>
@@ -133,6 +136,7 @@
 
                     <% if (user) { %>
                     <form action="/comment/<%= img.filename %>" method="POST" class="comment-form comment-form-inline">
+                        <input type="hidden" name="returnTo" value="/galerija?open=<%= encodeURIComponent(img.filename) %>">
                         <input type="text" name="comment" placeholder="Dodaj komentar..." required>
                         <button type="submit">Objavi</button>
                     </form>
@@ -160,6 +164,7 @@
                             <div class="gallery-reactions gallery-reactions-modal">
                                 <form action="/react/<%= img.filename %>" method="POST">
                                     <input type="hidden" name="reaction" value="like">
+                                    <input type="hidden" name="returnTo" value="/galerija?open=<%= encodeURIComponent(img.filename) %>">
                                     <button type="submit" class="reaction-btn">
                                         <span>👍</span>
                                         <strong><%= img.reactions?.like || 0 %></strong>
@@ -167,6 +172,7 @@
                                 </form>
                                 <form action="/react/<%= img.filename %>" method="POST">
                                     <input type="hidden" name="reaction" value="heart">
+                                    <input type="hidden" name="returnTo" value="/galerija?open=<%= encodeURIComponent(img.filename) %>">
                                     <button type="submit" class="reaction-btn">
                                         <span>❤</span>
                                         <strong><%= img.reactions?.heart || 0 %></strong>
@@ -174,6 +180,7 @@
                                 </form>
                                 <form action="/react/<%= img.filename %>" method="POST">
                                     <input type="hidden" name="reaction" value="sr">
+                                    <input type="hidden" name="returnTo" value="/galerija?open=<%= encodeURIComponent(img.filename) %>">
                                     <button type="submit" class="reaction-btn reaction-btn-logo">
                                         <img src="/images/logo.png" alt="SR">
                                         <strong><%= img.reactions?.sr || 0 %></strong>
@@ -201,6 +208,7 @@
 
                         <% if (user) { %>
                         <form action="/comment/<%= img.filename %>" method="POST" class="comment-form comment-form-modal">
+                            <input type="hidden" name="returnTo" value="/galerija?open=<%= encodeURIComponent(img.filename) %>">
                             <label>Dodaj komentar</label>
                             <textarea name="comment" placeholder="Napiši komentar..." required></textarea>
                             <button type="submit">Objavi komentar</button>
@@ -231,6 +239,20 @@ function openGalleryModal(templateId) {
     content.innerHTML = template.innerHTML;
     overlay.style.display = 'flex';
     document.body.classList.add('modal-open');
+}
+
+const openImage = <%- JSON.stringify(openImage || '') %>;
+if (openImage) {
+    const cards = Array.from(document.querySelectorAll('[data-filename]'));
+    const targetCard = cards.find(function (card) {
+        return card.getAttribute('data-filename') === openImage;
+    });
+    if (targetCard) {
+        const modalTemplate = targetCard.querySelector('.gallery-modal-template');
+        if (modalTemplate && modalTemplate.id) {
+            openGalleryModal(modalTemplate.id);
+        }
+    }
 }
 
 function closeGalleryModal(event) {

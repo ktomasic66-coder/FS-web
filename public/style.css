@@ -2428,8 +2428,9 @@ s input {
   position: relative;
 }
 
-.gallery-card-rich img {
+.gallery-card-media > img {
   height: 300px;
+  width: 100%;
   object-fit: cover;
 }
 
@@ -2442,6 +2443,15 @@ s input {
 
 .uploader-rich {
   padding: 0;
+}
+
+.uploader-rich img {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  min-height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .uploader-rich div {
@@ -2740,7 +2750,7 @@ s input {
     grid-template-columns: 1fr;
   }
 
-  .gallery-card-rich img {
+  .gallery-card-media > img {
     height: 240px;
   }
 

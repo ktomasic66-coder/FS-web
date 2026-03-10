@@ -257,7 +257,9 @@ async function initMySql() {
         description TEXT DEFAULT NULL,
         like_count INT NOT NULL DEFAULT 0,
         heart_count INT NOT NULL DEFAULT 0,
-        sr_count INT NOT NULL DEFAULT 0
+        sr_count INT NOT NULL DEFAULT 0,
+        mime_type VARCHAR(120) DEFAULT NULL,
+        image_data LONGBLOB DEFAULT NULL
       )
     `);
 
@@ -265,6 +267,8 @@ async function initMySql() {
     await ensureColumn('gallery_images', 'like_count', 'INT NOT NULL DEFAULT 0');
     await ensureColumn('gallery_images', 'heart_count', 'INT NOT NULL DEFAULT 0');
     await ensureColumn('gallery_images', 'sr_count', 'INT NOT NULL DEFAULT 0');
+    await ensureColumn('gallery_images', 'mime_type', 'VARCHAR(120) DEFAULT NULL');
+    await ensureColumn('gallery_images', 'image_data', 'LONGBLOB DEFAULT NULL');
 
     await dbPool.query(`
       CREATE TABLE IF NOT EXISTS gallery_comments (
@@ -348,10 +352,19 @@ async function migrateDataToMySqlIfNeeded() {
   if (galleryCountRows[0].c === 0) {
     const galleryFromFile = readJsonSafe(DATA_FILE, []);
     for (const image of galleryFromFile) {
+      const localImagePath = path.join(uploadPath, String(image.filename || ''));
+      const imageBuffer = fs.existsSync(localImagePath) ? fs.readFileSync(localImagePath) : null;
+      const ext = path.extname(localImagePath).toLowerCase();
+      const mimeType =
+        ext === '.png' ? 'image/png' :
+        ext === '.webp' ? 'image/webp' :
+        ext === '.gif' ? 'image/gif' :
+        imageBuffer ? 'image/jpeg' : null;
+
       await dbPool.query(
         `INSERT INTO gallery_images
-         (filename, uploader_id, uploader_name, uploader_avatar, description, like_count, heart_count, sr_count)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+         (filename, uploader_id, uploader_name, uploader_avatar, description, like_count, heart_count, sr_count, mime_type, image_data)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           String(image.filename || ''),
           String(image.uploaderId || ''),
@@ -361,6 +374,8 @@ async function migrateDataToMySqlIfNeeded() {
           Number(image.reactions?.like || 0),
           Number(image.reactions?.heart || 0),
           Number(image.reactions?.sr || 0),
+          mimeType,
+          imageBuffer,
         ]
       );
 
@@ -377,6 +392,27 @@ async function migrateDataToMySqlIfNeeded() {
         );
       }
     }
+  }
+
+  const [missingBlobRows] = await dbPool.query(
+    'SELECT filename FROM gallery_images WHERE image_data IS NULL OR mime_type IS NULL'
+  );
+  for (const row of missingBlobRows) {
+    const localImagePath = path.join(uploadPath, String(row.filename || ''));
+    if (!fs.existsSync(localImagePath)) continue;
+
+    const fileBuffer = fs.readFileSync(localImagePath);
+    const ext = path.extname(localImagePath).toLowerCase();
+    const mimeType =
+      ext === '.png' ? 'image/png' :
+      ext === '.webp' ? 'image/webp' :
+      ext === '.gif' ? 'image/gif' :
+      'image/jpeg';
+
+    await dbPool.query(
+      'UPDATE gallery_images SET image_data = ?, mime_type = COALESCE(mime_type, ?) WHERE filename = ?',
+      [fileBuffer, mimeType, row.filename]
+    );
   }
 
   const rulesFromFile = readJsonSafe(RULES_FILE, null);
@@ -464,7 +500,7 @@ async function loadGallery() {
 
   const [imageRows] = await dbPool.query(
     `SELECT filename, uploader_id, uploader_name, uploader_avatar, description,
-            like_count, heart_count, sr_count
+            like_count, heart_count, sr_count, mime_type
      FROM gallery_images`
   );
   const [commentRows] = await dbPool.query(
@@ -489,14 +525,14 @@ async function loadGallery() {
       uploaderName: row.uploader_name,
       uploaderAvatar: row.uploader_avatar,
       description: row.description || '',
+      mimeType: row.mime_type || '',
       comments: commentsByImage.get(row.filename) || [],
       reactions: {
         like: Number(row.like_count || 0),
         heart: Number(row.heart_count || 0),
         sr: Number(row.sr_count || 0),
       },
-    }))
-    .filter((img) => fs.existsSync(path.join(__dirname, 'public/uploads', img.filename)));
+    }));
 }
 
 async function addGalleryImage(item) {
@@ -506,6 +542,7 @@ async function addGalleryImage(item) {
       ...item,
       description: String(item.description || ''),
       comments: Array.isArray(item.comments) ? item.comments : [],
+      mimeType: String(item.mimeType || ''),
       reactions: {
         like: Number(item.reactions?.like || 0),
         heart: Number(item.reactions?.heart || 0),
@@ -518,8 +555,8 @@ async function addGalleryImage(item) {
 
   await dbPool.query(
     `INSERT INTO gallery_images
-      (filename, uploader_id, uploader_name, uploader_avatar, description, like_count, heart_count, sr_count)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      (filename, uploader_id, uploader_name, uploader_avatar, description, like_count, heart_count, sr_count, mime_type, image_data)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON DUPLICATE KEY UPDATE
        uploader_id = VALUES(uploader_id),
        uploader_name = VALUES(uploader_name),
@@ -527,7 +564,9 @@ async function addGalleryImage(item) {
        description = VALUES(description),
        like_count = VALUES(like_count),
        heart_count = VALUES(heart_count),
-       sr_count = VALUES(sr_count)`,
+        sr_count = VALUES(sr_count),
+        mime_type = COALESCE(VALUES(mime_type), mime_type),
+        image_data = COALESCE(VALUES(image_data), image_data)`,
     [
       item.filename,
       item.uploaderId,
@@ -537,8 +576,26 @@ async function addGalleryImage(item) {
       Number(item.reactions?.like || 0),
       Number(item.reactions?.heart || 0),
       Number(item.reactions?.sr || 0),
+      item.mimeType || null,
+      item.imageData || null,
     ]
   );
+}
+
+async function getGalleryImageBinary(filename) {
+  if (!useMySql || !dbPool) return null;
+
+  const [rows] = await dbPool.query(
+    'SELECT mime_type, image_data FROM gallery_images WHERE filename = ? LIMIT 1',
+    [filename]
+  );
+
+  if (!rows.length || !rows[0].image_data) return null;
+
+  return {
+    mimeType: rows[0].mime_type || 'image/jpeg',
+    buffer: rows[0].image_data,
+  };
 }
 
 async function addGalleryReaction(filename, reactionType) {
@@ -1035,10 +1092,7 @@ if (!fs.existsSync(uploadPath)) {
   fs.mkdirSync(uploadPath, { recursive: true });
 }
 
-const storage = multer.diskStorage({
-  destination: uploadPath,
-  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname),
-});
+const storage = multer.memoryStorage();
 
 const upload = multer({ storage });
 
@@ -1049,6 +1103,22 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.set('trust proxy', 1);
+
+app.get('/uploads/:filename', async (req, res, next) => {
+  const filename = String(req.params.filename || '').trim();
+  if (!filename) return res.status(404).end();
+
+  const localPath = path.join(uploadPath, filename);
+  if (fs.existsSync(localPath)) {
+    return res.sendFile(localPath);
+  }
+
+  const imageFile = await getGalleryImageBinary(filename);
+  if (!imageFile) return next();
+
+  res.setHeader('Content-Type', imageFile.mimeType);
+  return res.send(imageFile.buffer);
+});
 
 app.use(
   session({
@@ -1256,12 +1326,14 @@ app.get('/galerija', async (req, res) => {
   }
 
   const gallery = await loadGallery();
+  const openImage = String(req.query.open || '').trim();
 
   res.render('galerija', {
     user: req.user,
     gallery,
     canUpload,
     isAdmin,
+    openImage,
   });
 });
 
@@ -1283,12 +1355,19 @@ app.post('/upload', async (req, res) => {
     if (err) return res.send('Greška.');
     try {
       const description = String(req.body.description || '').trim().slice(0, 500);
+      const filename = `${Date.now()}-${String(req.file.originalname || 'image').replace(/\s+/g, '-')}`;
+      const localPath = path.join(uploadPath, filename);
+      if (!useMySql || !dbPool) {
+        fs.writeFileSync(localPath, req.file.buffer);
+      }
       await addGalleryImage({
-        filename: req.file.filename,
+        filename,
         uploaderId: req.user.id,
         uploaderName: req.user.username,
         uploaderAvatar: req.user.avatar,
         description,
+        mimeType: req.file.mimetype,
+        imageData: req.file.buffer,
         reactions: { like: 0, heart: 0, sr: 0 },
       });
       return res.redirect('/galerija');
@@ -1307,6 +1386,13 @@ function sanitizeComment(text) {
   return t.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+function getGalleryRedirectTarget(req, filename) {
+  const redirectTo = String(req.body.returnTo || '').trim();
+  if (redirectTo.startsWith('/galerija')) return redirectTo;
+  if (filename) return `/galerija?open=${encodeURIComponent(filename)}`;
+  return '/galerija';
+}
+
 app.post('/comment/:image', async (req, res) => {
   if (!req.user) return res.redirect('/');
 
@@ -1316,14 +1402,14 @@ app.post('/comment/:image', async (req, res) => {
 
   const text = sanitizeComment(req.body.comment);
 
-  if (!text.trim()) return res.redirect('/galerija');
+  if (!text.trim()) return res.redirect(getGalleryRedirectTarget(req, req.params.image));
   const added = await addGalleryComment(req.params.image, {
     user: req.user.username,
     text,
     date: new Date().toLocaleString(),
   });
-  if (!added) return res.redirect('/galerija');
-  res.redirect('/galerija');
+  if (!added) return res.redirect(getGalleryRedirectTarget(req, req.params.image));
+  res.redirect(getGalleryRedirectTarget(req, req.params.image));
 });
 
 app.post('/react/:image', async (req, res) => {
@@ -1335,8 +1421,8 @@ app.post('/react/:image', async (req, res) => {
 
   const reactionType = String(req.body.reaction || '').trim();
   const added = await addGalleryReaction(req.params.image, reactionType);
-  if (!added) return res.redirect('/galerija');
-  res.redirect('/galerija');
+  if (!added) return res.redirect(getGalleryRedirectTarget(req, req.params.image));
+  res.redirect(getGalleryRedirectTarget(req, req.params.image));
 });
 
 /* ===== DELETE (ADMIN+) ===== */
