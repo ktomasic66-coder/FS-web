@@ -253,9 +253,18 @@ async function initMySql() {
         filename VARCHAR(255) PRIMARY KEY,
         uploader_id VARCHAR(64) NOT NULL,
         uploader_name VARCHAR(120) NOT NULL,
-        uploader_avatar VARCHAR(255) DEFAULT NULL
+        uploader_avatar VARCHAR(255) DEFAULT NULL,
+        description TEXT DEFAULT NULL,
+        like_count INT NOT NULL DEFAULT 0,
+        heart_count INT NOT NULL DEFAULT 0,
+        sr_count INT NOT NULL DEFAULT 0
       )
     `);
+
+    await ensureColumn('gallery_images', 'description', 'TEXT DEFAULT NULL');
+    await ensureColumn('gallery_images', 'like_count', 'INT NOT NULL DEFAULT 0');
+    await ensureColumn('gallery_images', 'heart_count', 'INT NOT NULL DEFAULT 0');
+    await ensureColumn('gallery_images', 'sr_count', 'INT NOT NULL DEFAULT 0');
 
     await dbPool.query(`
       CREATE TABLE IF NOT EXISTS gallery_comments (
@@ -340,12 +349,18 @@ async function migrateDataToMySqlIfNeeded() {
     const galleryFromFile = readJsonSafe(DATA_FILE, []);
     for (const image of galleryFromFile) {
       await dbPool.query(
-        'INSERT INTO gallery_images (filename, uploader_id, uploader_name, uploader_avatar) VALUES (?, ?, ?, ?)',
+        `INSERT INTO gallery_images
+         (filename, uploader_id, uploader_name, uploader_avatar, description, like_count, heart_count, sr_count)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           String(image.filename || ''),
           String(image.uploaderId || ''),
           String(image.uploaderName || ''),
           image.uploaderAvatar ? String(image.uploaderAvatar) : null,
+          String(image.description || ''),
+          Number(image.reactions?.like || 0),
+          Number(image.reactions?.heart || 0),
+          Number(image.reactions?.sr || 0),
         ]
       );
 
@@ -433,7 +448,13 @@ async function loadGallery() {
     return data
       .map((img) => ({
         ...img,
+        description: String(img.description || ''),
         comments: Array.isArray(img.comments) ? img.comments : [],
+        reactions: {
+          like: Number(img.reactions?.like || 0),
+          heart: Number(img.reactions?.heart || 0),
+          sr: Number(img.reactions?.sr || 0),
+        },
       }))
       .filter((img) => {
         const imagePath = path.join(__dirname, 'public/uploads', img.filename);
@@ -442,7 +463,9 @@ async function loadGallery() {
   }
 
   const [imageRows] = await dbPool.query(
-    'SELECT filename, uploader_id, uploader_name, uploader_avatar FROM gallery_images'
+    `SELECT filename, uploader_id, uploader_name, uploader_avatar, description,
+            like_count, heart_count, sr_count
+     FROM gallery_images`
   );
   const [commentRows] = await dbPool.query(
     'SELECT image_filename, user_name, text, date_text FROM gallery_comments ORDER BY id ASC'
@@ -465,7 +488,13 @@ async function loadGallery() {
       uploaderId: row.uploader_id,
       uploaderName: row.uploader_name,
       uploaderAvatar: row.uploader_avatar,
+      description: row.description || '',
       comments: commentsByImage.get(row.filename) || [],
+      reactions: {
+        like: Number(row.like_count || 0),
+        heart: Number(row.heart_count || 0),
+        sr: Number(row.sr_count || 0),
+      },
     }))
     .filter((img) => fs.existsSync(path.join(__dirname, 'public/uploads', img.filename)));
 }
@@ -475,21 +504,69 @@ async function addGalleryImage(item) {
     const gallery = readJsonSafe(DATA_FILE, []);
     gallery.push({
       ...item,
+      description: String(item.description || ''),
       comments: Array.isArray(item.comments) ? item.comments : [],
+      reactions: {
+        like: Number(item.reactions?.like || 0),
+        heart: Number(item.reactions?.heart || 0),
+        sr: Number(item.reactions?.sr || 0),
+      },
     });
     writeJsonSafe(DATA_FILE, gallery);
     return;
   }
 
   await dbPool.query(
-    `INSERT INTO gallery_images (filename, uploader_id, uploader_name, uploader_avatar)
-     VALUES (?, ?, ?, ?)
+    `INSERT INTO gallery_images
+      (filename, uploader_id, uploader_name, uploader_avatar, description, like_count, heart_count, sr_count)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
      ON DUPLICATE KEY UPDATE
        uploader_id = VALUES(uploader_id),
        uploader_name = VALUES(uploader_name),
-       uploader_avatar = VALUES(uploader_avatar)`,
-    [item.filename, item.uploaderId, item.uploaderName, item.uploaderAvatar || null]
+       uploader_avatar = VALUES(uploader_avatar),
+       description = VALUES(description),
+       like_count = VALUES(like_count),
+       heart_count = VALUES(heart_count),
+       sr_count = VALUES(sr_count)`,
+    [
+      item.filename,
+      item.uploaderId,
+      item.uploaderName,
+      item.uploaderAvatar || null,
+      item.description || '',
+      Number(item.reactions?.like || 0),
+      Number(item.reactions?.heart || 0),
+      Number(item.reactions?.sr || 0),
+    ]
   );
+}
+
+async function addGalleryReaction(filename, reactionType) {
+  const allowed = {
+    like: 'like',
+    heart: 'heart',
+    sr: 'sr',
+  };
+
+  const reaction = allowed[reactionType];
+  if (!reaction) return false;
+
+  if (!useMySql || !dbPool) {
+    const gallery = readJsonSafe(DATA_FILE, []);
+    const image = gallery.find((img) => img.filename === filename);
+    if (!image) return false;
+    image.reactions = image.reactions || {};
+    image.reactions[reaction] = Number(image.reactions[reaction] || 0) + 1;
+    writeJsonSafe(DATA_FILE, gallery);
+    return true;
+  }
+
+  const column = `${reaction}_count`;
+  const [result] = await dbPool.query(
+    `UPDATE gallery_images SET ${column} = ${column} + 1 WHERE filename = ?`,
+    [filename]
+  );
+  return result.affectedRows > 0;
 }
 
 async function addGalleryComment(filename, comment) {
@@ -1205,11 +1282,14 @@ app.post('/upload', async (req, res) => {
   upload.single('image')(req, res, async function (err) {
     if (err) return res.send('Greška.');
     try {
+      const description = String(req.body.description || '').trim().slice(0, 500);
       await addGalleryImage({
         filename: req.file.filename,
         uploaderId: req.user.id,
         uploaderName: req.user.username,
         uploaderAvatar: req.user.avatar,
+        description,
+        reactions: { like: 0, heart: 0, sr: 0 },
       });
       return res.redirect('/galerija');
     } catch (e) {
@@ -1242,6 +1322,19 @@ app.post('/comment/:image', async (req, res) => {
     text,
     date: new Date().toLocaleString(),
   });
+  if (!added) return res.redirect('/galerija');
+  res.redirect('/galerija');
+});
+
+app.post('/react/:image', async (req, res) => {
+  if (!req.user) return res.redirect('/');
+
+  if (await isBlacklisted(req.user.id)) {
+    return res.send('Blokiran si za reakcije.');
+  }
+
+  const reactionType = String(req.body.reaction || '').trim();
+  const added = await addGalleryReaction(req.params.image, reactionType);
   if (!added) return res.redirect('/galerija');
   res.redirect('/galerija');
 });

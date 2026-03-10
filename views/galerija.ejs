@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -6,7 +6,7 @@
     <link rel="icon" type="image/png" href="/images/logo.png">
     <link rel="stylesheet" href="/style.css">
 </head>
-<body>
+<body class="gallery-page">
 
 <nav class="navbar">
     <div class="logo">
@@ -27,93 +27,233 @@
             <li><a href="/auth/discord">Login</a></li>
         <% } %>
     </ul>
-</nav> 
+</nav>
 
-<div class="section">
-
-<h1 class="gallery-title">Galerija Zajednice</h1>
-
-<% if(user && canUpload){ %>
-<form action="/upload" method="POST" enctype="multipart/form-data" class="upload-form">
-    <input type="file" name="image" required>
-    <button class="btn-primary">Upload sliku</button>
-</form>
-<% } %>
-
-<div class="gallery-grid">
-
-<% if (gallery && gallery.length > 0) { %>
-
-    <% gallery.forEach(function(img){ %>
-
-    <div class="gallery-card">
-
-        <!-- SLIKA -->
-        <img 
-            src="/uploads/<%= img.filename %>" 
-            onclick="openLightbox('/uploads/<%= img.filename %>')"
-            alt="slika"
-        >
-
-        <!-- DELETE (ADMIN) -->
-        <% if (isAdmin) { %>
-        <form action="/delete" method="POST" onsubmit="return confirm('Obrisati sliku?')">
-            <input type="hidden" name="image" value="<%= img.filename %>">
-            <button type="submit" class="gallery-delete-btn">Obriši</button>
-        </form>
-        <% } %>
-
-        <!-- UPLOADER -->
-        <div class="uploader">
-            <img src="https://cdn.discordapp.com/avatars/<%= img.uploaderId %>/<%= img.uploaderAvatar %>.png">
-            <span><%= img.uploaderName %></span>
-        </div>
-
-        <!-- KOMENTARI -->
-        <div class="comments">
-
-            <% if(img.comments && img.comments.length > 0){ %>
-                <% img.comments.forEach(function(c){ %>
-                    <div class="comment">
-                        <strong><%= c.user %>:</strong> <%= c.text %>
-                    </div>
-                <% }) %>
-            <% } %>
-
-            <% if(user){ %>
-            <form action="/comment/<%= img.filename %>" method="POST">
-                <input type="text" name="comment" placeholder="Dodaj komentar..." required>
-            </form>
-            <% } %>
-
-        </div>
-
+<section class="gallery-shell">
+    <div class="gallery-hero-panel">
+        <p class="gallery-kicker">Community media</p>
+        <h1 class="gallery-title">Galerija Zajednice</h1>
+        <p class="gallery-subtitle">Podijeli trenutke sa servera, reagiraj na objave i pregledaj komentare u proširenom prikazu.</p>
     </div>
 
-    <% }) %>
+    <% if (user && canUpload) { %>
+    <form action="/upload" method="POST" enctype="multipart/form-data" class="upload-form upload-form-pro">
+        <div class="upload-form-fields">
+            <label class="upload-field">
+                <span>Odaberi sliku</span>
+                <input type="file" name="image" required>
+            </label>
+            <label class="upload-field upload-field-wide">
+                <span>Opis slike</span>
+                <textarea name="description" placeholder="Dodaj kratak opis, priču ili detalj sa slike..."></textarea>
+            </label>
+        </div>
+        <button class="btn-primary" type="submit">Objavi sliku</button>
+    </form>
+    <% } %>
 
-<% } else { %>
+    <div class="gallery-grid gallery-grid-rich">
+    <% if (gallery && gallery.length > 0) { %>
+        <% gallery.forEach(function(img, index){ %>
+        <% const avatarSrc = img.uploaderAvatar ? `https://cdn.discordapp.com/avatars/${img.uploaderId}/${img.uploaderAvatar}.png` : '/images/logo.png'; %>
+        <% const previewComments = (img.comments || []).slice(0, 3); %>
+        <article class="gallery-card gallery-card-rich">
+            <div class="gallery-card-media">
+                <img
+                    src="/uploads/<%= img.filename %>"
+                    onclick="openGalleryModal('modal-<%= index %>')"
+                    alt="slika"
+                >
 
-    <p>Nema uploadanih slika.</p>
+                <% if (isAdmin) { %>
+                <form action="/delete" method="POST" onsubmit="return confirm('Obrisati sliku?')">
+                    <input type="hidden" name="image" value="<%= img.filename %>">
+                    <button type="submit" class="gallery-delete-btn">Obriši</button>
+                </form>
+                <% } %>
+            </div>
 
-<% } %>
+            <div class="gallery-card-body">
+                <div class="uploader uploader-rich">
+                    <img src="<%= avatarSrc %>" alt="<%= img.uploaderName %>">
+                    <div>
+                        <span><%= img.uploaderName %></span>
+                        <small><%= img.comments ? img.comments.length : 0 %> komentara</small>
+                    </div>
+                </div>
 
-</div>
-</div>
+                <% if (img.description) { %>
+                    <p class="gallery-description"><%= img.description %></p>
+                <% } %>
 
-<!-- LIGHTBOX -->
-<div id="lightbox" class="lightbox" onclick="closeLightbox()">
-    <img id="lightbox-img">
+                <div class="gallery-reactions">
+                    <form action="/react/<%= img.filename %>" method="POST">
+                        <input type="hidden" name="reaction" value="like">
+                        <button type="submit" class="reaction-btn">
+                            <span>👍</span>
+                            <strong><%= img.reactions?.like || 0 %></strong>
+                        </button>
+                    </form>
+                    <form action="/react/<%= img.filename %>" method="POST">
+                        <input type="hidden" name="reaction" value="heart">
+                        <button type="submit" class="reaction-btn">
+                            <span>❤</span>
+                            <strong><%= img.reactions?.heart || 0 %></strong>
+                        </button>
+                    </form>
+                    <form action="/react/<%= img.filename %>" method="POST">
+                        <input type="hidden" name="reaction" value="sr">
+                        <button type="submit" class="reaction-btn reaction-btn-logo">
+                            <img src="/images/logo.png" alt="SR">
+                            <strong><%= img.reactions?.sr || 0 %></strong>
+                        </button>
+                    </form>
+                </div>
+
+                <div class="comments comments-preview">
+                    <div class="comments-header">
+                        <strong>Komentari</strong>
+                        <% if ((img.comments || []).length > 3) { %>
+                            <button type="button" class="comments-more-link" onclick="openGalleryModal('modal-<%= index %>')">
+                                Prikaži sve
+                            </button>
+                        <% } %>
+                    </div>
+
+                    <% if (previewComments.length > 0) { %>
+                        <% previewComments.forEach(function(c){ %>
+                            <div class="comment comment-card">
+                                <strong><%= c.user %></strong>
+                                <span><%= c.text %></span>
+                            </div>
+                        <% }) %>
+                    <% } else { %>
+                        <p class="comment-empty">Još nema komentara.</p>
+                    <% } %>
+
+                    <% if (user) { %>
+                    <form action="/comment/<%= img.filename %>" method="POST" class="comment-form comment-form-inline">
+                        <input type="text" name="comment" placeholder="Dodaj komentar..." required>
+                        <button type="submit">Objavi</button>
+                    </form>
+                    <% } %>
+                </div>
+            </div>
+
+            <div id="modal-<%= index %>" class="gallery-modal-template" hidden>
+                <div class="gallery-lightbox-layout">
+                    <div class="gallery-lightbox-main">
+                        <img src="/uploads/<%= img.filename %>" alt="slika">
+                    </div>
+                    <aside class="gallery-lightbox-sidebar">
+                        <div class="gallery-lightbox-sidebar-top">
+                            <div class="uploader uploader-rich">
+                                <img src="<%= avatarSrc %>" alt="<%= img.uploaderName %>">
+                                <div>
+                                    <span><%= img.uploaderName %></span>
+                                    <small><%= img.comments ? img.comments.length : 0 %> komentara</small>
+                                </div>
+                            </div>
+                            <% if (img.description) { %>
+                                <p class="gallery-description gallery-description-modal"><%= img.description %></p>
+                            <% } %>
+                            <div class="gallery-reactions gallery-reactions-modal">
+                                <form action="/react/<%= img.filename %>" method="POST">
+                                    <input type="hidden" name="reaction" value="like">
+                                    <button type="submit" class="reaction-btn">
+                                        <span>👍</span>
+                                        <strong><%= img.reactions?.like || 0 %></strong>
+                                    </button>
+                                </form>
+                                <form action="/react/<%= img.filename %>" method="POST">
+                                    <input type="hidden" name="reaction" value="heart">
+                                    <button type="submit" class="reaction-btn">
+                                        <span>❤</span>
+                                        <strong><%= img.reactions?.heart || 0 %></strong>
+                                    </button>
+                                </form>
+                                <form action="/react/<%= img.filename %>" method="POST">
+                                    <input type="hidden" name="reaction" value="sr">
+                                    <button type="submit" class="reaction-btn reaction-btn-logo">
+                                        <img src="/images/logo.png" alt="SR">
+                                        <strong><%= img.reactions?.sr || 0 %></strong>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="gallery-lightbox-comments">
+                            <h3>Svi komentari</h3>
+                            <% if (img.comments && img.comments.length > 0) { %>
+                                <% img.comments.forEach(function(c){ %>
+                                    <div class="comment comment-modal">
+                                        <div class="comment-modal-head">
+                                            <strong><%= c.user %></strong>
+                                            <small><%= c.date %></small>
+                                        </div>
+                                        <p><%= c.text %></p>
+                                    </div>
+                                <% }) %>
+                            <% } else { %>
+                                <p class="comment-empty">Još nema komentara za ovu sliku.</p>
+                            <% } %>
+                        </div>
+
+                        <% if (user) { %>
+                        <form action="/comment/<%= img.filename %>" method="POST" class="comment-form comment-form-modal">
+                            <label>Dodaj komentar</label>
+                            <textarea name="comment" placeholder="Napiši komentar..." required></textarea>
+                            <button type="submit">Objavi komentar</button>
+                        </form>
+                        <% } %>
+                    </aside>
+                </div>
+            </div>
+        </article>
+        <% }) %>
+    <% } else { %>
+        <p class="gallery-empty-state">Nema uploadanih slika.</p>
+    <% } %>
+    </div>
+</section>
+
+<div id="gallery-lightbox" class="gallery-lightbox-overlay" onclick="closeGalleryModal(event)">
+    <button type="button" class="gallery-lightbox-close" onclick="closeGalleryModal(event)">Zatvori</button>
+    <div id="gallery-lightbox-content"></div>
 </div>
 
 <script>
-function openLightbox(src){
-    document.getElementById("lightbox").style.display = "flex";
-    document.getElementById("lightbox-img").src = src;
+function openGalleryModal(templateId) {
+    const template = document.getElementById(templateId);
+    const overlay = document.getElementById('gallery-lightbox');
+    const content = document.getElementById('gallery-lightbox-content');
+    if (!template || !overlay || !content) return;
+    content.innerHTML = template.innerHTML;
+    overlay.style.display = 'flex';
+    document.body.classList.add('modal-open');
 }
-function closeLightbox(){
-    document.getElementById("lightbox").style.display = "none";
+
+function closeGalleryModal(event) {
+    if (event) {
+        const target = event.target;
+        const clickedBackdrop = target.id === 'gallery-lightbox';
+        const clickedClose = target.classList && target.classList.contains('gallery-lightbox-close');
+        if (!clickedBackdrop && !clickedClose) return;
+    }
+
+    const overlay = document.getElementById('gallery-lightbox');
+    const content = document.getElementById('gallery-lightbox-content');
+    if (!overlay || !content) return;
+    overlay.style.display = 'none';
+    content.innerHTML = '';
+    document.body.classList.remove('modal-open');
 }
+
+document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+        closeGalleryModal();
+    }
+});
 </script>
 
 </body>
