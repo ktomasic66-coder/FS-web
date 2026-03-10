@@ -56,31 +56,6 @@ const uploadPath = path.join(__dirname, 'public/uploads');
 const backupDir = path.join(__dirname, 'backups');
 const SESSION_FILE = path.join(__dirname, 'sessions.json');
 
-/* funkcje loga */
-
-function loadLogs() {
-  if (!fs.existsSync(LOG_FILE)) return [];
-  return JSON.parse(fs.readFileSync(LOG_FILE, 'utf8'));
-}
-
-function saveLogs(data) {
-  fs.writeFileSync(LOG_FILE, JSON.stringify(data, null, 2));
-}
-
-function addLog(action, admin, details) {
-  const logs = loadLogs();
-
-  logs.unshift({
-    id: Date.now(),
-    action,
-    admin,
-    details,
-    date: new Date().toLocaleString()
-  });
-
-  saveLogs(logs);
-}
-
 /* ================= ENV ================= */
 
 const GUILD_ID = process.env.GUILD_ID;
@@ -271,9 +246,39 @@ async function initMySql() {
       )
     `);
 
+    await dbPool.query(`
+      CREATE TABLE IF NOT EXISTS rules_meta (
+        meta_key VARCHAR(80) PRIMARY KEY,
+        meta_value TEXT NOT NULL
+      )
+    `);
+
+    await dbPool.query(`
+      CREATE TABLE IF NOT EXISTS rules_items (
+        id BIGINT PRIMARY KEY,
+        sort_order INT NOT NULL,
+        text TEXT NOT NULL
+      )
+    `);
+
+    await dbPool.query(`
+      CREATE TABLE IF NOT EXISTS blacklist_entries (
+        user_id VARCHAR(64) PRIMARY KEY
+      )
+    `);
+
+    await dbPool.query(`
+      CREATE TABLE IF NOT EXISTS admin_logs (
+        id BIGINT PRIMARY KEY,
+        action VARCHAR(255) NOT NULL,
+        admin VARCHAR(120) NOT NULL,
+        date_text VARCHAR(120) NOT NULL
+      )
+    `);
+
     useMySql = true;
-    await migrateNewsAndGalleryIfNeeded();
-    console.log('MySQL storage aktivan (news + gallery).');
+    await migrateDataToMySqlIfNeeded();
+    console.log('MySQL storage aktivan (news + gallery + rules + blacklist + logs).');
   } catch (err) {
     console.log('MySQL init error, fallback na JSON:', err.message);
     useMySql = false;
@@ -281,7 +286,7 @@ async function initMySql() {
   }
 }
 
-async function migrateNewsAndGalleryIfNeeded() {
+async function migrateDataToMySqlIfNeeded() {
   if (!useMySql || !dbPool) return;
 
   const [newsCountRows] = await dbPool.query('SELECT COUNT(*) AS c FROM news');
@@ -327,6 +332,62 @@ async function migrateNewsAndGalleryIfNeeded() {
           ]
         );
       }
+    }
+  }
+
+  const rulesFromFile = readJsonSafe(RULES_FILE, null);
+  const [rulesItemsCountRows] = await dbPool.query('SELECT COUNT(*) AS c FROM rules_items');
+  if (rulesItemsCountRows[0].c === 0 && rulesFromFile) {
+    const normalizedRules = normalizeRulesData(rulesFromFile);
+    for (let i = 0; i < normalizedRules.items.length; i += 1) {
+      const item = normalizedRules.items[i];
+      await dbPool.query(
+        'INSERT INTO rules_items (id, sort_order, text) VALUES (?, ?, ?)',
+        [Number(item.id) || Date.now() + i, i, String(item.text || '')]
+      );
+    }
+  }
+
+  const [rulesMetaCountRows] = await dbPool.query('SELECT COUNT(*) AS c FROM rules_meta');
+  if (rulesMetaCountRows[0].c === 0) {
+    const normalizedRules = normalizeRulesData(rulesFromFile);
+    const metaEntries = [
+      ['title', normalizedRules.title],
+      ['subtitle', normalizedRules.subtitle],
+      ['warning', normalizedRules.warning],
+    ];
+    for (const [metaKey, metaValue] of metaEntries) {
+      await dbPool.query(
+        'INSERT INTO rules_meta (meta_key, meta_value) VALUES (?, ?)',
+        [metaKey, metaValue]
+      );
+    }
+  }
+
+  const [blacklistCountRows] = await dbPool.query('SELECT COUNT(*) AS c FROM blacklist_entries');
+  if (blacklistCountRows[0].c === 0) {
+    const blacklistFromFile = readJsonSafe(BLACKLIST_FILE, []);
+    for (const userId of blacklistFromFile) {
+      await dbPool.query(
+        'INSERT IGNORE INTO blacklist_entries (user_id) VALUES (?)',
+        [String(userId || '')]
+      );
+    }
+  }
+
+  const [logsCountRows] = await dbPool.query('SELECT COUNT(*) AS c FROM admin_logs');
+  if (logsCountRows[0].c === 0) {
+    const logsFromFile = readJsonSafe(LOG_FILE, []);
+    for (const log of logsFromFile) {
+      await dbPool.query(
+        'INSERT INTO admin_logs (id, action, admin, date_text) VALUES (?, ?, ?, ?)',
+        [
+          Number(log.id) || Date.now(),
+          String(log.action || ''),
+          String(log.admin || 'system'),
+          String(log.date || ''),
+        ]
+      );
     }
   }
 }
@@ -462,8 +523,7 @@ async function deleteNewsById(id) {
 
 /* ----- Rules ----- */
 
-function loadRules() {
-  const raw = readJsonSafe(RULES_FILE, null);
+function normalizeRulesData(raw) {
   const fallback = {
     title: 'Pravila Ponasanja',
     subtitle: 'Ova pravila vaze za sve clanove servera bez izuzetka.',
@@ -501,76 +561,180 @@ function loadRules() {
   };
 }
 
-function saveRules(data) {
-  writeJsonSafe(RULES_FILE, data);
+async function loadRules() {
+  if (!useMySql || !dbPool) {
+    return normalizeRulesData(readJsonSafe(RULES_FILE, null));
+  }
+
+  const [metaRows] = await dbPool.query(
+    'SELECT meta_key, meta_value FROM rules_meta WHERE meta_key IN (?,?,?)',
+    ['title', 'subtitle', 'warning']
+  );
+  const [itemRows] = await dbPool.query(
+    'SELECT id, text FROM rules_items ORDER BY sort_order ASC, id ASC'
+  );
+
+  const meta = Object.fromEntries(metaRows.map((row) => [row.meta_key, row.meta_value]));
+  return {
+    title: String(meta.title || 'Pravila Ponasanja'),
+    subtitle: String(meta.subtitle || 'Ova pravila vaze za sve clanove servera bez izuzetka.'),
+    warning: String(meta.warning || 'Krsenje pravila moze rezultirati upozorenjem, mute-om ili trajnim banom.'),
+    items: itemRows.map((row) => ({
+      id: Number(row.id),
+      text: String(row.text || '').trim(),
+    })).filter((item) => item.text),
+  };
 }
 
-function addRule(text) {
-  const rules = loadRules();
+async function saveRules(data) {
+  if (!useMySql || !dbPool) {
+    writeJsonSafe(RULES_FILE, data);
+    return;
+  }
+
+  const rules = normalizeRulesData(data);
+  await dbPool.query('DELETE FROM rules_items');
+  await dbPool.query('DELETE FROM rules_meta');
+
+  const metaEntries = [
+    ['title', rules.title],
+    ['subtitle', rules.subtitle],
+    ['warning', rules.warning],
+  ];
+
+  for (const [metaKey, metaValue] of metaEntries) {
+    await dbPool.query(
+      'INSERT INTO rules_meta (meta_key, meta_value) VALUES (?, ?)',
+      [metaKey, metaValue]
+    );
+  }
+
+  for (let i = 0; i < rules.items.length; i += 1) {
+    const item = rules.items[i];
+    await dbPool.query(
+      'INSERT INTO rules_items (id, sort_order, text) VALUES (?, ?, ?)',
+      [Number(item.id) || Date.now() + i, i, String(item.text || '')]
+    );
+  }
+}
+
+async function addRule(text) {
+  const rules = await loadRules();
   rules.items.push({
     id: Date.now(),
     text,
   });
-  saveRules(rules);
+  await saveRules(rules);
 }
 
-function updateRuleById(id, text) {
-  const rules = loadRules();
+async function updateRuleById(id, text) {
+  const rules = await loadRules();
   const rule = rules.items.find((item) => Number(item.id) === Number(id));
   if (!rule) return false;
   rule.text = text;
-  saveRules(rules);
+  await saveRules(rules);
   return true;
 }
 
-function deleteRuleById(id) {
-  const rules = loadRules();
+async function deleteRuleById(id) {
+  const rules = await loadRules();
   const before = rules.items.length;
   rules.items = rules.items.filter((item) => Number(item.id) !== Number(id));
-  saveRules(rules);
+  await saveRules(rules);
   return before !== rules.items.length;
 }
 
-function updateRulesMeta({ title, subtitle, warning }) {
-  const rules = loadRules();
+async function updateRulesMeta({ title, subtitle, warning }) {
+  const rules = await loadRules();
   rules.title = title || rules.title;
   rules.subtitle = subtitle || rules.subtitle;
   rules.warning = warning || rules.warning;
-  saveRules(rules);
+  await saveRules(rules);
 }
 
 /* ----- Logs ----- */
 
-function logAction(action, adminUser) {
-  const logs = readJsonSafe(LOG_FILE, []);
-  logs.unshift({
-    action,
-    admin: adminUser,
-    date: new Date().toLocaleString(),
-  });
-  writeJsonSafe(LOG_FILE, logs);
+async function loadLogs() {
+  if (!useMySql || !dbPool) {
+    return readJsonSafe(LOG_FILE, []);
+  }
+
+  const [rows] = await dbPool.query(
+    'SELECT id, action, admin, date_text AS date FROM admin_logs ORDER BY id DESC'
+  );
+  return rows;
+}
+
+async function logAction(action, adminUser) {
+  if (!useMySql || !dbPool) {
+    const logs = readJsonSafe(LOG_FILE, []);
+    logs.unshift({
+      id: Date.now(),
+      action,
+      admin: adminUser,
+      date: new Date().toLocaleString(),
+    });
+    writeJsonSafe(LOG_FILE, logs);
+    return;
+  }
+
+  await dbPool.query(
+    'INSERT INTO admin_logs (id, action, admin, date_text) VALUES (?, ?, ?, ?)',
+    [Date.now(), action, adminUser, new Date().toLocaleString()]
+  );
 }
 
 /* ----- Blacklist ----- */
 
-function loadBlacklist() {
-  return readJsonSafe(BLACKLIST_FILE, []);
+async function loadBlacklist() {
+  if (!useMySql || !dbPool) {
+    return readJsonSafe(BLACKLIST_FILE, []);
+  }
+
+  const [rows] = await dbPool.query(
+    'SELECT user_id FROM blacklist_entries ORDER BY user_id ASC'
+  );
+  return rows.map((row) => row.user_id);
 }
 
-function isBlacklisted(userId) {
-  return loadBlacklist().includes(userId);
+async function isBlacklisted(userId) {
+  if (!useMySql || !dbPool) {
+    return (await loadBlacklist()).includes(userId);
+  }
+
+  const [rows] = await dbPool.query(
+    'SELECT user_id FROM blacklist_entries WHERE user_id = ? LIMIT 1',
+    [userId]
+  );
+  return rows.length > 0;
 }
 
-function addToBlacklist(userId) {
-  const list = loadBlacklist();
-  if (!list.includes(userId)) list.push(userId);
-  writeJsonSafe(BLACKLIST_FILE, list);
+async function addToBlacklist(userId) {
+  if (!useMySql || !dbPool) {
+    const list = await loadBlacklist();
+    if (!list.includes(userId)) list.push(userId);
+    writeJsonSafe(BLACKLIST_FILE, list);
+    return;
+  }
+
+  await dbPool.query(
+    'INSERT IGNORE INTO blacklist_entries (user_id) VALUES (?)',
+    [userId]
+  );
 }
 
-function removeFromBlacklist(userId) {
-  let list = loadBlacklist();
-  list = list.filter((id) => id !== userId);
-  writeJsonSafe(BLACKLIST_FILE, list);
+async function removeFromBlacklist(userId) {
+  if (!useMySql || !dbPool) {
+    let list = await loadBlacklist();
+    list = list.filter((id) => id !== userId);
+    writeJsonSafe(BLACKLIST_FILE, list);
+    return;
+  }
+
+  await dbPool.query(
+    'DELETE FROM blacklist_entries WHERE user_id = ?',
+    [userId]
+  );
 }
 
 async function resolveBlacklistEntries(userIds) {
@@ -755,11 +919,11 @@ app.get('/profile', (req, res) => {
 
 app.get('/admin', requireAdmin, async (req, res) => {
 
-  const logs = loadLogs();
+  const logs = await loadLogs();
   const news = await loadNews();
   const images = await loadGallery();
-  const blacklist = await resolveBlacklistEntries(loadBlacklist());
-  const rules = loadRules();
+  const blacklist = await resolveBlacklistEntries(await loadBlacklist());
+  const rules = await loadRules();
 
   res.render('admin', {
     user: req.user,
@@ -790,78 +954,77 @@ app.post('/admin/news', requireAdmin, async (req, res) => {
     author: req.user.username,
   });
 
-  logAction(`News objava dodana: "${title}"`, req.user.username);
+  await logAction(`News objava dodana: "${title}"`, req.user.username);
   res.redirect('/admin');
 });
 
 app.post('/admin/news/delete/:id', requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
   const deleted = await deleteNewsById(id);
-  if (deleted) logAction(`News obrisan (id=${id})`, req.user.username);
+  if (deleted) await logAction(`News obrisan (id=${id})`, req.user.username);
   res.redirect('/admin');
 });
 
 /* ===== PRAVILA ===== */
 
-app.get('/pravila', (req, res) => {
-  const rules = loadRules();
+app.get('/pravila', async (req, res) => {
+  const rules = await loadRules();
   res.render('pravila', { user: req.user, rules });
 });
 
-app.post('/admin/rules', requireAdmin, (req, res) => {
-  updateRulesMeta({
+app.post('/admin/rules', requireAdmin, async (req, res) => {
+  await updateRulesMeta({
     title: (req.body.title || '').trim(),
     subtitle: (req.body.subtitle || '').trim(),
     warning: (req.body.warning || '').trim(),
   });
-
-  logAction('Pravila uređena', req.user.username);
+  await logAction('Pravila uredena', req.user.username);
   res.redirect('/admin');
 });
 
-app.post('/admin/rules/add', requireAdmin, (req, res) => {
+app.post('/admin/rules/add', requireAdmin, async (req, res) => {
   const text = (req.body.text || '').trim();
   if (!text) return res.redirect('/admin');
 
-  addRule(text);
-  logAction('Dodano novo pravilo', req.user.username);
+  await addRule(text);
+  await logAction('Dodano novo pravilo', req.user.username);
   res.redirect('/admin');
 });
 
-app.post('/admin/rules/update/:id', requireAdmin, (req, res) => {
+app.post('/admin/rules/update/:id', requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
   const text = (req.body.text || '').trim();
   if (!text) return res.redirect('/admin');
 
-  const updated = updateRuleById(id, text);
-  if (updated) logAction(`Uredeno pravilo (id=${id})`, req.user.username);
+  const updated = await updateRuleById(id, text);
+  if (updated) await logAction(`Uredeno pravilo (id=${id})`, req.user.username);
   res.redirect('/admin');
 });
 
-app.post('/admin/rules/delete/:id', requireAdmin, (req, res) => {
+app.post('/admin/rules/delete/:id', requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
-  const deleted = deleteRuleById(id);
-  if (deleted) logAction(`Obrisano pravilo (id=${id})`, req.user.username);
+  const deleted = await deleteRuleById(id);
+  if (deleted) await logAction(`Obrisano pravilo (id=${id})`, req.user.username);
   res.redirect('/admin');
 });
 
 /* ===== ADMIN: BLACKLIST ===== */
 
-app.post('/admin/blacklist/add', requireAdmin, (req, res) => {
+app.post('/admin/blacklist/add', requireAdmin, async (req, res) => {
   const userId = (req.body.userId || '').trim();
   if (!userId) return res.redirect('/admin');
 
-  addToBlacklist(userId);
-  logAction(`Blacklist ADD: ${userId}`, req.user.username);
+  await addToBlacklist(userId);
+  await logAction(`Blacklist ADD: ${userId}`, req.user.username);
   res.redirect('/admin');
 });
 
-app.post('/admin/blacklist/remove', requireAdmin, (req, res) => {
+app.post('/admin/blacklist/remove', requireAdmin, async (req, res) => {
   const userId = (req.body.userId || '').trim();
   if (!userId) return res.redirect('/admin');
 
-  removeFromBlacklist(userId);
-  logAction(`Blacklist REMOVE: ${userId}`, req.user.username);
+  await removeFromBlacklist(userId);
+  await logAction(`Blacklist REMOVE: ${userId}`, req.user.username);
   res.redirect('/admin');
 });
 
@@ -920,7 +1083,7 @@ app.get('/galerija', async (req, res) => {
 app.post('/upload', async (req, res) => {
   if (!req.user) return res.redirect('/');
 
-  if (isBlacklisted(req.user.id)) {
+  if (await isBlacklisted(req.user.id)) {
     return res.send('Blokiran si za upload.');
   }
 
@@ -957,7 +1120,7 @@ function sanitizeComment(text) {
 app.post('/comment/:image', async (req, res) => {
   if (!req.user) return res.redirect('/');
 
-  if (isBlacklisted(req.user.id)) {
+  if (await isBlacklisted(req.user.id)) {
     return res.send('Blokiran si za komentare.');
   }
 
@@ -996,7 +1159,7 @@ async function handleDeleteImage(req, res, filenameRaw) {
 
     await deleteGalleryImageByFilename(filename);
 
-    logAction(`Obrisana slika: ${filename}`, req.user.username);
+    await logAction(`Obrisana slika: ${filename}`, req.user.username);
     return res.redirect('/galerija');
   } catch (err) {
     console.log('DELETE IMAGE ERROR:', err.message);
@@ -1043,3 +1206,4 @@ const PORT = Number(process.env.PORT) || 3000;
 initMySql().finally(() => {
   app.listen(PORT, () => console.log('FS25 Web pokrenut na portu ' + PORT));
 });
+
