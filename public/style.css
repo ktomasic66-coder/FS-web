@@ -2522,6 +2522,116 @@ s input {
   border-radius: 50%;
 }
 
+.fs-modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 8, 6, 0.72);
+  backdrop-filter: blur(10px);
+  z-index: 999999;
+}
+
+.fs-modal-overlay.is-open {
+  display: flex;
+}
+
+.fs-modal {
+  width: min(540px, 100%);
+  padding: 28px;
+  border-radius: 22px;
+  border: 1px solid rgba(0, 255, 157, 0.24);
+  background: linear-gradient(180deg, rgba(8, 24, 19, 0.98), rgba(4, 14, 11, 0.98));
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255,255,255,0.04);
+  color: #ecfff7;
+}
+
+.fs-modal-kicker {
+  margin: 0 0 8px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(130, 255, 200, 0.72);
+}
+
+.fs-modal-title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.05;
+}
+
+.fs-modal-message {
+  margin: 18px 0 0;
+  font-size: 15px;
+  line-height: 1.7;
+  color: rgba(233, 255, 246, 0.82);
+}
+
+.fs-modal-input-wrap {
+  margin-top: 18px;
+}
+
+.fs-modal-input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  color: #fff;
+  outline: none;
+}
+
+.fs-modal-input:focus {
+  border-color: rgba(0,255,157,0.34);
+  box-shadow: 0 0 0 3px rgba(0,255,157,0.12);
+}
+
+.fs-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.fs-modal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.05);
+  color: #f4fff9;
+  cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+}
+
+.fs-modal-btn:hover {
+  transform: translateY(-1px);
+}
+
+.fs-modal-cancel:hover {
+  border-color: rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.08);
+}
+
+.fs-modal-confirm {
+  border-color: rgba(0,255,157,0.32);
+  background: linear-gradient(135deg, #00d47f, #02f0a6);
+  color: #032116;
+  font-weight: 700;
+}
+
+.fs-modal-confirm:hover {
+  border-color: rgba(0,255,157,0.52);
+  box-shadow: 0 10px 24px rgba(0,255,157,0.18);
+}
+
 .comments-preview {
   padding: 0;
   display: grid;

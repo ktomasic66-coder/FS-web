@@ -96,7 +96,7 @@
                   <small><%= post.date %></small>
                 </div>
 
-                <form method="POST" action="/admin/news/delete/<%= post.id %>" onsubmit="return confirm('Obrisati ovu objavu?')">
+                <form method="POST" action="/admin/news/delete/<%= post.id %>" data-confirm="Obrisati ovu objavu?" data-confirm-title="Brisanje objave" data-confirm-ok="Obriši">
                   <button type="submit" class="admin-danger-btn">Obrisi</button>
                 </form>
               </div>
@@ -159,7 +159,7 @@
                         <button type="submit" class="admin-secondary-btn">Spremi izmjene</button>
                       </div>
                     </form>
-                    <form method="POST" action="/admin/rules/delete/<%= rule.id %>" onsubmit="return confirm('Obrisati ovo pravilo?')">
+                    <form method="POST" action="/admin/rules/delete/<%= rule.id %>" data-confirm="Obrisati ovo pravilo?" data-confirm-title="Brisanje pravila" data-confirm-ok="Obriši">
                       <button type="submit" class="admin-danger-btn">Obrisi</button>
                     </form>
                   </div>
@@ -255,5 +255,6 @@
   </div>
 </section>
 
+<script src="/modal.js"></script>
 </body>
 </html>

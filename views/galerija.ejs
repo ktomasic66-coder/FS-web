@@ -69,7 +69,7 @@
                 >
 
                 <% if (isAdmin) { %>
-                <form action="/delete" method="POST" onsubmit="return confirm('Obrisati sliku?')">
+                <form action="/delete" method="POST" data-confirm="Obrisati sliku?" data-confirm-title="Brisanje slike" data-confirm-ok="Obriši">
                     <input type="hidden" name="image" value="<%= img.filename %>">
                     <button type="submit" class="gallery-delete-btn">Obriši</button>
                 </form>
@@ -281,5 +281,6 @@ document.addEventListener('keydown', function (event) {
 });
 </script>
 
+<script src="/modal.js"></script>
 </body>
 </html>
