@@ -1605,7 +1605,7 @@ async function publishGalleryImageToDiscord(item, buffer) {
 }
 
 async function ingestDiscordGalleryMessage(message) {
-  if (!useMySql || !dbPool || !message) return 0;
+  if (!message) return 0;
 
   const attachments = Array.from(message.attachments.values()).filter((attachment) => {
     return String(attachment.contentType || '').startsWith('image/');
@@ -1613,11 +1613,17 @@ async function ingestDiscordGalleryMessage(message) {
 
   if (!attachments.length) return 0;
 
-  const [existingRows] = await dbPool.query(
-    'SELECT filename FROM gallery_images WHERE discord_message_id = ? LIMIT 1',
-    [message.id]
-  );
-  if (existingRows.length) return 0;
+  if (useMySql && dbPool) {
+    const [existingRows] = await dbPool.query(
+      'SELECT filename FROM gallery_images WHERE discord_message_id = ? LIMIT 1',
+      [message.id]
+    );
+    if (existingRows.length) return 0;
+  } else {
+    const gallery = readJsonSafe(DATA_FILE, []);
+    const exists = gallery.some((image) => String(image.discordMessageId || '') === String(message.id));
+    if (exists) return 0;
+  }
 
   let created = 0;
   for (let index = 0; index < attachments.length; index += 1) {
@@ -1633,6 +1639,11 @@ async function ingestDiscordGalleryMessage(message) {
       }
     } catch (err) {
       console.log('DISCORD GALLERY FETCH ERROR:', err.message);
+    }
+
+    if (!useMySql && fileBuffer) {
+      const localPath = path.join(uploadPath, filename);
+      fs.writeFileSync(localPath, fileBuffer);
     }
 
     await addGalleryImage({
@@ -1658,7 +1669,7 @@ async function ingestDiscordGalleryMessage(message) {
 async function syncGalleryFromDiscordChannel() {
   const botConfig = await loadBotConfig();
   const channelId = String(botConfig.gallery?.channelId || GALLERY_CHANNEL_ID || '').trim();
-  if (!useMySql || !dbPool || !channelId || !discordClient.isReady()) return 0;
+  if (!channelId || !discordClient.isReady()) return 0;
 
   const channel = await discordClient.channels.fetch(channelId).catch(() => null);
   if (!channel || !channel.isTextBased()) return 0;
