@@ -2878,8 +2878,44 @@ s input {
     padding: 12px;
   }
 
-  .gallery-lightbox-close {
+.gallery-lightbox-close {
     top: 14px;
     right: 14px;
+  }
+}
+
+.gallery-toast {
+  position: fixed;
+  top: 92px;
+  right: 24px;
+  z-index: 1200;
+  min-width: 280px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 110, 110, 0.45);
+  background:
+    linear-gradient(135deg, rgba(42, 14, 18, 0.96), rgba(76, 16, 24, 0.92));
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.38);
+  color: #fff4f4;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transform: translateX(120%);
+  opacity: 0;
+  transition: transform 0.28s ease, opacity 0.28s ease;
+}
+
+.gallery-toast-visible {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+@media (max-width: 720px) {
+  .gallery-toast {
+    top: 78px;
+    right: 12px;
+    left: 12px;
+    max-width: none;
+    min-width: 0;
   }
 }

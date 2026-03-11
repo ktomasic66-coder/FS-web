@@ -2312,20 +2312,25 @@ app.get('/galerija', async (req, res) => {
   let roles = [];
   let canUpload = false;
   let isAdmin = false;
+  let uploadBlocked = false;
 
   if (req.user) {
     roles = await hydrateUserRoles(req.user);
     canUpload = canUploadWithRoles(req.user, roles);
     isAdmin = isGalleryAdminByRoles(roles);
+    uploadBlocked = await isBlacklisted(req.user.id);
   }
 
   const gallery = await loadGallery(req.user?.id || '');
   const openImage = String(req.query.open || '').trim();
+  const uploadNotice = String(req.query.uploadNotice || '').trim();
 
   res.render('galerija', {
     user: req.user,
     gallery,
     canUpload,
+    uploadBlocked,
+    uploadNotice,
     isAdmin,
     openImage,
   });
@@ -2337,7 +2342,7 @@ app.post('/upload', async (req, res) => {
   if (!req.user) return res.redirect('/');
 
   if (await isBlacklisted(req.user.id)) {
-    return res.send('Blokiran si za upload.');
+    return res.redirect('/galerija?uploadNotice=blocked');
   }
 
   const roles = req.user.roles?.length ? req.user.roles : await getMemberRoles(req.user.id);

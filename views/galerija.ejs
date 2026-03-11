@@ -8,6 +8,8 @@
 </head>
 <body class="gallery-page">
 
+<div id="gallery-toast" class="gallery-toast" hidden></div>
+
 <nav class="navbar">
     <div class="logo">
         <img src="/images/logo.png" alt="SR Logo">
@@ -40,7 +42,7 @@
     </div>
 
     <% if (user && canUpload) { %>
-    <form action="/upload" method="POST" enctype="multipart/form-data" class="upload-form upload-form-pro">
+    <form action="/upload" method="POST" enctype="multipart/form-data" class="upload-form upload-form-pro" id="gallery-upload-form">
         <div class="upload-form-fields">
             <label class="upload-field">
                 <span>Odaberi sliku</span>
@@ -234,6 +236,29 @@
 </div>
 
 <script>
+const uploadBlocked = <%- JSON.stringify(Boolean(uploadBlocked)) %>;
+const uploadNotice = <%- JSON.stringify(uploadNotice || '') %>;
+
+function showGalleryToast(message) {
+    const toast = document.getElementById('gallery-toast');
+    if (!toast) return;
+    toast.textContent = message;
+    toast.hidden = false;
+    toast.classList.remove('gallery-toast-visible');
+
+    requestAnimationFrame(function () {
+        toast.classList.add('gallery-toast-visible');
+    });
+
+    clearTimeout(showGalleryToast.dismissTimer);
+    showGalleryToast.dismissTimer = setTimeout(function () {
+        toast.classList.remove('gallery-toast-visible');
+        setTimeout(function () {
+            toast.hidden = true;
+        }, 280);
+    }, 3200);
+}
+
 function openGalleryModal(templateId) {
     const template = document.getElementById(templateId);
     const overlay = document.getElementById('gallery-lightbox');
@@ -279,6 +304,18 @@ document.addEventListener('keydown', function (event) {
         closeGalleryModal();
     }
 });
+
+const uploadForm = document.getElementById('gallery-upload-form');
+if (uploadForm && uploadBlocked) {
+    uploadForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        showGalleryToast('Trenutno nemas dozvolu za upload.');
+    });
+}
+
+if (uploadNotice === 'blocked') {
+    showGalleryToast('Trenutno nemas dozvolu za upload.');
+}
 </script>
 
 <script src="/modal.js"></script>
