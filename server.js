@@ -261,6 +261,31 @@ function cloneDefaultBotConfig() {
   return JSON.parse(JSON.stringify(DEFAULT_BOT_CONFIG));
 }
 
+function getDiscordSnowflakeTimestamp(id) {
+  try {
+    if (!id) return 0;
+    return Number((BigInt(String(id)) >> 22n) + 1420070400000n);
+  } catch {
+    return 0;
+  }
+}
+
+function getGalleryItemTimestamp(item) {
+  const explicit = Number(item?.uploadedAtMs || 0);
+  if (explicit > 0) return explicit;
+
+  const filenameMatch = String(item?.filename || '').match(/^(\d{10,})-/);
+  if (filenameMatch) {
+    const filenameTs = Number(filenameMatch[1]);
+    if (Number.isFinite(filenameTs) && filenameTs > 0) return filenameTs;
+  }
+
+  const discordTs = getDiscordSnowflakeTimestamp(item?.discordMessageId);
+  if (discordTs > 0) return discordTs;
+
+  return 0;
+}
+
 function normalizeBotConfig(raw) {
   const base = cloneDefaultBotConfig();
   const cfg = raw && typeof raw === 'object' ? raw : {};
@@ -737,11 +762,13 @@ async function loadGallery(viewerUserId = '') {
           heart: Array.isArray(img.reactionUsers?.heart) ? img.reactionUsers.heart.includes(String(viewerUserId || '')) : false,
           sr: Array.isArray(img.reactionUsers?.sr) ? img.reactionUsers.sr.includes(String(viewerUserId || '')) : false,
         },
+        uploadedAtMs: getGalleryItemTimestamp(img),
       }))
       .filter((img) => {
         const imagePath = path.join(__dirname, 'public/uploads', img.filename);
         return fs.existsSync(imagePath);
-      });
+      })
+      .sort((a, b) => Number(b.uploadedAtMs || 0) - Number(a.uploadedAtMs || 0));
   }
 
   const [imageRows] = await dbPool.query(
@@ -803,7 +830,12 @@ async function loadGallery(viewerUserId = '') {
         heart: Boolean(viewerReactionMap.get(row.filename)?.heart),
         sr: Boolean(viewerReactionMap.get(row.filename)?.sr),
       },
-    }));
+      uploadedAtMs: getGalleryItemTimestamp({
+        filename: row.filename,
+        discordMessageId: row.discord_message_id,
+      }),
+    }))
+    .sort((a, b) => Number(b.uploadedAtMs || 0) - Number(a.uploadedAtMs || 0));
 }
 
 async function addGalleryImage(item) {
