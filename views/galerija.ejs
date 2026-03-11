@@ -90,7 +90,7 @@
                     <form action="/react/<%= img.filename %>" method="POST">
                         <input type="hidden" name="reaction" value="like">
                         <input type="hidden" name="returnTo" value="/galerija?open=<%= encodeURIComponent(img.filename) %>">
-                        <button type="submit" class="reaction-btn">
+                        <button type="submit" class="reaction-btn <%= img.viewerReactions?.like ? 'reaction-btn-active' : '' %>">
                             <span>👍</span>
                             <strong><%= img.reactions?.like || 0 %></strong>
                         </button>
@@ -98,7 +98,7 @@
                     <form action="/react/<%= img.filename %>" method="POST">
                         <input type="hidden" name="reaction" value="heart">
                         <input type="hidden" name="returnTo" value="/galerija?open=<%= encodeURIComponent(img.filename) %>">
-                        <button type="submit" class="reaction-btn">
+                        <button type="submit" class="reaction-btn <%= img.viewerReactions?.heart ? 'reaction-btn-active' : '' %>">
                             <span>❤</span>
                             <strong><%= img.reactions?.heart || 0 %></strong>
                         </button>
@@ -106,7 +106,7 @@
                     <form action="/react/<%= img.filename %>" method="POST">
                         <input type="hidden" name="reaction" value="sr">
                         <input type="hidden" name="returnTo" value="/galerija?open=<%= encodeURIComponent(img.filename) %>">
-                        <button type="submit" class="reaction-btn reaction-btn-logo">
+                        <button type="submit" class="reaction-btn reaction-btn-logo <%= img.viewerReactions?.sr ? 'reaction-btn-active' : '' %>">
                             <img src="/images/logo.png" alt="SR">
                             <strong><%= img.reactions?.sr || 0 %></strong>
                         </button>
@@ -165,7 +165,7 @@
                                 <form action="/react/<%= img.filename %>" method="POST">
                                     <input type="hidden" name="reaction" value="like">
                                     <input type="hidden" name="returnTo" value="/galerija?open=<%= encodeURIComponent(img.filename) %>">
-                                    <button type="submit" class="reaction-btn">
+                                    <button type="submit" class="reaction-btn <%= img.viewerReactions?.like ? 'reaction-btn-active' : '' %>">
                                         <span>👍</span>
                                         <strong><%= img.reactions?.like || 0 %></strong>
                                     </button>
@@ -173,7 +173,7 @@
                                 <form action="/react/<%= img.filename %>" method="POST">
                                     <input type="hidden" name="reaction" value="heart">
                                     <input type="hidden" name="returnTo" value="/galerija?open=<%= encodeURIComponent(img.filename) %>">
-                                    <button type="submit" class="reaction-btn">
+                                    <button type="submit" class="reaction-btn <%= img.viewerReactions?.heart ? 'reaction-btn-active' : '' %>">
                                         <span>❤</span>
                                         <strong><%= img.reactions?.heart || 0 %></strong>
                                     </button>
@@ -181,7 +181,7 @@
                                 <form action="/react/<%= img.filename %>" method="POST">
                                     <input type="hidden" name="reaction" value="sr">
                                     <input type="hidden" name="returnTo" value="/galerija?open=<%= encodeURIComponent(img.filename) %>">
-                                    <button type="submit" class="reaction-btn reaction-btn-logo">
+                                    <button type="submit" class="reaction-btn reaction-btn-logo <%= img.viewerReactions?.sr ? 'reaction-btn-active' : '' %>">
                                         <img src="/images/logo.png" alt="SR">
                                         <strong><%= img.reactions?.sr || 0 %></strong>
                                     </button>

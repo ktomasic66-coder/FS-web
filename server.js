@@ -30,6 +30,7 @@ const DiscordStrategy = require('passport-discord').Strategy;
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
+const fetch = global.fetch || require('node-fetch');
 const { getPlayerStats } = require('./player');
 let mysql = null;
 try {
@@ -38,7 +39,7 @@ try {
   mysql = null;
 }
 
-const { Client, GatewayIntentBits } = require('discord.js');
+const { AttachmentBuilder, Client, GatewayIntentBits } = require('discord.js');
 
 const app = express();
 let dbPool = null;
@@ -62,6 +63,7 @@ const GUILD_ID = process.env.GUILD_ID;
 const PLAYER_ROLE_ID = process.env.PLAYER_ROLE_ID; // npr Player role
 const ADMIN_ROLE_ID = process.env.ADMIN_ROLE_ID;   // npr Admin role
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
+const GALLERY_CHANNEL_ID = process.env.GALLERY_CHANNEL_ID || '';
 
 /* ===== GLOBAL ROLE IDS (za admin panel + badge) ===== */
 
@@ -71,6 +73,63 @@ const ROLE_IDS = {
   ADMIN: '863814372610146314',
   PLAYER: '1238209853009297560',
   MEMBER: '1238854428136571000',
+};
+
+const DEFAULT_BOT_CONFIG = {
+  welcome: {
+    channelId: '',
+    message: 'Dobrodošao {user} na server!',
+  },
+  logging: {
+    channelId: '',
+  },
+  embeds: [],
+  gallery: {
+    channelId: GALLERY_CHANNEL_ID,
+  },
+  ticketSystem: {
+    logChannelId: '',
+    categoryId: '',
+    supportRoleId: '',
+    autoCloseHours: 48,
+    reminderHours: 3,
+    types: {
+      igranje: {
+        title: 'Igranje na serveru',
+        questions: [
+          'Koliko često planiraš da igraš na serveru?',
+          'U koje vrijeme si najčešće aktivan?',
+          'Da li si spreman da poštuješ raspored i obaveze na farmi?',
+          'Kako bi reagovao ako neko iz tima ne poštuje dogovor ili pravila igre?',
+          'Da li koristiš voice chat (Discord) tokom igre?',
+          'Da li si spreman da pomogneš drugim igračima?',
+          'Zašto želiš da igraš baš na hard serveru?',
+        ],
+      },
+      zalba: {
+        title: 'Žalba na igrače',
+        questions: [
+          'Ime igrača na kojeg se žališ?',
+          'Vrijeme i detaljan opis situacije?',
+          'Imaš li dokaze (slike, video, log)?',
+        ],
+      },
+      modovi: {
+        title: 'Edit modova',
+        questions: [
+          'Na čemu trenutno radiš?',
+          'Koji je konkretan problem?',
+          'Koji editor / verziju igre koristiš?',
+        ],
+      },
+    },
+    messages: {
+      reminder:
+        'Hej {user}!\nJoš uvijek nisi odgovorio na pitanja iz prve poruke u tiketu.\n\nMolimo te da odgovoriš na sva pitanja kako bismo mogli nastaviti s procesom.',
+      autoClose:
+        'Ticket je automatski zatvoren jer 48 sati nije bilo aktivnosti. Ako i dalje trebaš pomoć, slobodno otvori novi ticket.',
+    },
+  },
 };
 
 /* ================= DISCORD BOT ================= */
@@ -90,9 +149,47 @@ discordClient.once('clientReady', async () => {
     discordMemberCount = mainGuild.memberCount;
 
     console.log('📊 Discord članovi:', discordMemberCount);
+    await syncDiscordStateToDatabase();
+    await syncGalleryFromDiscordChannel();
   } catch (err) {
     console.log('❌ Guild error:', err.message);
   }
+});
+
+discordClient.on('guildMemberAdd', (member) => {
+  if (member.guild.id !== GUILD_ID) return;
+  discordMemberCount = member.guild.memberCount;
+  scheduleDiscordStateSync();
+});
+
+discordClient.on('guildMemberRemove', (member) => {
+  if (member.guild.id !== GUILD_ID) return;
+  discordMemberCount = member.guild.memberCount;
+  scheduleDiscordStateSync();
+});
+
+discordClient.on('guildMemberUpdate', (_, member) => {
+  if (member.guild.id !== GUILD_ID) return;
+  scheduleDiscordStateSync();
+});
+
+discordClient.on('roleCreate', () => scheduleDiscordStateSync());
+discordClient.on('roleDelete', () => scheduleDiscordStateSync());
+discordClient.on('roleUpdate', () => scheduleDiscordStateSync());
+
+discordClient.on('messageCreate', (message) => {
+  if (message.author?.bot) return;
+  if (!message.guild || message.guild.id !== GUILD_ID) return;
+
+  loadBotConfig()
+    .then((config) => {
+      const galleryChannelId = String(config.gallery?.channelId || GALLERY_CHANNEL_ID || '').trim();
+      if (!galleryChannelId || message.channelId !== galleryChannelId) return null;
+      return ingestDiscordGalleryMessage(message);
+    })
+    .catch((err) => {
+      console.log('DISCORD MESSAGE SYNC ERROR:', err.message);
+    });
 });
 
 discordClient.login(BOT_TOKEN);
@@ -129,6 +226,62 @@ function readJsonSafe(filePath, fallback) {
 
 function writeJsonSafe(filePath, data) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+}
+
+function cloneDefaultBotConfig() {
+  return JSON.parse(JSON.stringify(DEFAULT_BOT_CONFIG));
+}
+
+function normalizeBotConfig(raw) {
+  const base = cloneDefaultBotConfig();
+  const cfg = raw && typeof raw === 'object' ? raw : {};
+
+  return {
+    welcome: {
+      ...base.welcome,
+      ...(cfg.welcome || {}),
+    },
+    logging: {
+      ...base.logging,
+      ...(cfg.logging || {}),
+    },
+    embeds: Array.isArray(cfg.embeds) ? cfg.embeds : base.embeds,
+    gallery: {
+      ...base.gallery,
+      ...(cfg.gallery || {}),
+    },
+    ticketSystem: {
+      ...base.ticketSystem,
+      ...(cfg.ticketSystem || {}),
+      types: {
+        igranje: {
+          ...base.ticketSystem.types.igranje,
+          ...(cfg.ticketSystem?.types?.igranje || {}),
+          questions: Array.isArray(cfg.ticketSystem?.types?.igranje?.questions)
+            ? cfg.ticketSystem.types.igranje.questions.map((q) => String(q || '')).filter(Boolean)
+            : [...base.ticketSystem.types.igranje.questions],
+        },
+        zalba: {
+          ...base.ticketSystem.types.zalba,
+          ...(cfg.ticketSystem?.types?.zalba || {}),
+          questions: Array.isArray(cfg.ticketSystem?.types?.zalba?.questions)
+            ? cfg.ticketSystem.types.zalba.questions.map((q) => String(q || '')).filter(Boolean)
+            : [...base.ticketSystem.types.zalba.questions],
+        },
+        modovi: {
+          ...base.ticketSystem.types.modovi,
+          ...(cfg.ticketSystem?.types?.modovi || {}),
+          questions: Array.isArray(cfg.ticketSystem?.types?.modovi?.questions)
+            ? cfg.ticketSystem.types.modovi.questions.map((q) => String(q || '')).filter(Boolean)
+            : [...base.ticketSystem.types.modovi.questions],
+        },
+      },
+      messages: {
+        ...base.ticketSystem.messages,
+        ...(cfg.ticketSystem?.messages || {}),
+      },
+    },
+  };
 }
 
 function readSessionMap() {
@@ -318,6 +471,65 @@ async function initMySql() {
       )
     `);
 
+    await dbPool.query(`
+      CREATE TABLE IF NOT EXISTS bot_config (
+        config_key VARCHAR(80) PRIMARY KEY,
+        config_value LONGTEXT NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    await dbPool.query(`
+      CREATE TABLE IF NOT EXISTS discord_roles (
+        role_id VARCHAR(64) PRIMARY KEY,
+        guild_id VARCHAR(64) NOT NULL,
+        name VARCHAR(120) NOT NULL,
+        color VARCHAR(16) NOT NULL DEFAULT '#444444',
+        position INT NOT NULL DEFAULT 0,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    await dbPool.query(`
+      CREATE TABLE IF NOT EXISTS discord_members (
+        user_id VARCHAR(64) PRIMARY KEY,
+        guild_id VARCHAR(64) NOT NULL,
+        username VARCHAR(120) NOT NULL,
+        global_name VARCHAR(120) DEFAULT NULL,
+        avatar VARCHAR(255) DEFAULT NULL,
+        joined_at VARCHAR(120) DEFAULT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    await dbPool.query(`
+      CREATE TABLE IF NOT EXISTS discord_member_roles (
+        user_id VARCHAR(64) NOT NULL,
+        role_id VARCHAR(64) NOT NULL,
+        guild_id VARCHAR(64) NOT NULL,
+        assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (user_id, role_id)
+      )
+    `);
+
+    await dbPool.query(`
+      CREATE TABLE IF NOT EXISTS gallery_reactions (
+        image_filename VARCHAR(255) NOT NULL,
+        user_id VARCHAR(64) NOT NULL,
+        reaction_type VARCHAR(20) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (image_filename, user_id, reaction_type),
+        CONSTRAINT fk_gallery_reaction_image
+          FOREIGN KEY (image_filename) REFERENCES gallery_images(filename)
+          ON DELETE CASCADE
+      )
+    `);
+
+    await ensureColumn('gallery_images', 'source_type', "VARCHAR(20) NOT NULL DEFAULT 'web'");
+    await ensureColumn('gallery_images', 'discord_message_id', 'VARCHAR(64) DEFAULT NULL');
+    await ensureColumn('gallery_images', 'discord_channel_id', 'VARCHAR(64) DEFAULT NULL');
+    await ensureColumn('gallery_images', 'external_url', 'TEXT DEFAULT NULL');
+
     useMySql = true;
     await migrateDataToMySqlIfNeeded();
     console.log('MySQL storage aktivan (news + gallery + rules + blacklist + logs).');
@@ -478,7 +690,7 @@ async function migrateDataToMySqlIfNeeded() {
   }
 }
 
-async function loadGallery() {
+async function loadGallery(viewerUserId = '') {
   if (!useMySql || !dbPool) {
     const data = readJsonSafe(DATA_FILE, []);
     return data
@@ -491,6 +703,11 @@ async function loadGallery() {
           heart: Number(img.reactions?.heart || 0),
           sr: Number(img.reactions?.sr || 0),
         },
+        viewerReactions: {
+          like: Array.isArray(img.reactionUsers?.like) ? img.reactionUsers.like.includes(String(viewerUserId || '')) : false,
+          heart: Array.isArray(img.reactionUsers?.heart) ? img.reactionUsers.heart.includes(String(viewerUserId || '')) : false,
+          sr: Array.isArray(img.reactionUsers?.sr) ? img.reactionUsers.sr.includes(String(viewerUserId || '')) : false,
+        },
       }))
       .filter((img) => {
         const imagePath = path.join(__dirname, 'public/uploads', img.filename);
@@ -500,12 +717,21 @@ async function loadGallery() {
 
   const [imageRows] = await dbPool.query(
     `SELECT filename, uploader_id, uploader_name, uploader_avatar, description,
-            like_count, heart_count, sr_count, mime_type
+            like_count, heart_count, sr_count, mime_type, source_type,
+            discord_message_id, discord_channel_id, external_url
      FROM gallery_images`
   );
   const [commentRows] = await dbPool.query(
     'SELECT image_filename, user_name, text, date_text FROM gallery_comments ORDER BY id ASC'
   );
+  const [reactionRows] = viewerUserId
+    ? await dbPool.query(
+        `SELECT image_filename, reaction_type
+         FROM gallery_reactions
+         WHERE user_id = ?`,
+        [String(viewerUserId)]
+      )
+    : [[]];
 
   const commentsByImage = new Map();
   for (const row of commentRows) {
@@ -518,6 +744,13 @@ async function loadGallery() {
     commentsByImage.set(row.image_filename, existing);
   }
 
+  const viewerReactionMap = new Map();
+  for (const row of reactionRows) {
+    const current = viewerReactionMap.get(row.image_filename) || {};
+    current[String(row.reaction_type || '')] = true;
+    viewerReactionMap.set(row.image_filename, current);
+  }
+
   return imageRows
     .map((row) => ({
       filename: row.filename,
@@ -526,11 +759,20 @@ async function loadGallery() {
       uploaderAvatar: row.uploader_avatar,
       description: row.description || '',
       mimeType: row.mime_type || '',
+      sourceType: row.source_type || 'web',
+      discordMessageId: row.discord_message_id || '',
+      discordChannelId: row.discord_channel_id || '',
+      externalUrl: row.external_url || '',
       comments: commentsByImage.get(row.filename) || [],
       reactions: {
         like: Number(row.like_count || 0),
         heart: Number(row.heart_count || 0),
         sr: Number(row.sr_count || 0),
+      },
+      viewerReactions: {
+        like: Boolean(viewerReactionMap.get(row.filename)?.like),
+        heart: Boolean(viewerReactionMap.get(row.filename)?.heart),
+        sr: Boolean(viewerReactionMap.get(row.filename)?.sr),
       },
     }));
 }
@@ -543,6 +785,11 @@ async function addGalleryImage(item) {
       description: String(item.description || ''),
       comments: Array.isArray(item.comments) ? item.comments : [],
       mimeType: String(item.mimeType || ''),
+      sourceType: String(item.sourceType || 'web'),
+      discordMessageId: String(item.discordMessageId || ''),
+      discordChannelId: String(item.discordChannelId || ''),
+      externalUrl: String(item.externalUrl || ''),
+      reactionUsers: item.reactionUsers || { like: [], heart: [], sr: [] },
       reactions: {
         like: Number(item.reactions?.like || 0),
         heart: Number(item.reactions?.heart || 0),
@@ -555,8 +802,8 @@ async function addGalleryImage(item) {
 
   await dbPool.query(
     `INSERT INTO gallery_images
-      (filename, uploader_id, uploader_name, uploader_avatar, description, like_count, heart_count, sr_count, mime_type, image_data)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (filename, uploader_id, uploader_name, uploader_avatar, description, like_count, heart_count, sr_count, mime_type, image_data, source_type, discord_message_id, discord_channel_id, external_url)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON DUPLICATE KEY UPDATE
        uploader_id = VALUES(uploader_id),
        uploader_name = VALUES(uploader_name),
@@ -564,9 +811,13 @@ async function addGalleryImage(item) {
        description = VALUES(description),
        like_count = VALUES(like_count),
        heart_count = VALUES(heart_count),
-        sr_count = VALUES(sr_count),
-        mime_type = COALESCE(VALUES(mime_type), mime_type),
-        image_data = COALESCE(VALUES(image_data), image_data)`,
+       sr_count = VALUES(sr_count),
+       mime_type = COALESCE(VALUES(mime_type), mime_type),
+       image_data = COALESCE(VALUES(image_data), image_data),
+       source_type = VALUES(source_type),
+       discord_message_id = COALESCE(VALUES(discord_message_id), discord_message_id),
+       discord_channel_id = COALESCE(VALUES(discord_channel_id), discord_channel_id),
+       external_url = COALESCE(VALUES(external_url), external_url)`,
     [
       item.filename,
       item.uploaderId,
@@ -578,6 +829,10 @@ async function addGalleryImage(item) {
       Number(item.reactions?.sr || 0),
       item.mimeType || null,
       item.imageData || null,
+      item.sourceType || 'web',
+      item.discordMessageId || null,
+      item.discordChannelId || null,
+      item.externalUrl || null,
     ]
   );
 }
@@ -586,19 +841,49 @@ async function getGalleryImageBinary(filename) {
   if (!useMySql || !dbPool) return null;
 
   const [rows] = await dbPool.query(
-    'SELECT mime_type, image_data FROM gallery_images WHERE filename = ? LIMIT 1',
+    'SELECT mime_type, image_data, external_url FROM gallery_images WHERE filename = ? LIMIT 1',
     [filename]
   );
 
-  if (!rows.length || !rows[0].image_data) return null;
+  if (!rows.length) return null;
 
-  return {
-    mimeType: rows[0].mime_type || 'image/jpeg',
-    buffer: rows[0].image_data,
-  };
+  if (rows[0].image_data) {
+    return {
+      type: 'binary',
+      mimeType: rows[0].mime_type || 'image/jpeg',
+      buffer: rows[0].image_data,
+    };
+  }
+
+  if (rows[0].external_url) {
+    return {
+      type: 'redirect',
+      url: rows[0].external_url,
+    };
+  }
+
+  return null;
 }
 
-async function addGalleryReaction(filename, reactionType) {
+async function updateGalleryImageDiscordMessage(filename, payload) {
+  if (!useMySql || !dbPool || !filename) return;
+
+  await dbPool.query(
+    `UPDATE gallery_images
+     SET discord_message_id = COALESCE(?, discord_message_id),
+         discord_channel_id = COALESCE(?, discord_channel_id),
+         external_url = COALESCE(?, external_url)
+     WHERE filename = ?`,
+    [
+      payload?.discordMessageId || null,
+      payload?.discordChannelId || null,
+      payload?.externalUrl || null,
+      filename,
+    ]
+  );
+}
+
+async function toggleGalleryReaction(filename, userId, reactionType) {
   const allowed = {
     like: 'like',
     heart: 'heart',
@@ -606,24 +891,65 @@ async function addGalleryReaction(filename, reactionType) {
   };
 
   const reaction = allowed[reactionType];
-  if (!reaction) return false;
+  if (!reaction || !userId) return false;
 
   if (!useMySql || !dbPool) {
     const gallery = readJsonSafe(DATA_FILE, []);
     const image = gallery.find((img) => img.filename === filename);
     if (!image) return false;
     image.reactions = image.reactions || {};
-    image.reactions[reaction] = Number(image.reactions[reaction] || 0) + 1;
+    image.reactionUsers = image.reactionUsers || { like: [], heart: [], sr: [] };
+    image.reactionUsers[reaction] = Array.isArray(image.reactionUsers[reaction])
+      ? image.reactionUsers[reaction]
+      : [];
+
+    const existing = image.reactionUsers[reaction].includes(String(userId));
+    if (existing) {
+      image.reactionUsers[reaction] = image.reactionUsers[reaction].filter((id) => id !== String(userId));
+      image.reactions[reaction] = Math.max(0, Number(image.reactions[reaction] || 0) - 1);
+    } else {
+      image.reactionUsers[reaction].push(String(userId));
+      image.reactions[reaction] = Number(image.reactions[reaction] || 0) + 1;
+    }
     writeJsonSafe(DATA_FILE, gallery);
     return true;
   }
 
-  const column = `${reaction}_count`;
-  const [result] = await dbPool.query(
-    `UPDATE gallery_images SET ${column} = ${column} + 1 WHERE filename = ?`,
+  const [rows] = await dbPool.query(
+    `SELECT reaction_type
+     FROM gallery_reactions
+     WHERE image_filename = ? AND user_id = ? AND reaction_type = ?
+     LIMIT 1`,
+    [filename, String(userId), reaction]
+  );
+
+  if (rows.length) {
+    await dbPool.query(
+      `DELETE FROM gallery_reactions
+       WHERE image_filename = ? AND user_id = ? AND reaction_type = ?`,
+      [filename, String(userId), reaction]
+    );
+    await dbPool.query(
+      `UPDATE gallery_images
+       SET ${reaction}_count = GREATEST(${reaction}_count - 1, 0)
+       WHERE filename = ?`,
+      [filename]
+    );
+    return true;
+  }
+
+  await dbPool.query(
+    `INSERT INTO gallery_reactions (image_filename, user_id, reaction_type)
+     VALUES (?, ?, ?)`,
+    [filename, String(userId), reaction]
+  );
+  await dbPool.query(
+    `UPDATE gallery_images
+     SET ${reaction}_count = ${reaction}_count + 1
+     WHERE filename = ?`,
     [filename]
   );
-  return result.affectedRows > 0;
+  return true;
 }
 
 async function addGalleryComment(filename, comment) {
@@ -856,6 +1182,223 @@ async function saveRules(data) {
   }
 }
 
+async function loadBotConfig() {
+  if (!useMySql || !dbPool) {
+    return cloneDefaultBotConfig();
+  }
+
+  const [rows] = await dbPool.query(
+    'SELECT config_value FROM bot_config WHERE config_key = ? LIMIT 1',
+    ['ticket-bot']
+  );
+
+  if (!rows.length) {
+    const defaults = cloneDefaultBotConfig();
+    await saveBotConfig(defaults);
+    return defaults;
+  }
+
+  try {
+    return normalizeBotConfig(JSON.parse(rows[0].config_value));
+  } catch {
+    const defaults = cloneDefaultBotConfig();
+    await saveBotConfig(defaults);
+    return defaults;
+  }
+}
+
+async function saveBotConfig(config) {
+  if (!useMySql || !dbPool) return;
+
+  const normalized = normalizeBotConfig(config);
+  await dbPool.query(
+    `INSERT INTO bot_config (config_key, config_value)
+     VALUES (?, ?)
+     ON DUPLICATE KEY UPDATE config_value = VALUES(config_value)`,
+    ['ticket-bot', JSON.stringify(normalized, null, 2)]
+  );
+}
+
+async function loadSyncedGuildRoles() {
+  if (!useMySql || !dbPool) return [];
+
+  const [rows] = await dbPool.query(
+    `SELECT role_id AS id, name, color, position
+     FROM discord_roles
+     WHERE guild_id = ?
+     ORDER BY position DESC, name ASC`,
+    [GUILD_ID]
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    color: row.color || '#444',
+    position: Number(row.position || 0),
+  }));
+}
+
+async function loadSyncedMemberRoles(userId) {
+  if (!useMySql || !dbPool || !userId) return [];
+
+  const [rows] = await dbPool.query(
+    `SELECT r.role_id AS id, r.name, r.color, r.position
+     FROM discord_member_roles mr
+     INNER JOIN discord_roles r ON r.role_id = mr.role_id
+     WHERE mr.guild_id = ? AND mr.user_id = ?
+     ORDER BY r.position DESC, r.name ASC`,
+    [GUILD_ID, String(userId)]
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    color: row.color || '#444',
+    position: Number(row.position || 0),
+  }));
+}
+
+async function loadDiscordSyncStats() {
+  if (!useMySql || !dbPool) {
+    return {
+      rolesCount: 0,
+      membersCount: 0,
+      memberRolesCount: 0,
+    };
+  }
+
+  const [[rolesRows], [membersRows], [memberRolesRows]] = await Promise.all([
+    dbPool.query('SELECT COUNT(*) AS c FROM discord_roles WHERE guild_id = ?', [GUILD_ID]),
+    dbPool.query('SELECT COUNT(*) AS c FROM discord_members WHERE guild_id = ?', [GUILD_ID]),
+    dbPool.query('SELECT COUNT(*) AS c FROM discord_member_roles WHERE guild_id = ?', [GUILD_ID]),
+  ]);
+
+  return {
+    rolesCount: Number(rolesRows[0]?.c || 0),
+    membersCount: Number(membersRows[0]?.c || 0),
+    memberRolesCount: Number(memberRolesRows[0]?.c || 0),
+  };
+}
+
+async function syncDiscordStateToDatabase() {
+  if (!useMySql || !dbPool || !mainGuild) return;
+
+  await mainGuild.roles.fetch();
+  await mainGuild.members.fetch();
+
+  const roles = mainGuild.roles.cache
+    .filter((role) => role.name !== '@everyone')
+    .sort((a, b) => b.position - a.position);
+  const members = mainGuild.members.cache;
+
+  const roleIds = roles.map((role) => role.id);
+  for (const role of roles.values()) {
+    await dbPool.query(
+      `INSERT INTO discord_roles (role_id, guild_id, name, color, position)
+       VALUES (?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         guild_id = VALUES(guild_id),
+         name = VALUES(name),
+         color = VALUES(color),
+         position = VALUES(position)`,
+      [
+        role.id,
+        mainGuild.id,
+        role.name,
+        role.hexColor && role.hexColor !== '#000000' ? role.hexColor : '#444444',
+        Number(role.position || 0),
+      ]
+    );
+  }
+
+  if (roleIds.length) {
+    const placeholders = roleIds.map(() => '?').join(', ');
+    await dbPool.query(
+      `DELETE FROM discord_roles WHERE guild_id = ? AND role_id NOT IN (${placeholders})`,
+      [mainGuild.id, ...roleIds]
+    );
+  } else {
+    await dbPool.query('DELETE FROM discord_roles WHERE guild_id = ?', [mainGuild.id]);
+  }
+
+  const memberIds = members.map((member) => member.id);
+  for (const member of members.values()) {
+    await dbPool.query(
+      `INSERT INTO discord_members (user_id, guild_id, username, global_name, avatar, joined_at)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         guild_id = VALUES(guild_id),
+         username = VALUES(username),
+         global_name = VALUES(global_name),
+         avatar = VALUES(avatar),
+         joined_at = VALUES(joined_at)`,
+      [
+        member.id,
+        mainGuild.id,
+        member.user.username,
+        member.user.globalName || null,
+        member.user.avatar || null,
+        member.joinedAt ? member.joinedAt.toISOString() : null,
+      ]
+    );
+  }
+
+  if (memberIds.length) {
+    const placeholders = memberIds.map(() => '?').join(', ');
+    await dbPool.query(
+      `DELETE FROM discord_members WHERE guild_id = ? AND user_id NOT IN (${placeholders})`,
+      [mainGuild.id, ...memberIds]
+    );
+    await dbPool.query(
+      `DELETE FROM discord_member_roles WHERE guild_id = ? AND user_id NOT IN (${placeholders})`,
+      [mainGuild.id, ...memberIds]
+    );
+  } else {
+    await dbPool.query('DELETE FROM discord_members WHERE guild_id = ?', [mainGuild.id]);
+    await dbPool.query('DELETE FROM discord_member_roles WHERE guild_id = ?', [mainGuild.id]);
+  }
+
+  await dbPool.query('DELETE FROM discord_member_roles WHERE guild_id = ?', [mainGuild.id]);
+  for (const member of members.values()) {
+    const memberRoles = member.roles.cache
+      .filter((role) => role.name !== '@everyone')
+      .map((role) => role.id);
+
+    for (const roleId of memberRoles) {
+      await dbPool.query(
+        `INSERT INTO discord_member_roles (user_id, role_id, guild_id)
+         VALUES (?, ?, ?)`,
+        [member.id, roleId, mainGuild.id]
+      );
+    }
+  }
+}
+
+let discordSyncTimer = null;
+
+function scheduleDiscordStateSync() {
+  if (discordSyncTimer) clearTimeout(discordSyncTimer);
+  discordSyncTimer = setTimeout(() => {
+    syncDiscordStateToDatabase().catch((err) => {
+      console.log('DISCORD SYNC ERROR:', err.message);
+    });
+  }, 1500);
+}
+
+async function hydrateUserRoles(user) {
+  if (!user || !user.id) return [];
+
+  const dbRoles = await loadSyncedMemberRoles(user.id);
+  if (dbRoles.length) {
+    user.roles = dbRoles;
+    return dbRoles;
+  }
+
+  const liveRoles = await getMemberRoles(user.id);
+  user.roles = liveRoles;
+  return liveRoles;
+}
+
 async function addRule(title, content) {
   const rules = await loadRules();
   rules.items.push({
@@ -1016,6 +1559,117 @@ function backupGallery() {
   fs.copyFileSync(DATA_FILE, path.join(backupDir, fileName));
 }
 
+function sanitizeGalleryFilename(name) {
+  return String(name || 'image')
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 120);
+}
+
+async function publishGalleryImageToDiscord(item, buffer) {
+  const botConfig = await loadBotConfig();
+  const channelId = String(botConfig.gallery?.channelId || GALLERY_CHANNEL_ID || '').trim();
+  if (!channelId || !buffer || !discordClient.isReady()) return null;
+
+  const channel = await discordClient.channels.fetch(channelId).catch(() => null);
+  if (!channel || !channel.isTextBased()) return null;
+
+  const fileName = sanitizeGalleryFilename(item.filename || 'image.jpg');
+  const attachment = new AttachmentBuilder(buffer, { name: fileName });
+  const content = [
+    'Nova slika sa web galerije',
+    item.description ? `Opis: ${item.description}` : '',
+    item.uploaderName ? `Autor: ${item.uploaderName}` : '',
+    item.filename ? `WEB_FILE:${item.filename}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  const sent = await channel.send({
+    content,
+    files: [attachment],
+  });
+
+  const firstAttachment = sent.attachments.first();
+  await updateGalleryImageDiscordMessage(item.filename, {
+    discordMessageId: sent.id,
+    discordChannelId: channel.id,
+    externalUrl: firstAttachment?.url || null,
+  });
+
+  return sent;
+}
+
+async function ingestDiscordGalleryMessage(message) {
+  if (!useMySql || !dbPool || !message) return 0;
+
+  const attachments = Array.from(message.attachments.values()).filter((attachment) => {
+    return String(attachment.contentType || '').startsWith('image/');
+  });
+
+  if (!attachments.length) return 0;
+
+  const [existingRows] = await dbPool.query(
+    'SELECT filename FROM gallery_images WHERE discord_message_id = ? LIMIT 1',
+    [message.id]
+  );
+  if (existingRows.length) return 0;
+
+  let created = 0;
+  for (let index = 0; index < attachments.length; index += 1) {
+    const attachment = attachments[index];
+    const filename = `discord-${message.id}-${index}-${sanitizeGalleryFilename(attachment.name || 'image')}`;
+
+    let fileBuffer = null;
+    try {
+      const response = await fetch(attachment.url);
+      if (response.ok) {
+        const arrayBuffer = await response.arrayBuffer();
+        fileBuffer = Buffer.from(arrayBuffer);
+      }
+    } catch (err) {
+      console.log('DISCORD GALLERY FETCH ERROR:', err.message);
+    }
+
+    await addGalleryImage({
+      filename,
+      uploaderId: message.author?.id || 'discord',
+      uploaderName: message.member?.displayName || message.author?.username || 'Discord',
+      uploaderAvatar: message.author?.avatar || null,
+      description: String(message.content || '').replace(/WEB_FILE:[^\s]+/g, '').trim(),
+      mimeType: attachment.contentType || null,
+      imageData: fileBuffer,
+      sourceType: 'discord',
+      discordMessageId: message.id,
+      discordChannelId: message.channelId,
+      externalUrl: attachment.url,
+      reactions: { like: 0, heart: 0, sr: 0 },
+    });
+    created += 1;
+  }
+
+  return created;
+}
+
+async function syncGalleryFromDiscordChannel() {
+  const botConfig = await loadBotConfig();
+  const channelId = String(botConfig.gallery?.channelId || GALLERY_CHANNEL_ID || '').trim();
+  if (!useMySql || !dbPool || !channelId || !discordClient.isReady()) return 0;
+
+  const channel = await discordClient.channels.fetch(channelId).catch(() => null);
+  if (!channel || !channel.isTextBased()) return 0;
+
+  const messages = await channel.messages.fetch({ limit: 100 }).catch(() => null);
+  if (!messages) return 0;
+
+  let imported = 0;
+  for (const message of messages.values()) {
+    imported += await ingestDiscordGalleryMessage(message);
+  }
+
+  return imported;
+}
+
 /* ================= ROLES (DISCORD) ================= */
 
 async function getMemberRoles(userId) {
@@ -1066,10 +1720,11 @@ function canUploadWithRoles(user, roles) {
   return roleIds.some((id) => uploadAllowedRoleIds.includes(id));
 }
 
-function requireAdmin(req, res, next) {
+async function requireAdmin(req, res, next) {
   if (!req.user) return res.redirect('/');
 
-  const ok = hasAnyRole(req.user, [ROLE_IDS.OWNER, ROLE_IDS.CO_OWNER, ROLE_IDS.ADMIN]);
+  const roles = await hydrateUserRoles(req.user);
+  const ok = hasAnyRole({ roles }, [ROLE_IDS.OWNER, ROLE_IDS.CO_OWNER, ROLE_IDS.ADMIN]);
   if (!ok) return res.redirect('/no-permission');
 
   next();
@@ -1116,6 +1771,10 @@ app.get('/uploads/:filename', async (req, res, next) => {
   const imageFile = await getGalleryImageBinary(filename);
   if (!imageFile) return next();
 
+  if (imageFile.type === 'redirect') {
+    return res.redirect(imageFile.url);
+  }
+
   res.setHeader('Content-Type', imageFile.mimeType);
   return res.send(imageFile.buffer);
 });
@@ -1151,10 +1810,10 @@ app.get('/no-permission', (req, res) => {
 
 /* ===== PROFILE ===== */
 
-app.get('/profile', (req, res) => {
+app.get('/profile', async (req, res) => {
   if (!req.user) return res.redirect('/');
 
-  const userRoles = req.user.roles || [];
+  const userRoles = await hydrateUserRoles(req.user);
 
   const isAdmin = userRoles.some((role) =>
     [ROLE_IDS.ADMIN, ROLE_IDS.OWNER, ROLE_IDS.CO_OWNER].includes(role.id)
@@ -1173,12 +1832,28 @@ app.get('/profile', (req, res) => {
 /* ===== ADMIN PANEL ===== */
 
 app.get('/admin', requireAdmin, async (req, res) => {
+  await hydrateUserRoles(req.user);
 
   const logs = await loadLogs();
   const news = await loadNews();
   const images = await loadGallery();
   const blacklist = await resolveBlacklistEntries(await loadBlacklist());
   const rules = await loadRules();
+  const botConfig = await loadBotConfig();
+  const syncedRoles = await loadSyncedGuildRoles();
+  const syncStats = await loadDiscordSyncStats();
+
+  let guildChannels = [];
+  if (mainGuild) {
+    await mainGuild.channels.fetch().catch(() => null);
+    guildChannels = mainGuild.channels.cache
+      .filter((channel) => channel.isTextBased?.() || channel.type === 0 || channel.type === 5)
+      .map((channel) => ({
+        id: channel.id,
+        name: channel.name,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'hr'));
+  }
 
   res.render('admin', {
     user: req.user,
@@ -1186,6 +1861,10 @@ app.get('/admin', requireAdmin, async (req, res) => {
     news: news,                   // ⬅️ OVO MORA BITI POSLANO
     blacklist: blacklist,
     rules: rules,
+    botConfig,
+    guildChannels,
+    syncedRoles,
+    discordSync: syncStats,
     discordMembers: discordMemberCount,
     imagesCount: images.length,
     newsCount: news.length
@@ -1285,6 +1964,151 @@ app.post('/admin/blacklist/remove', requireAdmin, async (req, res) => {
   res.redirect('/admin');
 });
 
+app.post('/admin/bot/greetings', requireAdmin, async (req, res) => {
+  const botConfig = await loadBotConfig();
+  botConfig.welcome.channelId = String(req.body.welcomeChannelId || '').trim();
+  botConfig.welcome.message = String(req.body.welcomeMessage || '').trim() || DEFAULT_BOT_CONFIG.welcome.message;
+  await saveBotConfig(botConfig);
+  await logAction('Bot postavke: welcome ažuriran', req.user.username);
+  res.redirect('/admin#bot-settings');
+});
+
+app.post('/admin/bot/logging', requireAdmin, async (req, res) => {
+  const botConfig = await loadBotConfig();
+  botConfig.logging.channelId = String(req.body.logChannelId || '').trim();
+  await saveBotConfig(botConfig);
+  await logAction('Bot postavke: logging ažuriran', req.user.username);
+  res.redirect('/admin#bot-settings');
+});
+
+app.post('/admin/bot/gallery', requireAdmin, async (req, res) => {
+  const botConfig = await loadBotConfig();
+  botConfig.gallery.channelId = String(req.body.galleryChannelId || '').trim();
+  await saveBotConfig(botConfig);
+  await syncGalleryFromDiscordChannel().catch(() => 0);
+  await logAction('Bot postavke: gallery kanal ažuriran', req.user.username);
+  res.redirect('/admin#bot-settings');
+});
+
+app.post('/admin/bot/tickets', requireAdmin, async (req, res) => {
+  const botConfig = await loadBotConfig();
+  const ts = botConfig.ticketSystem;
+
+  ts.categoryId = String(req.body.ticketCategoryId || '').trim();
+  ts.logChannelId = String(req.body.ticketLogChannelId || '').trim();
+  ts.supportRoleId = String(req.body.ticketSupportRoleId || '').trim();
+  ts.autoCloseHours = Number(req.body.autoCloseHours) || DEFAULT_BOT_CONFIG.ticketSystem.autoCloseHours;
+  ts.reminderHours = Number(req.body.reminderHours) || DEFAULT_BOT_CONFIG.ticketSystem.reminderHours;
+  ts.types.igranje.questions = String(req.body.igranjeQuestions || '')
+    .split('\n')
+    .map((q) => q.trim())
+    .filter(Boolean);
+  ts.types.zalba.questions = String(req.body.zalbaQuestions || '')
+    .split('\n')
+    .map((q) => q.trim())
+    .filter(Boolean);
+  ts.types.modovi.questions = String(req.body.modoviQuestions || '')
+    .split('\n')
+    .map((q) => q.trim())
+    .filter(Boolean);
+  ts.messages.reminder = String(req.body.reminderMessage || '').trim() || DEFAULT_BOT_CONFIG.ticketSystem.messages.reminder;
+  ts.messages.autoClose = String(req.body.autoCloseMessage || '').trim() || DEFAULT_BOT_CONFIG.ticketSystem.messages.autoClose;
+
+  await saveBotConfig(botConfig);
+  await logAction('Bot postavke: ticket sistem ažuriran', req.user.username);
+  res.redirect('/admin#bot-settings');
+});
+
+app.post('/admin/bot/embeds', requireAdmin, async (req, res) => {
+  const channelId = String(req.body.embedChannelId || '').trim();
+  if (!channelId) return res.redirect('/admin#bot-settings');
+
+  const channel = await discordClient.channels.fetch(channelId).catch(() => null);
+  if (!channel || !channel.isTextBased()) return res.redirect('/admin#bot-settings');
+
+  const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+  const embed = new EmbedBuilder();
+  const title = String(req.body.title || '').trim();
+  const description = String(req.body.description || '').trim();
+  const color = String(req.body.color || '').trim();
+  const imageUrl = String(req.body.imageUrl || '').trim();
+  const thumbnailUrl = String(req.body.thumbnailUrl || '').trim();
+  const footerText = String(req.body.footerText || '').trim();
+  const footerIcon = String(req.body.footerIcon || '').trim();
+  const authorName = String(req.body.authorName || '').trim();
+  const authorIcon = String(req.body.authorIcon || '').trim();
+  const normalMessage = String(req.body.normalMessage || '').trim();
+  const launcherButtonLabel = String(req.body.launcherButtonLabel || '').trim();
+  const launcherButtonUrl = String(req.body.launcherButtonUrl || '').trim();
+
+  if (title) embed.setTitle(title);
+  if (description) embed.setDescription(description);
+  if (color) embed.setColor(color);
+  if (imageUrl) embed.setImage(imageUrl);
+  if (thumbnailUrl) embed.setThumbnail(thumbnailUrl);
+  if (authorName || authorIcon) {
+    embed.setAuthor({ name: authorName || 'Info', iconURL: authorIcon || undefined });
+  }
+  if (footerText || footerIcon) {
+    embed.setFooter({ text: footerText || 'Slavonska Ravnica', iconURL: footerIcon || undefined });
+  }
+  if (req.body.timestamp === 'on') {
+    embed.setTimestamp(new Date());
+  }
+
+  const components = [];
+  if (launcherButtonUrl) {
+    components.push(
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setLabel(launcherButtonLabel || 'Otvori link')
+          .setStyle(ButtonStyle.Link)
+          .setURL(launcherButtonUrl)
+      )
+    );
+  }
+
+  await channel.send({
+    content: normalMessage || undefined,
+    embeds: [embed],
+    components,
+  });
+
+  const botConfig = await loadBotConfig();
+  botConfig.embeds.push({
+    channelId,
+    title,
+    description,
+    color,
+    imageUrl,
+    thumbnailUrl,
+    footerText,
+    footerIcon,
+    authorName,
+    authorIcon,
+    normalMessage,
+    launcherButtonLabel,
+    launcherButtonUrl,
+    timestamp: req.body.timestamp === 'on',
+    sentAt: new Date().toISOString(),
+  });
+  botConfig.embeds = botConfig.embeds.slice(-20);
+  await saveBotConfig(botConfig);
+  await logAction('Bot postavke: embed poslan', req.user.username);
+  res.redirect('/admin#bot-settings');
+});
+
+app.post('/admin/discord-sync', requireAdmin, async (req, res) => {
+  await syncDiscordStateToDatabase().catch((err) => {
+    console.log('MANUAL DISCORD SYNC ERROR:', err.message);
+  });
+  await syncGalleryFromDiscordChannel().catch((err) => {
+    console.log('MANUAL GALLERY SYNC ERROR:', err.message);
+  });
+  await logAction('Discord sinkronizacija pokrenuta ručno', req.user.username);
+  res.redirect('/admin#bot-settings');
+});
+
 /* ===== STATISTIKA (G-Portal) ===== */
 
 app.get('/statistika', async (req, res) => {
@@ -1320,12 +2144,12 @@ app.get('/galerija', async (req, res) => {
   let isAdmin = false;
 
   if (req.user) {
-    roles = req.user.roles?.length ? req.user.roles : await getMemberRoles(req.user.id);
+    roles = await hydrateUserRoles(req.user);
     canUpload = canUploadWithRoles(req.user, roles);
     isAdmin = isGalleryAdminByRoles(roles);
   }
 
-  const gallery = await loadGallery();
+  const gallery = await loadGallery(req.user?.id || '');
   const openImage = String(req.query.open || '').trim();
 
   res.render('galerija', {
@@ -1370,6 +2194,14 @@ app.post('/upload', async (req, res) => {
         imageData: req.file.buffer,
         reactions: { like: 0, heart: 0, sr: 0 },
       });
+      await publishGalleryImageToDiscord(
+        {
+          filename,
+          uploaderName: req.user.username,
+          description,
+        },
+        req.file.buffer
+      );
       return res.redirect('/galerija');
     } catch (e) {
       console.log('UPLOAD IMAGE ERROR:', e.message);
@@ -1420,7 +2252,7 @@ app.post('/react/:image', async (req, res) => {
   }
 
   const reactionType = String(req.body.reaction || '').trim();
-  const added = await addGalleryReaction(req.params.image, reactionType);
+  const added = await toggleGalleryReaction(req.params.image, req.user.id, reactionType);
   if (!added) return res.redirect(getGalleryRedirectTarget(req, req.params.image));
   res.redirect(getGalleryRedirectTarget(req, req.params.image));
 });
@@ -1474,7 +2306,7 @@ app.get(
   passport.authenticate('discord', { failureRedirect: '/' }),
   async (req, res) => {
     try {
-      const roles = await getMemberRoles(req.user.id);
+      const roles = await hydrateUserRoles(req.user);
       req.user.roles = roles;
     } catch (err) {
       console.log('ROLE FETCH ERROR:', err.message);
