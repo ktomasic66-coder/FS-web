@@ -64,6 +64,7 @@ const PLAYER_ROLE_ID = process.env.PLAYER_ROLE_ID; // npr Player role
 const ADMIN_ROLE_ID = process.env.ADMIN_ROLE_ID;   // npr Admin role
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GALLERY_CHANNEL_ID = process.env.GALLERY_CHANNEL_ID || '';
+const WEB_LOGIN_LOG_CHANNEL_ID = '1271570784866799718';
 
 /* ===== GLOBAL ROLE IDS (za admin panel + badge) ===== */
 
@@ -1558,6 +1559,35 @@ async function logAction(action, adminUser) {
   );
 }
 
+async function sendWebLoginDiscordLog(user) {
+  if (!user || !discordClient.isReady()) return;
+
+  let channelId = WEB_LOGIN_LOG_CHANNEL_ID;
+  try {
+    const botConfig = await loadBotConfig();
+    channelId = String(botConfig.logging?.channelId || WEB_LOGIN_LOG_CHANNEL_ID || '').trim();
+  } catch {
+    channelId = WEB_LOGIN_LOG_CHANNEL_ID;
+  }
+
+  if (!channelId) return;
+
+  const channel = await discordClient.channels.fetch(channelId).catch(() => null);
+  if (!channel || !channel.isTextBased()) return;
+
+  const roleNames = Array.isArray(user.roles) ? user.roles.map((role) => role.name).filter(Boolean) : [];
+  const lines = [
+    'Prijava na web stranicu',
+    `Korisnik: ${user.username} (${user.id})`,
+    `Vrijeme: ${new Date().toLocaleString('hr-HR')}`,
+    roleNames.length ? `Role: ${roleNames.join(', ')}` : '',
+  ].filter(Boolean);
+
+  await channel.send(lines.join('\n')).catch((err) => {
+    console.log('WEB LOGIN LOG ERROR:', err.message);
+  });
+}
+
 /* ----- Blacklist ----- */
 
 async function loadBlacklist() {
@@ -2452,6 +2482,8 @@ app.get(
       console.log('ROLE FETCH ERROR:', err.message);
       req.user.roles = [];
     }
+
+    await sendWebLoginDiscordLog(req.user);
 
     res.redirect('/');
   }
