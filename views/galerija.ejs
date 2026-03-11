@@ -309,12 +309,12 @@ const uploadForm = document.getElementById('gallery-upload-form');
 if (uploadForm && uploadBlocked) {
     uploadForm.addEventListener('submit', function (event) {
         event.preventDefault();
-        showGalleryToast('Trenutno nemas dozvolu za upload.');
+        showGalleryToast('Trenutno si na BLACKLISTI i nemaš dozvolu za upload.');
     });
 }
 
 if (uploadNotice === 'blocked') {
-    showGalleryToast('Trenutno nemas dozvolu za upload.');
+    showGalleryToast('Trenutno si na BLACKLISTI i nemaš dozvolu za upload.');
 }
 </script>
 

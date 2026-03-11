@@ -1699,7 +1699,6 @@ async function publishGalleryImageToDiscord(item, buffer) {
     'Nova slika sa web galerije',
     item.description ? `Opis: ${item.description}` : '',
     item.uploaderName ? `Autor: ${item.uploaderName}` : '',
-    item.filename ? `WEB_FILE:${item.filename}` : '',
   ]
     .filter(Boolean)
     .join('\n');
