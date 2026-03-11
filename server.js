@@ -135,7 +135,11 @@ const DEFAULT_BOT_CONFIG = {
 /* ================= DISCORD BOT ================= */
 
 const discordClient = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+  ],
 });
 
 let discordMemberCount = 0;
