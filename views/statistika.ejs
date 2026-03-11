@@ -21,7 +21,10 @@
         <li><a href="/moja-farma">Moja Farma</a></li>
         <% if(user){ %>
             <li><a href="/profile">Profil</a></li>
-            <li><a href="/admin">Admin</a></li>
+            <% if (canAdminNav) { %>
+                <li><a href="/admin">Admin</a></li>
+                <li><a href="/bot-settings">Bot</a></li>
+            <% } %>
             <li><a href="/logout">Logout</a></li>
         <% } else { %>
             <li><a href="/auth/discord">Login</a></li>

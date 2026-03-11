@@ -1897,6 +1897,18 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
+app.use(async (req, res, next) => {
+  res.locals.user = req.user || null;
+  res.locals.canAdminNav = false;
+
+  if (req.user) {
+    const roles = await hydrateUserRoles(req.user);
+    res.locals.canAdminNav = hasAnyRole({ roles }, [ROLE_IDS.OWNER, ROLE_IDS.CO_OWNER, ROLE_IDS.ADMIN]);
+  }
+
+  next();
+});
+
 /* ================= ROUTES ================= */
 
 app.get('/', async (req, res) => {
@@ -1970,6 +1982,34 @@ app.get('/admin', requireAdmin, async (req, res) => {
     newsCount: news.length
   });
 
+});
+
+app.get('/bot-settings', requireAdmin, async (req, res) => {
+  await hydrateUserRoles(req.user);
+
+  const botConfig = await loadBotConfig();
+  const syncedRoles = await loadSyncedGuildRoles();
+  const syncStats = await loadDiscordSyncStats();
+
+  let guildChannels = [];
+  if (mainGuild) {
+    await mainGuild.channels.fetch().catch(() => null);
+    guildChannels = mainGuild.channels.cache
+      .filter((channel) => channel.isTextBased?.() || channel.type === 0 || channel.type === 5)
+      .map((channel) => ({
+        id: channel.id,
+        name: channel.name,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'hr'));
+  }
+
+  res.render('bot-settings', {
+    user: req.user,
+    botConfig,
+    guildChannels,
+    syncedRoles,
+    discordSync: syncStats,
+  });
 });
 
 /* ===== ADMIN: NEWS ===== */

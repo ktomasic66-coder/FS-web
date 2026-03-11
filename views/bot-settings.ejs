@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Bot Postavke</title>
+  <link rel="icon" type="image/png" href="/images/logo.png">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="logo">
+    <img src="/images/logo.png" alt="SR Logo">
+    <span>Slavonska Ravnica</span>
+  </div>
+  <ul>
+    <li><a href="/">Početna</a></li>
+    <li><a href="/galerija">Galerija</a></li>
+    <li><a href="/pravila">Pravila</a></li>
+    <li><a href="/statistika">Statistika</a></li>
+    <li><a href="/moja-farma">Moja Farma</a></li>
+    <% if (user) { %>
+      <li><a href="/profile">Profil</a></li>
+      <% if (canAdminNav) { %>
+        <li><a href="/admin">Admin</a></li>
+        <li><a href="/bot-settings">Bot</a></li>
+      <% } %>
+      <li><a href="/logout">Logout</a></li>
+    <% } else { %>
+      <li><a href="/auth/discord">Login</a></li>
+    <% } %>
+  </ul>
+</nav>
+
+<section class="admin-shell">
+  <div class="admin-topbar">
+    <div>
+      <p class="admin-kicker">Discord upravljanje</p>
+      <h1>Bot Postavke</h1>
+      <p class="admin-subtitle">Centralne postavke Discord bota odvojene od glavnog admin panela.</p>
+    </div>
+  </div>
+
+  <div class="admin-stats-grid">
+    <div class="admin-stat-card">
+      <span class="admin-stat-label">Sync role</span>
+      <strong><%= discordSync ? discordSync.rolesCount : 0 %></strong>
+    </div>
+    <div class="admin-stat-card">
+      <span class="admin-stat-label">Sync članovi</span>
+      <strong><%= discordSync ? discordSync.membersCount : 0 %></strong>
+    </div>
+    <div class="admin-stat-card">
+      <span class="admin-stat-label">Veze rola</span>
+      <strong><%= discordSync ? discordSync.memberRolesCount : 0 %></strong>
+    </div>
+    <div class="admin-stat-card">
+      <span class="admin-stat-label">Embeds</span>
+      <strong><%= botConfig && botConfig.embeds ? botConfig.embeds.length : 0 %></strong>
+    </div>
+  </div>
+
+  <% const bot = botConfig || {}; const ticket = bot.ticketSystem || {}; %>
+  <div class="admin-wrapper">
+    <div class="admin-section">
+      <div class="admin-header">
+        <div>
+          <span class="admin-header-label">Discord Bot</span>
+          <small>Sinkronizacija, welcome, logging i galerija</small>
+        </div>
+        <span class="admin-header-count"><%= syncedRoles ? syncedRoles.length : 0 %></span>
+      </div>
+
+      <div class="admin-content open">
+        <div class="admin-rules-layout">
+          <div class="admin-rules-sidebar">
+            <form method="POST" action="/admin/discord-sync" class="admin-form compact-form">
+              <label class="admin-field-label">Discord sinkronizacija</label>
+              <p class="admin-empty">Role: <%= discordSync ? discordSync.rolesCount : 0 %> | Članovi: <%= discordSync ? discordSync.membersCount : 0 %> | Veze: <%= discordSync ? discordSync.memberRolesCount : 0 %></p>
+              <button type="submit" class="admin-action-btn">Pokreni sync</button>
+            </form>
+
+            <form method="POST" action="/admin/bot/greetings" class="admin-form compact-form">
+              <label class="admin-field-label">Welcome postavke</label>
+              <input type="text" name="welcomeChannelId" value="<%= bot.welcome ? bot.welcome.channelId : '' %>" list="guild-channels" placeholder="Welcome kanal ID">
+              <textarea name="welcomeMessage" placeholder="Dobrodošlica..."><%= bot.welcome ? bot.welcome.message : '' %></textarea>
+              <button type="submit" class="admin-secondary-btn">Spremi welcome</button>
+            </form>
+
+            <form method="POST" action="/admin/bot/logging" class="admin-form compact-form">
+              <label class="admin-field-label">Log kanal</label>
+              <input type="text" name="logChannelId" value="<%= bot.logging ? bot.logging.channelId : '' %>" list="guild-channels" placeholder="Log kanal ID">
+              <button type="submit" class="admin-secondary-btn">Spremi logging</button>
+            </form>
+
+            <form method="POST" action="/admin/bot/gallery" class="admin-form compact-form">
+              <label class="admin-field-label">Galerija kanal</label>
+              <input type="text" name="galleryChannelId" value="<%= bot.gallery ? bot.gallery.channelId : '' %>" list="guild-channels" placeholder="Discord kanal za slike">
+              <button type="submit" class="admin-secondary-btn">Spremi galeriju</button>
+            </form>
+          </div>
+
+          <div class="admin-rules-list">
+            <div class="admin-content-title-row">
+              <h3 class="admin-content-title">Ticket sistem</h3>
+              <span class="admin-pill"><%= syncedRoles ? syncedRoles.length : 0 %> rola</span>
+            </div>
+
+            <form method="POST" action="/admin/bot/tickets" class="admin-form admin-rule-form">
+              <input type="text" name="ticketCategoryId" value="<%= ticket.categoryId || '' %>" list="guild-channels" placeholder="Ticket kategorija ID">
+              <input type="text" name="ticketLogChannelId" value="<%= ticket.logChannelId || '' %>" list="guild-channels" placeholder="Ticket log kanal ID">
+              <input type="text" name="ticketSupportRoleId" value="<%= ticket.supportRoleId || '' %>" list="guild-roles" placeholder="Support role ID">
+              <input type="number" name="autoCloseHours" min="1" value="<%= ticket.autoCloseHours || 48 %>" placeholder="Auto close sati">
+              <input type="number" name="reminderHours" min="1" value="<%= ticket.reminderHours || 3 %>" placeholder="Reminder sati">
+              <textarea name="igranjeQuestions" rows="6" placeholder="Igranje pitanja"><%= ticket.types && ticket.types.igranje ? ticket.types.igranje.questions.join('\n') : '' %></textarea>
+              <textarea name="zalbaQuestions" rows="4" placeholder="Žalba pitanja"><%= ticket.types && ticket.types.zalba ? ticket.types.zalba.questions.join('\n') : '' %></textarea>
+              <textarea name="modoviQuestions" rows="4" placeholder="Modovi pitanja"><%= ticket.types && ticket.types.modovi ? ticket.types.modovi.questions.join('\n') : '' %></textarea>
+              <textarea name="reminderMessage" rows="4" placeholder="Reminder poruka"><%= ticket.messages ? ticket.messages.reminder : '' %></textarea>
+              <textarea name="autoCloseMessage" rows="4" placeholder="Auto close poruka"><%= ticket.messages ? ticket.messages.autoClose : '' %></textarea>
+              <div class="admin-inline-actions">
+                <button type="submit" class="admin-action-btn">Spremi ticket postavke</button>
+              </div>
+            </form>
+
+            <div class="admin-divider"></div>
+
+            <div class="admin-content-title-row">
+              <h3 class="admin-content-title">Pošalji embed</h3>
+              <span class="admin-pill"><%= bot.embeds ? bot.embeds.length : 0 %></span>
+            </div>
+
+            <form method="POST" action="/admin/bot/embeds" class="admin-form admin-rule-form">
+              <input type="text" name="embedChannelId" list="guild-channels" placeholder="Kanal ID" required>
+              <input type="text" name="title" placeholder="Naslov embed-a">
+              <textarea name="description" rows="4" placeholder="Opis embed-a"></textarea>
+              <input type="text" name="color" placeholder="#2f855a">
+              <input type="text" name="authorName" placeholder="Autor">
+              <input type="text" name="authorIcon" placeholder="Author icon URL">
+              <input type="text" name="footerText" placeholder="Footer tekst">
+              <input type="text" name="footerIcon" placeholder="Footer icon URL">
+              <input type="text" name="thumbnailUrl" placeholder="Thumbnail URL">
+              <input type="text" name="imageUrl" placeholder="Image URL">
+              <input type="text" name="launcherButtonLabel" placeholder="Tekst dugmeta">
+              <input type="text" name="launcherButtonUrl" placeholder="Link dugmeta">
+              <textarea name="normalMessage" rows="2" placeholder="Običan tekst uz embed"></textarea>
+              <label class="admin-field-label"><input type="checkbox" name="timestamp" checked> Dodaj timestamp</label>
+              <div class="admin-inline-actions">
+                <button type="submit" class="admin-action-btn">Pošalji embed</button>
+              </div>
+            </form>
+
+            <div class="admin-divider"></div>
+
+            <div class="admin-content-title-row">
+              <h3 class="admin-content-title">Sinkronizirane role</h3>
+              <span class="admin-pill"><%= syncedRoles ? syncedRoles.length : 0 %></span>
+            </div>
+
+            <% if (syncedRoles && syncedRoles.length > 0) { %>
+              <div class="all-roles">
+                <% syncedRoles.forEach(role => { %>
+                  <span class="role-pill" style="background:<%= role.color || '#444' %>"><%= role.name %></span>
+                <% }) %>
+              </div>
+            <% } else { %>
+              <p class="admin-empty">Role još nisu sinkronizirane.</p>
+            <% } %>
+          </div>
+        </div>
+
+        <datalist id="guild-channels">
+          <% (guildChannels || []).forEach(channel => { %>
+            <option value="<%= channel.id %>"><%= channel.name %></option>
+          <% }) %>
+        </datalist>
+
+        <datalist id="guild-roles">
+          <% (syncedRoles || []).forEach(role => { %>
+            <option value="<%= role.id %>"><%= role.name %></option>
+          <% }) %>
+        </datalist>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
