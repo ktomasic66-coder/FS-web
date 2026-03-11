@@ -149,12 +149,11 @@ discordClient.once('clientReady', async () => {
 
   try {
     mainGuild = await discordClient.guilds.fetch(GUILD_ID);
-    await mainGuild.members.fetch(); // cache members
     discordMemberCount = mainGuild.memberCount;
 
     console.log('📊 Discord članovi:', discordMemberCount);
-    await syncDiscordStateToDatabase();
     await syncGalleryFromDiscordChannel();
+    await syncDiscordStateToDatabase({ includeMembers: false });
   } catch (err) {
     console.log('❌ Guild error:', err.message);
   }
@@ -163,23 +162,49 @@ discordClient.once('clientReady', async () => {
 discordClient.on('guildMemberAdd', (member) => {
   if (member.guild.id !== GUILD_ID) return;
   discordMemberCount = member.guild.memberCount;
-  scheduleDiscordStateSync();
+  Promise.all([
+    upsertDiscordMember(member),
+    syncDiscordStateToDatabase({ includeMembers: false }),
+  ]).catch((err) => {
+    console.log('DISCORD MEMBER ADD SYNC ERROR:', err.message);
+  });
 });
 
 discordClient.on('guildMemberRemove', (member) => {
   if (member.guild.id !== GUILD_ID) return;
   discordMemberCount = member.guild.memberCount;
-  scheduleDiscordStateSync();
+  removeDiscordMember(member.id).catch((err) => {
+    console.log('DISCORD MEMBER REMOVE SYNC ERROR:', err.message);
+  });
 });
 
 discordClient.on('guildMemberUpdate', (_, member) => {
   if (member.guild.id !== GUILD_ID) return;
-  scheduleDiscordStateSync();
+  upsertDiscordMember(member).catch((err) => {
+    console.log('DISCORD MEMBER UPDATE SYNC ERROR:', err.message);
+  });
 });
 
-discordClient.on('roleCreate', () => scheduleDiscordStateSync());
-discordClient.on('roleDelete', () => scheduleDiscordStateSync());
-discordClient.on('roleUpdate', () => scheduleDiscordStateSync());
+discordClient.on('roleCreate', (role) => {
+  if (role.guild.id !== GUILD_ID) return;
+  upsertDiscordRole(role).catch((err) => {
+    console.log('DISCORD ROLE CREATE SYNC ERROR:', err.message);
+  });
+});
+
+discordClient.on('roleDelete', (role) => {
+  if (role.guild.id !== GUILD_ID) return;
+  removeDiscordRole(role.id).catch((err) => {
+    console.log('DISCORD ROLE DELETE SYNC ERROR:', err.message);
+  });
+});
+
+discordClient.on('roleUpdate', (_, role) => {
+  if (role.guild.id !== GUILD_ID) return;
+  upsertDiscordRole(role).catch((err) => {
+    console.log('DISCORD ROLE UPDATE SYNC ERROR:', err.message);
+  });
+});
 
 discordClient.on('messageCreate', (message) => {
   if (message.author?.bot) return;
@@ -1284,35 +1309,90 @@ async function loadDiscordSyncStats() {
   };
 }
 
-async function syncDiscordStateToDatabase() {
+async function upsertDiscordRole(role) {
+  if (!useMySql || !dbPool || !mainGuild || !role || role.name === '@everyone') return;
+
+  await dbPool.query(
+    `INSERT INTO discord_roles (role_id, guild_id, name, color, position)
+     VALUES (?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+       guild_id = VALUES(guild_id),
+       name = VALUES(name),
+       color = VALUES(color),
+       position = VALUES(position)`,
+    [
+      role.id,
+      mainGuild.id,
+      role.name,
+      role.hexColor && role.hexColor !== '#000000' ? role.hexColor : '#444444',
+      Number(role.position || 0),
+    ]
+  );
+}
+
+async function removeDiscordRole(roleId) {
+  if (!useMySql || !dbPool || !mainGuild || !roleId) return;
+
+  await dbPool.query('DELETE FROM discord_roles WHERE guild_id = ? AND role_id = ?', [mainGuild.id, String(roleId)]);
+  await dbPool.query('DELETE FROM discord_member_roles WHERE guild_id = ? AND role_id = ?', [mainGuild.id, String(roleId)]);
+}
+
+async function upsertDiscordMember(member) {
+  if (!useMySql || !dbPool || !mainGuild || !member) return;
+
+  await dbPool.query(
+    `INSERT INTO discord_members (user_id, guild_id, username, global_name, avatar, joined_at)
+     VALUES (?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+       guild_id = VALUES(guild_id),
+       username = VALUES(username),
+       global_name = VALUES(global_name),
+       avatar = VALUES(avatar),
+       joined_at = VALUES(joined_at)`,
+    [
+      member.id,
+      mainGuild.id,
+      member.user.username,
+      member.user.globalName || null,
+      member.user.avatar || null,
+      member.joinedAt ? member.joinedAt.toISOString() : null,
+    ]
+  );
+
+  await dbPool.query('DELETE FROM discord_member_roles WHERE guild_id = ? AND user_id = ?', [mainGuild.id, member.id]);
+
+  const memberRoles = member.roles.cache
+    .filter((role) => role.name !== '@everyone')
+    .map((role) => role.id);
+
+  for (const roleId of memberRoles) {
+    await dbPool.query(
+      `INSERT INTO discord_member_roles (user_id, role_id, guild_id)
+       VALUES (?, ?, ?)`,
+      [member.id, roleId, mainGuild.id]
+    );
+  }
+}
+
+async function removeDiscordMember(userId) {
+  if (!useMySql || !dbPool || !mainGuild || !userId) return;
+
+  await dbPool.query('DELETE FROM discord_member_roles WHERE guild_id = ? AND user_id = ?', [mainGuild.id, String(userId)]);
+  await dbPool.query('DELETE FROM discord_members WHERE guild_id = ? AND user_id = ?', [mainGuild.id, String(userId)]);
+}
+
+async function syncDiscordStateToDatabase({ includeMembers = false } = {}) {
   if (!useMySql || !dbPool || !mainGuild) return;
 
   await mainGuild.roles.fetch();
-  await mainGuild.members.fetch();
 
   const roles = mainGuild.roles.cache
     .filter((role) => role.name !== '@everyone')
     .sort((a, b) => b.position - a.position);
-  const members = mainGuild.members.cache;
 
   const roleIds = roles.map((role) => role.id);
   for (const role of roles.values()) {
-    await dbPool.query(
-      `INSERT INTO discord_roles (role_id, guild_id, name, color, position)
-       VALUES (?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE
-         guild_id = VALUES(guild_id),
-         name = VALUES(name),
-         color = VALUES(color),
-         position = VALUES(position)`,
-      [
-        role.id,
-        mainGuild.id,
-        role.name,
-        role.hexColor && role.hexColor !== '#000000' ? role.hexColor : '#444444',
-        Number(role.position || 0),
-      ]
-    );
+    await upsertDiscordRole(role);
   }
 
   if (roleIds.length) {
@@ -1325,26 +1405,14 @@ async function syncDiscordStateToDatabase() {
     await dbPool.query('DELETE FROM discord_roles WHERE guild_id = ?', [mainGuild.id]);
   }
 
+  if (!includeMembers) return;
+
+  await mainGuild.members.fetch();
+  const members = mainGuild.members.cache;
   const memberIds = members.map((member) => member.id);
+
   for (const member of members.values()) {
-    await dbPool.query(
-      `INSERT INTO discord_members (user_id, guild_id, username, global_name, avatar, joined_at)
-       VALUES (?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE
-         guild_id = VALUES(guild_id),
-         username = VALUES(username),
-         global_name = VALUES(global_name),
-         avatar = VALUES(avatar),
-         joined_at = VALUES(joined_at)`,
-      [
-        member.id,
-        mainGuild.id,
-        member.user.username,
-        member.user.globalName || null,
-        member.user.avatar || null,
-        member.joinedAt ? member.joinedAt.toISOString() : null,
-      ]
-    );
+    await upsertDiscordMember(member);
   }
 
   if (memberIds.length) {
@@ -1361,21 +1429,6 @@ async function syncDiscordStateToDatabase() {
     await dbPool.query('DELETE FROM discord_members WHERE guild_id = ?', [mainGuild.id]);
     await dbPool.query('DELETE FROM discord_member_roles WHERE guild_id = ?', [mainGuild.id]);
   }
-
-  await dbPool.query('DELETE FROM discord_member_roles WHERE guild_id = ?', [mainGuild.id]);
-  for (const member of members.values()) {
-    const memberRoles = member.roles.cache
-      .filter((role) => role.name !== '@everyone')
-      .map((role) => role.id);
-
-    for (const roleId of memberRoles) {
-      await dbPool.query(
-        `INSERT INTO discord_member_roles (user_id, role_id, guild_id)
-         VALUES (?, ?, ?)`,
-        [member.id, roleId, mainGuild.id]
-      );
-    }
-  }
 }
 
 let discordSyncTimer = null;
@@ -1383,7 +1436,7 @@ let discordSyncTimer = null;
 function scheduleDiscordStateSync() {
   if (discordSyncTimer) clearTimeout(discordSyncTimer);
   discordSyncTimer = setTimeout(() => {
-    syncDiscordStateToDatabase().catch((err) => {
+    syncDiscordStateToDatabase({ includeMembers: false }).catch((err) => {
       console.log('DISCORD SYNC ERROR:', err.message);
     });
   }, 1500);
