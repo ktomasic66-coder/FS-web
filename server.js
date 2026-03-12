@@ -5,11 +5,11 @@ let mainGuild = null;
 const express = require('express');
 const mongoose = require('mongoose');
 
-// ===== MONGODB CONNECTION =====
+// ===== MONGODB CONNECTION (Mongoose - for legacy Farm model, optional) =====
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://mongo:OOvotyonHPYWjWuBLnbiBSUskMFrATIU@mongodb.railway.internal:27017';
 mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 10000 })
   .then(() => console.log('MongoDB connected (Slavonska Ravnica)'))
-  .catch(err => console.log('MongoDB connection error (Slavonska Ravnica):', err));
+  .catch(err => console.log('MongoDB (Mongoose) not available - OK, using MongoClient for bot data'));
 
 // ===== BOT DATABASE CONNECTION =====
 // Farmbuddy bot stores data via MONGO_URL (separate from mongoose MONGO_URI).
@@ -2353,33 +2353,36 @@ app.get('/moja-farma', async (req, res) => {
 
         // Find player link by Discord user ID
         const playerLink = await db.collection('player_links').findOne({ discordUserId: req.user.id });
-        console.log('[MOJA-FARMA] Player link found:', playerLink ? ('farmId=' + playerLink.defaultFarmId) : 'NONE');
+        console.log('[MOJA-FARMA] Player link:', JSON.stringify(playerLink, null, 2));
 
-        if (playerLink) {
-          let farmId = playerLink.defaultFarmId;
+        // Even without a player_link, try to find farm data
+        let farmId = playerLink ? playerLink.defaultFarmId : null;
 
-          // Fallback: if defaultFarmId is null, find farm via players collection using uniqueUserId
-          if (!farmId && playerLink.uniqueUserId) {
-            const player = await db.collection('players').findOne({ uniqueUserId: playerLink.uniqueUserId });
-            if (player && player.farmId) {
-              farmId = player.farmId;
-              console.log('[MOJA-FARMA] Fallback: found farmId via player uniqueUserId:', farmId);
-            }
+        // Fallback 1: find farm via players collection using uniqueUserId
+        if (!farmId && playerLink && playerLink.uniqueUserId) {
+          console.log('[MOJA-FARMA] Fallback 1: searching players by uniqueUserId:', playerLink.uniqueUserId);
+          const player = await db.collection('players').findOne({ uniqueUserId: playerLink.uniqueUserId });
+          if (player && player.farmId) {
+            farmId = player.farmId;
+            console.log('[MOJA-FARMA] Fallback 1 success: farmId =', farmId);
+          } else {
+            console.log('[MOJA-FARMA] Fallback 1: no player found or no farmId');
           }
-          // Second fallback: find any player matching this discord user's name
-          if (!farmId) {
-            const allPlayers = await db.collection('players').find().toArray();
-            if (allPlayers.length > 0) {
-              // Try to find by name match, otherwise use first farm available
-              const firstPlayer = allPlayers.find(p => p.farmId) || allPlayers[0];
-              if (firstPlayer && firstPlayer.farmId) {
-                farmId = firstPlayer.farmId;
-                console.log('[MOJA-FARMA] Fallback: using first available farm:', farmId);
-              }
-            }
-          }
+        }
 
-          const farm = farmId ? await db.collection('farms').findOne({ farmId }) : null;
+        // Fallback 2: use first available farm
+        if (!farmId) {
+          console.log('[MOJA-FARMA] Fallback 2: searching all farms...');
+          const allFarms = await db.collection('farms').find().toArray();
+          console.log('[MOJA-FARMA] Available farms:', allFarms.map(f => ({ farmId: f.farmId, name: f.name })));
+          if (allFarms.length > 0) {
+            farmId = allFarms[0].farmId;
+            console.log('[MOJA-FARMA] Fallback 2 success: using farmId =', farmId);
+          }
+        }
+
+        if (farmId) {
+          const farm = await db.collection('farms').findOne({ farmId });
           console.log('[MOJA-FARMA] Farm found:', farm ? farm.name : 'NONE');
 
           if (farm) {
