@@ -11,56 +11,46 @@ mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 10000 })
   .then(() => console.log('MongoDB connected (Slavonska Ravnica)'))
   .catch(err => console.log('MongoDB connection error (Slavonska Ravnica):', err));
 
-// ===== BOT DATABASE AUTO-DISCOVERY =====
-// Farmbuddy bot may store data in a different database than the mongoose default.
-// This helper finds the database containing 'player_links' collection and caches it.
+// ===== BOT DATABASE CONNECTION =====
+// Farmbuddy bot stores data via MONGO_URL (separate from mongoose MONGO_URI).
+// We use a direct MongoClient to connect to the exact same database the bot uses.
+const { MongoClient } = require('mongodb');
 let _botDb = null;
-let _botDbSearched = false;
+let _botClient = null;
 
 async function getBotDb() {
   if (_botDb) return _botDb;
-  if (_botDbSearched) return null;
+
+  // Use MONGO_URL (same as farmbuddy bot) — fall back to MONGO_URI if not set
+  const botMongoUrl = process.env.MONGO_URL || process.env.MONGO_URI || MONGO_URI;
+  if (!botMongoUrl) {
+    console.error('[BOT-DB] No MONGO_URL or MONGO_URI environment variable set');
+    return null;
+  }
 
   try {
-    const client = mongoose.connection.getClient();
+    console.log('[BOT-DB] Connecting to bot database...');
+    _botClient = new MongoClient(botMongoUrl, { serverSelectionTimeoutMS: 10000 });
+    await _botClient.connect();
+    _botDb = _botClient.db();
+    console.log('[BOT-DB] Connected to bot database:', _botDb.databaseName);
 
-    // First check the current mongoose database
-    const currentDb = mongoose.connection.db;
-    if (currentDb) {
-      const cols = await currentDb.listCollections({ name: 'player_links' }).toArray();
-      if (cols.length > 0) {
-        _botDb = currentDb;
-        _botDbSearched = true;
-        console.log('[BOT-DB] Found bot data in mongoose database:', currentDb.databaseName);
-        return _botDb;
-      }
+    // Verify player_links collection exists
+    const cols = await _botDb.listCollections({ name: 'player_links' }).toArray();
+    if (cols.length > 0) {
+      console.log('[BOT-DB] player_links collection confirmed');
+    } else {
+      console.log('[BOT-DB] WARNING: player_links collection not found in database:', _botDb.databaseName);
+      // List all collections for debugging
+      const allCols = await _botDb.listCollections().toArray();
+      console.log('[BOT-DB] Available collections:', allCols.map(c => c.name));
     }
 
-    // Search all other databases
-    const adminDb = client.db().admin();
-    const dbList = await adminDb.listDatabases();
-    console.log('[BOT-DB] Searching databases:', dbList.databases.map(d => d.name));
-
-    for (const dbInfo of dbList.databases) {
-      if (['admin', 'local', 'config'].includes(dbInfo.name)) continue;
-      if (currentDb && dbInfo.name === currentDb.databaseName) continue;
-
-      const testDb = client.db(dbInfo.name);
-      const cols = await testDb.listCollections({ name: 'player_links' }).toArray();
-      if (cols.length > 0) {
-        _botDb = testDb;
-        _botDbSearched = true;
-        console.log('[BOT-DB] Found bot data in database:', dbInfo.name);
-        return _botDb;
-      }
-    }
-
-    _botDbSearched = true;
-    console.log('[BOT-DB] player_links collection not found in any database');
-    return null;
+    return _botDb;
   } catch (err) {
-    console.error('[BOT-DB] Error discovering bot database:', err.message);
-    _botDbSearched = true;
+    console.error('[BOT-DB] Error connecting to bot database:', err.message);
+    _botClient = null;
+    _botDb = null;
     return null;
   }
 }
