@@ -11,6 +11,60 @@ mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 10000 })
   .then(() => console.log('MongoDB connected (Slavonska Ravnica)'))
   .catch(err => console.log('MongoDB connection error (Slavonska Ravnica):', err));
 
+// ===== BOT DATABASE AUTO-DISCOVERY =====
+// Farmbuddy bot may store data in a different database than the mongoose default.
+// This helper finds the database containing 'player_links' collection and caches it.
+let _botDb = null;
+let _botDbSearched = false;
+
+async function getBotDb() {
+  if (_botDb) return _botDb;
+  if (_botDbSearched) return null;
+
+  try {
+    const client = mongoose.connection.getClient();
+
+    // First check the current mongoose database
+    const currentDb = mongoose.connection.db;
+    if (currentDb) {
+      const cols = await currentDb.listCollections({ name: 'player_links' }).toArray();
+      if (cols.length > 0) {
+        _botDb = currentDb;
+        _botDbSearched = true;
+        console.log('[BOT-DB] Found bot data in mongoose database:', currentDb.databaseName);
+        return _botDb;
+      }
+    }
+
+    // Search all other databases
+    const adminDb = client.db().admin();
+    const dbList = await adminDb.listDatabases();
+    console.log('[BOT-DB] Searching databases:', dbList.databases.map(d => d.name));
+
+    for (const dbInfo of dbList.databases) {
+      if (['admin', 'local', 'config'].includes(dbInfo.name)) continue;
+      if (currentDb && dbInfo.name === currentDb.databaseName) continue;
+
+      const testDb = client.db(dbInfo.name);
+      const cols = await testDb.listCollections({ name: 'player_links' }).toArray();
+      if (cols.length > 0) {
+        _botDb = testDb;
+        _botDbSearched = true;
+        console.log('[BOT-DB] Found bot data in database:', dbInfo.name);
+        return _botDb;
+      }
+    }
+
+    _botDbSearched = true;
+    console.log('[BOT-DB] player_links collection not found in any database');
+    return null;
+  } catch (err) {
+    console.error('[BOT-DB] Error discovering bot database:', err.message);
+    _botDbSearched = true;
+    return null;
+  }
+}
+
 // ===== FARM MODEL (Slavonska Ravnica) =====
 const farmSchema = new mongoose.Schema({
   userId: String,
@@ -2298,42 +2352,52 @@ app.get('/statistika', async (req, res) => {
 app.get('/moja-farma', async (req, res) => {
   let farmData = null;
 
-  if (req.user && mongoose.connection.readyState === 1) {
+  if (req.user) {
     try {
-      const db = mongoose.connection.db;
+      const db = await getBotDb();
 
-      // Find player link by Discord user ID
-      const playerLink = await db.collection('player_links').findOne({ discordUserId: req.user.id });
+      if (!db) {
+        console.log('[MOJA-FARMA] Bot database not available');
+      } else {
+        console.log('[MOJA-FARMA] Querying for Discord user:', req.user.id, '(' + req.user.username + ')');
 
-      if (playerLink) {
-        const farmId = playerLink.defaultFarmId;
-        const farm = farmId ? await db.collection('farms').findOne({ farmId }) : null;
+        // Find player link by Discord user ID
+        const playerLink = await db.collection('player_links').findOne({ discordUserId: req.user.id });
+        console.log('[MOJA-FARMA] Player link found:', playerLink ? ('farmId=' + playerLink.defaultFarmId) : 'NONE');
 
-        if (farm) {
-          const [fields, vehicles, silos, productions, animals, players] = await Promise.all([
-            db.collection('fields').find({ ownerFarmId: farmId }).toArray(),
-            db.collection('vehicles').find({ farmId }).toArray(),
-            db.collection('silos').find({ farmId }).toArray(),
-            db.collection('productions').find({ farmId }).toArray(),
-            db.collection('animals').find({ farmId }).toArray(),
-            db.collection('players').find({ farmId }).toArray(),
-          ]);
+        if (playerLink) {
+          const farmId = playerLink.defaultFarmId;
+          const farm = farmId ? await db.collection('farms').findOne({ farmId }) : null;
+          console.log('[MOJA-FARMA] Farm found:', farm ? farm.name : 'NONE');
 
-          farmData = {
-            farmId: farm.farmId,
-            name: farm.name || ('Farma ' + farm.farmId),
-            balance: farm.balance || 0,
-            fields,
-            vehicles,
-            silos,
-            productions,
-            animals,
-            players,
-          };
+          if (farm) {
+            const [fields, vehicles, silos, productions, animals, players] = await Promise.all([
+              db.collection('fields').find({ ownerFarmId: farmId }).toArray(),
+              db.collection('vehicles').find({ farmId }).toArray(),
+              db.collection('silos').find({ farmId }).toArray(),
+              db.collection('productions').find({ farmId }).toArray(),
+              db.collection('animals').find({ farmId }).toArray(),
+              db.collection('players').find({ farmId }).toArray(),
+            ]);
+
+            console.log('[MOJA-FARMA] Data counts - fields:', fields.length, 'vehicles:', vehicles.length, 'silos:', silos.length, 'productions:', productions.length, 'animals:', animals.length, 'players:', players.length);
+
+            farmData = {
+              farmId: farm.farmId,
+              name: farm.name || ('Farma ' + farm.farmId),
+              balance: farm.balance || 0,
+              fields,
+              vehicles,
+              silos,
+              productions,
+              animals,
+              players,
+            };
+          }
         }
       }
     } catch (err) {
-      console.error('Greška pri dohvaćanju farme:', err.message);
+      console.error('[MOJA-FARMA] Greška pri dohvaćanju farme:', err.message);
     }
   }
 
