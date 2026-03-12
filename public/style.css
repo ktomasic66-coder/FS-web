@@ -1824,6 +1824,9 @@ s input {
 .farm-progress-fill.damage {
   background: linear-gradient(90deg, #00ff7a, #ff4444);
 }
+.farm-progress-fill.condition {
+  background: linear-gradient(90deg, #ff4444, #00ff7a);
+}
 .farm-progress-fill.dirt {
   background: linear-gradient(90deg, #8B6914, #654321);
 }
@@ -1937,6 +1940,66 @@ s input {
 }
 .farm-modal-grid-single {
   grid-template-columns: 1fr;
+}
+
+/* ===== FARM FILTER BAR ===== */
+.farm-filter-bar {
+  padding: 14px 30px;
+  border-bottom: 1px solid rgba(0,255,120,0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.farm-filter-search {
+  width: 100%;
+  padding: 10px 16px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(0,255,120,0.15);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.farm-filter-search::placeholder {
+  color: rgba(255,255,255,0.3);
+}
+.farm-filter-search:focus {
+  border-color: rgba(0,255,120,0.4);
+}
+.farm-filter-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.farm-filter-btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.6);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.farm-filter-btn:hover {
+  background: rgba(0,255,120,0.08);
+  border-color: rgba(0,255,120,0.25);
+  color: #fff;
+}
+.farm-filter-btn.active {
+  background: rgba(0,255,120,0.15);
+  border-color: rgba(0,255,120,0.4);
+  color: #00ff7a;
+  font-weight: 600;
+}
+.farm-no-results {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 20px;
+  color: rgba(255,255,255,0.3);
+  font-size: 14px;
 }
 
 /* ===== FARM DETAIL CARDS (inside modals) ===== */
@@ -2067,6 +2130,17 @@ s input {
   }
   .farm-modal-header, .farm-modal-body {
     padding: 16px 20px;
+  }
+  .farm-filter-bar {
+    padding: 10px 20px;
+  }
+  .farm-filter-search {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+  .farm-filter-btn {
+    font-size: 11px;
+    padding: 5px 10px;
   }
   .farm-detail-bar-label {
     width: 80px;

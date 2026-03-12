@@ -64,19 +64,19 @@
                     <ul class="farm-list">
                         <% farm.vehicles.slice(0, 5).forEach(function(v){ %>
                             <li>
-                                <span class="farm-list-dot" style="background: <%= (v.damage != null && Math.min(v.damage * 100, 100) > 50) ? '#ff4444' : '#00ff7a' %>"></span>
+                                <% var fuelPct = v.fuelLevel != null ? Math.min(Math.round(v.fuelLevel * 100), 100) : 0; %>
+                                <% var condPct = v.damage != null ? Math.max(100 - Math.round(v.damage * 100), 0) : 100; %>
+                                <span class="farm-list-dot" style="background: <%= condPct < 50 ? '#ff4444' : '#00ff7a' %>"></span>
                                 <div style="flex:1">
                                     <strong><%= v.name %></strong>
                                     <div class="farm-bars-mini">
-                                        <% var fuelPct = v.fuelLevel != null ? Math.min(Math.round(v.fuelLevel * 100), 100) : 0; %>
-                                        <% var dmgPct = v.damage != null ? Math.min(Math.round(v.damage * 100), 100) : 0; %>
                                         <div class="farm-bar-mini">
                                             <span>⛽ <%= fuelPct %>%</span>
                                             <div class="farm-progress"><div class="farm-progress-fill fuel" style="width:<%= fuelPct %>%"></div></div>
                                         </div>
                                         <div class="farm-bar-mini">
-                                            <span>🔧 <%= dmgPct %>%</span>
-                                            <div class="farm-progress"><div class="farm-progress-fill damage" style="width:<%= dmgPct %>%"></div></div>
+                                            <span>🔧 <%= condPct %>%</span>
+                                            <div class="farm-progress"><div class="farm-progress-fill condition" style="width:<%= condPct %>%"></div></div>
                                         </div>
                                     </div>
                                 </div>
@@ -270,15 +270,24 @@
             <h2>🚜 Vozila (<%= farm.vehicles ? farm.vehicles.length : 0 %>)</h2>
             <button class="farm-modal-close" onclick="closeModal('modal-vozila')">✕</button>
         </div>
+        <div class="farm-filter-bar">
+            <input type="text" class="farm-filter-search" placeholder="Pretraži vozila..." oninput="filterCards('modal-vozila', this.value)">
+            <div class="farm-filter-buttons">
+                <button class="farm-filter-btn active" onclick="setFilter('modal-vozila', 'all', this)">Sve</button>
+                <button class="farm-filter-btn" onclick="setFilter('modal-vozila', 'low-fuel', this)">⛽ Malo goriva</button>
+                <button class="farm-filter-btn" onclick="setFilter('modal-vozila', 'damaged', this)">🔧 Oštećeno</button>
+                <button class="farm-filter-btn" onclick="setFilter('modal-vozila', 'dirty', this)">💩 Prljavo</button>
+            </div>
+        </div>
         <div class="farm-modal-body">
             <% if(farm.vehicles && farm.vehicles.length > 0) { %>
                 <div class="farm-modal-grid">
                     <% farm.vehicles.forEach(function(v){ %>
                         <% var fuelPct = v.fuelLevel != null ? Math.min(Math.round(v.fuelLevel * 100), 100) : 0; %>
-                        <% var dmgPct = v.damage != null ? Math.min(Math.round(v.damage * 100), 100) : 0; %>
+                        <% var condPct = v.damage != null ? Math.max(100 - Math.round(v.damage * 100), 0) : 100; %>
                         <% var dirtPct = v.dirt != null ? Math.min(Math.round(v.dirt * 100), 100) : 0; %>
                         <% var defPct = v.defLevel != null ? Math.min(Math.round(v.defLevel * 100), 100) : 0; %>
-                        <div class="farm-detail-card">
+                        <div class="farm-detail-card" data-name="<%= (v.name || '').toLowerCase() %>" data-fuel="<%= fuelPct %>" data-condition="<%= condPct %>" data-dirt="<%= dirtPct %>">
                             <h3><%= v.name %></h3>
                             <% if(v.vehType) { %><p class="farm-detail-type"><%= v.vehType %></p><% } %>
                             <div class="farm-detail-bars">
@@ -302,9 +311,9 @@
                                 </div>
                                 <% } %>
                                 <div class="farm-detail-bar-row">
-                                    <span class="farm-detail-bar-label">🔧 Šteta</span>
-                                    <div class="farm-progress-lg"><div class="farm-progress-fill damage" style="width:<%= dmgPct %>%"></div></div>
-                                    <span class="farm-detail-bar-val"><%= dmgPct %>%</span>
+                                    <span class="farm-detail-bar-label">🔧 Stanje</span>
+                                    <div class="farm-progress-lg"><div class="farm-progress-fill condition" style="width:<%= condPct %>%"></div></div>
+                                    <span class="farm-detail-bar-val"><%= condPct %>%</span>
                                 </div>
                                 <div class="farm-detail-bar-row">
                                     <span class="farm-detail-bar-label">💩 Prljavština</span>
@@ -347,11 +356,22 @@
             <h2>🌾 Polja (<%= farm.fields ? farm.fields.length : 0 %>)</h2>
             <button class="farm-modal-close" onclick="closeModal('modal-polja')">✕</button>
         </div>
+        <div class="farm-filter-bar">
+            <input type="text" class="farm-filter-search" placeholder="Pretraži polja..." oninput="filterCards('modal-polja', this.value)">
+            <div class="farm-filter-buttons">
+                <button class="farm-filter-btn active" onclick="setFilter('modal-polja', 'all', this)">Sve</button>
+                <button class="farm-filter-btn" onclick="setFilter('modal-polja', 'needs-action', this)">⚠️ Treba radnju</button>
+                <button class="farm-filter-btn" onclick="setFilter('modal-polja', 'has-crop', this)">🌱 Zasađeno</button>
+                <button class="farm-filter-btn" onclick="setFilter('modal-polja', 'empty', this)">🚫 Prazno</button>
+            </div>
+        </div>
         <div class="farm-modal-body">
             <% if(farm.fields && farm.fields.length > 0) { %>
                 <div class="farm-modal-grid">
                     <% farm.fields.forEach(function(f){ %>
-                        <div class="farm-detail-card">
+                        <% var fieldNeedsAction = (f.plowingInfo && f.plowingInfo !== 'None' && f.plowingInfo !== 'OK') || (f.limeInfo && f.limeInfo !== 'None' && f.limeInfo !== 'OK') || (f.fertilizationInfo && f.fertilizationInfo !== 'None' && f.fertilizationInfo !== 'OK' && f.fertilizationInfo !== 'Full') || (f.weedInfo && f.weedInfo !== 'None' && f.weedInfo !== 'OK') || (f.rollingInfo && f.rollingInfo !== 'None' && f.rollingInfo !== 'OK'); %>
+                        <% var fieldHasCrop = f.fruitName && f.fruitName !== 'None'; %>
+                        <div class="farm-detail-card" data-name="<%= ('Polje ' + f.fieldId + ' ' + (f.fruitName || '')).toLowerCase() %>" data-needs-action="<%= fieldNeedsAction ? '1' : '0' %>" data-has-crop="<%= fieldHasCrop ? '1' : '0' %>">
                             <h3>Polje <%= f.fieldId %></h3>
                             <div class="farm-detail-info">
                                 <div class="farm-detail-info-row">
@@ -426,11 +446,18 @@
             <h2>🐄 Životinje</h2>
             <button class="farm-modal-close" onclick="closeModal('modal-zivotinje')">✕</button>
         </div>
+        <div class="farm-filter-bar">
+            <input type="text" class="farm-filter-search" placeholder="Pretraži životinje..." oninput="filterCards('modal-zivotinje', this.value)">
+            <div class="farm-filter-buttons">
+                <button class="farm-filter-btn active" onclick="setFilter('modal-zivotinje', 'all', this)">Sve</button>
+                <button class="farm-filter-btn" onclick="setFilter('modal-zivotinje', 'low-health', this)">❤️ Slabo zdravlje</button>
+            </div>
+        </div>
         <div class="farm-modal-body">
             <% if(farm.animals && farm.animals.length > 0) { %>
                 <div class="farm-modal-grid farm-modal-grid-single">
                     <% farm.animals.forEach(function(a){ %>
-                        <div class="farm-detail-card">
+                        <div class="farm-detail-card" data-name="<%= ((a.name || '') + ' ' + (a.animalType || '')).toLowerCase() %>" data-health="<%= a.health != null ? Math.round(a.health) : 100 %>">
                             <h3><%= a.name || a.animalType %></h3>
                             <p class="farm-detail-type"><%= a.animalType || '' %> · <%= a.numAnimals || 0 %>/<%= a.maxAnimals || '?' %> životinja</p>
                             <div class="farm-detail-bars">
@@ -493,11 +520,19 @@
             <h2>🏭 Proizvodnja</h2>
             <button class="farm-modal-close" onclick="closeModal('modal-proizvodnja')">✕</button>
         </div>
+        <div class="farm-filter-bar">
+            <input type="text" class="farm-filter-search" placeholder="Pretraži proizvodnju..." oninput="filterCards('modal-proizvodnja', this.value)">
+            <div class="farm-filter-buttons">
+                <button class="farm-filter-btn active" onclick="setFilter('modal-proizvodnja', 'all', this)">Sve</button>
+                <button class="farm-filter-btn" onclick="setFilter('modal-proizvodnja', 'owned', this)">✅ Kupljeno</button>
+                <button class="farm-filter-btn" onclick="setFilter('modal-proizvodnja', 'not-owned', this)">❌ Nije kupljeno</button>
+            </div>
+        </div>
         <div class="farm-modal-body">
             <% if(farm.productions && farm.productions.length > 0) { %>
                 <div class="farm-modal-grid farm-modal-grid-single">
                     <% farm.productions.forEach(function(p){ %>
-                        <div class="farm-detail-card">
+                        <div class="farm-detail-card" data-name="<%= (p.name || '').toLowerCase() %>" data-owned="<%= p.isOwned !== false ? '1' : '0' %>">
                             <h3><%= p.name %></h3>
                             <div class="farm-detail-info">
                                 <div class="farm-detail-info-row">
@@ -552,12 +587,20 @@
             <h2>📦 Skladišta</h2>
             <button class="farm-modal-close" onclick="closeModal('modal-skladista')">✕</button>
         </div>
+        <div class="farm-filter-bar">
+            <input type="text" class="farm-filter-search" placeholder="Pretraži skladišta..." oninput="filterCards('modal-skladista', this.value)">
+            <div class="farm-filter-buttons">
+                <button class="farm-filter-btn active" onclick="setFilter('modal-skladista', 'all', this)">Sve</button>
+                <button class="farm-filter-btn" onclick="setFilter('modal-skladista', 'full', this)">📦 Puno (&gt;80%)</button>
+                <button class="farm-filter-btn" onclick="setFilter('modal-skladista', 'low', this)">📭 Prazno (&lt;20%)</button>
+            </div>
+        </div>
         <div class="farm-modal-body">
             <% if(farm.silos && farm.silos.length > 0) { %>
                 <div class="farm-modal-grid farm-modal-grid-single">
                     <% farm.silos.forEach(function(s){ %>
                         <% var fillPct = s.percent != null ? Math.round(s.percent) : (s.totalFill && s.capacity ? Math.round((s.totalFill / s.capacity) * 100) : 0); %>
-                        <div class="farm-detail-card">
+                        <div class="farm-detail-card" data-name="<%= (s.name || '').toLowerCase() %>" data-fill="<%= fillPct %>">
                             <h3><%= s.name %></h3>
                             <% if(s.typeName) { %><p class="farm-detail-type"><%= s.typeName %></p><% } %>
                             <div class="farm-detail-bars">
@@ -594,6 +637,8 @@
 </div>
 
 <script>
+var activeFilters = {};
+
 function openModal(id) {
     document.getElementById(id).classList.add('active');
     document.body.style.overflow = 'hidden';
@@ -613,6 +658,70 @@ document.addEventListener('keydown', function(e) {
         document.body.style.overflow = '';
     }
 });
+
+function filterCards(modalId, searchText) {
+    var modal = document.getElementById(modalId);
+    var cards = modal.querySelectorAll('.farm-detail-card');
+    var query = searchText.toLowerCase().trim();
+    cards.forEach(function(card) {
+        var name = card.getAttribute('data-name') || '';
+        var matchesSearch = !query || name.indexOf(query) !== -1;
+        var matchesFilter = applyFilter(modalId, card);
+        card.style.display = (matchesSearch && matchesFilter) ? '' : 'none';
+    });
+    updateNoResults(modal);
+}
+
+function setFilter(modalId, filter, btn) {
+    activeFilters[modalId] = filter;
+    var bar = btn.closest('.farm-filter-bar');
+    bar.querySelectorAll('.farm-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    var searchInput = bar.querySelector('.farm-filter-search');
+    filterCards(modalId, searchInput ? searchInput.value : '');
+}
+
+function applyFilter(modalId, card) {
+    var filter = activeFilters[modalId] || 'all';
+    if (filter === 'all') return true;
+
+    switch(filter) {
+        // Vozila
+        case 'low-fuel': return parseInt(card.getAttribute('data-fuel') || '100') < 25;
+        case 'damaged': return parseInt(card.getAttribute('data-condition') || '100') < 75;
+        case 'dirty': return parseInt(card.getAttribute('data-dirt') || '0') > 50;
+        // Polja
+        case 'needs-action': return card.getAttribute('data-needs-action') === '1';
+        case 'has-crop': return card.getAttribute('data-has-crop') === '1';
+        case 'empty': return card.getAttribute('data-has-crop') === '0';
+        // Životinje
+        case 'low-health': return parseInt(card.getAttribute('data-health') || '100') < 70;
+        // Proizvodnja
+        case 'owned': return card.getAttribute('data-owned') === '1';
+        case 'not-owned': return card.getAttribute('data-owned') === '0';
+        // Skladišta
+        case 'full': return parseInt(card.getAttribute('data-fill') || '0') > 80;
+        case 'low': return parseInt(card.getAttribute('data-fill') || '0') < 20;
+        default: return true;
+    }
+}
+
+function updateNoResults(modal) {
+    var grid = modal.querySelector('.farm-modal-grid');
+    if (!grid) return;
+    var existing = grid.querySelector('.farm-no-results');
+    var visibleCards = grid.querySelectorAll('.farm-detail-card:not([style*="display: none"])');
+    if (visibleCards.length === 0) {
+        if (!existing) {
+            var msg = document.createElement('p');
+            msg.className = 'farm-no-results';
+            msg.textContent = 'Nema rezultata za odabrani filter';
+            grid.appendChild(msg);
+        }
+    } else if (existing) {
+        existing.remove();
+    }
+}
 </script>
 
 <% } else if (user) { %>
