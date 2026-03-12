@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480">
+  <rect width="640" height="160" fill="#ff0000"/>
+  <rect y="160" width="640" height="160" fill="#ffffff"/>
+  <rect y="320" width="640" height="160" fill="#171796"/>
+  <g transform="translate(320,240) scale(0.9)">
+    <path d="M-55,-75 L55,-75 L55,30 Q0,75 -55,30 Z" fill="#fff" stroke="#171796" stroke-width="1"/>
+    <g fill="none" stroke="#ff0000" stroke-width="0">
+      <rect x="-55" y="-75" width="22" height="21" fill="#ff0000"/>
+      <rect x="-11" y="-75" width="22" height="21" fill="#ff0000"/>
+      <rect x="33" y="-75" width="22" height="21" fill="#ff0000"/>
+      <rect x="-33" y="-54" width="22" height="21" fill="#ff0000"/>
+      <rect x="11" y="-54" width="22" height="21" fill="#ff0000"/>
+      <rect x="-55" y="-33" width="22" height="21" fill="#ff0000"/>
+      <rect x="-11" y="-33" width="22" height="21" fill="#ff0000"/>
+      <rect x="33" y="-33" width="22" height="21" fill="#ff0000"/>
+      <rect x="-33" y="-12" width="22" height="21" fill="#ff0000"/>
+      <rect x="11" y="-12" width="22" height="21" fill="#ff0000"/>
+      <rect x="-55" y="9" width="22" height="21" fill="#ff0000"/>
+      <rect x="-11" y="9" width="22" height="21" fill="#ff0000"/>
+      <rect x="33" y="9" width="22" height="21" fill="#ff0000"/>
+    </g>
+  </g>
+</svg>

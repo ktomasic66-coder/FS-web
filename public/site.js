@@ -163,19 +163,24 @@
     var navbar = document.querySelector('.navbar');
     if (!navbar) return;
 
-    var controls = document.createElement('div');
-    controls.className = 'site-controls';
-    controls.innerHTML =
-      '<div class="site-controls-group">' +
-        '<button class="lang-flag" data-lang="hr" title="Hrvatski" onclick="window.__setLang(\'hr\')">🇭🇷</button>' +
-        '<button class="lang-flag" data-lang="en" title="English" onclick="window.__setLang(\'en\')">🇺🇸</button>' +
-      '</div>' +
-      '<div class="site-controls-group">' +
-        '<button class="theme-btn" data-theme="green" title="Zelena tema" onclick="window.__setTheme(\'green\')"><span style="background:#00ff7a"></span></button>' +
-        '<button class="theme-btn" data-theme="gold" title="Zlatna tema" onclick="window.__setTheme(\'gold\')"><span style="background:#ffd700"></span></button>' +
-      '</div>';
+    // Insert controls inside the navbar <ul> as last items
+    var ul = navbar.querySelector('ul');
+    if (!ul) return;
 
-    navbar.appendChild(controls);
+    var li = document.createElement('li');
+    li.className = 'site-controls';
+    li.innerHTML =
+      '<button class="lang-flag" data-lang="hr" title="Hrvatski" onclick="window.__setLang(\'hr\')">' +
+        '<img src="/images/flag-hr.svg" alt="HR" width="22" height="15">' +
+      '</button>' +
+      '<button class="lang-flag" data-lang="en" title="English" onclick="window.__setLang(\'en\')">' +
+        '<img src="/images/flag-us.svg" alt="EN" width="22" height="15">' +
+      '</button>' +
+      '<span class="site-controls-divider"></span>' +
+      '<button class="theme-btn" data-theme="green" title="Zelena tema" onclick="window.__setTheme(\'green\')"><span style="background:#00ff7a"></span></button>' +
+      '<button class="theme-btn" data-theme="gold" title="Zlatna tema" onclick="window.__setTheme(\'gold\')"><span style="background:#ffd700"></span></button>';
+
+    ul.appendChild(li);
   }
 
   // Expose for onclick handlers
