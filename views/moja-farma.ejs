@@ -52,23 +52,19 @@
             <h3 data-i18n="sendMoney">💸 Pošalji novac</h3>
             <form id="transfer-form" class="farm-transfer-form">
                 <input type="hidden" name="fromFarmId" value="<%= farm.farmId %>">
-                <div class="farm-transfer-row">
-                    <label data-i18n="targetFarm">Ciljna farma</label>
+                <div class="farm-transfer-inline">
                     <select name="toFarmId" id="transfer-target" required>
-                        <option value="" data-i18n="selectFarm">-- Odaberi farmu --</option>
+                        <option value="" data-i18n="selectFarm">-- Farma --</option>
                         <% if(typeof otherFarms !== 'undefined' && otherFarms.length > 0) { %>
                             <% otherFarms.forEach(function(of){ %>
                                 <option value="<%= of.farmId %>"><%= of.name %> (F<%= of.farmId %>)</option>
                             <% }) %>
                         <% } %>
                     </select>
+                    <input type="number" name="amount" id="transfer-amount" min="1" max="<%= Math.floor(farm.balance) %>" placeholder="Iznos €" required>
+                    <button type="submit" class="farm-transfer-btn" data-i18n="queueTransfer">📋 Zakaži</button>
                 </div>
-                <div class="farm-transfer-row">
-                    <label data-i18n="amount">Iznos (€)</label>
-                    <input type="number" name="amount" id="transfer-amount" min="1" max="<%= Math.floor(farm.balance) %>" placeholder="0" required>
-                </div>
-                <button type="submit" class="farm-transfer-btn" data-i18n="queueTransfer">📋 Zakaži prijenos</button>
-                <p class="farm-transfer-note" data-i18n="transferNote">* Prijenos se izvršava tek nakon sljedećeg spremanja igre (savegame)</p>
+                <p class="farm-transfer-note" data-i18n="transferNote">* Izvršava se nakon sljedećeg savegame-a</p>
             </form>
             <div id="transfer-result" class="farm-transfer-result" style="display:none;"></div>
             <div id="pending-transfers" class="farm-pending-transfers"></div>

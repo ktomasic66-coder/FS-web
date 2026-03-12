@@ -1740,23 +1740,27 @@ s input {
   font-size: 13px;
 }
 .farms-overview-player-dot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+.farms-overview-player-dot.dot-online {
+  background: #00ff7a;
+  box-shadow: 0 0 6px rgba(0,255,122,0.6);
+  animation: dotPulse 1.5s ease-in-out infinite;
+}
+.farms-overview-player-dot.dot-offline {
+  background: #ff4444;
+  opacity: 0.5;
+}
+@keyframes dotPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(0,255,122,0.6); }
+  50% { opacity: 0.4; box-shadow: 0 0 2px rgba(0,255,122,0.2); }
 }
 .farms-overview-player-name {
   flex: 1;
   opacity: 0.8;
-}
-.farms-overview-online-badge {
-  font-size: 9px;
-  font-weight: 700;
-  color: var(--accent);
-  background: rgba(var(--accent-rgb),0.1);
-  padding: 2px 6px;
-  border-radius: 4px;
-  letter-spacing: 0.5px;
 }
 .farms-overview-no-players {
   font-size: 12px;
@@ -3539,63 +3543,66 @@ s input {
 .farm-transfer-card {
   background: rgba(255,255,255,0.03);
   border: 1px solid rgba(var(--accent-rgb),0.15);
-  border-radius: 16px;
-  padding: 24px 30px;
-  margin-top: 20px;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-top: 16px;
   max-width: 420px;
   width: 100%;
 }
 .farm-transfer-card h3 {
-  margin: 0 0 16px;
-  font-size: 16px;
+  margin: 0 0 10px;
+  font-size: 14px;
   color: var(--accent);
 }
 .farm-transfer-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
-.farm-transfer-row {
+.farm-transfer-inline {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  gap: 8px;
+  align-items: center;
 }
-.farm-transfer-row label {
-  font-size: 12px;
-  opacity: 0.6;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-.farm-transfer-row select,
-.farm-transfer-row input {
-  padding: 10px 14px;
+.farm-transfer-inline select,
+.farm-transfer-inline input {
+  padding: 8px 10px;
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(var(--accent-rgb),0.2);
   border-radius: 8px;
   color: #fff;
-  font-size: 14px;
+  font-size: 13px;
   outline: none;
   transition: border-color 0.2s;
 }
-.farm-transfer-row select:focus,
-.farm-transfer-row input:focus {
+.farm-transfer-inline select {
+  flex: 1;
+  min-width: 0;
+}
+.farm-transfer-inline input {
+  width: 90px;
+  flex-shrink: 0;
+}
+.farm-transfer-inline select:focus,
+.farm-transfer-inline input:focus {
   border-color: rgba(var(--accent-rgb),0.5);
 }
-.farm-transfer-row select option {
+.farm-transfer-inline select option {
   background: #111;
   color: #fff;
 }
 .farm-transfer-btn {
-  padding: 12px 20px;
+  padding: 8px 14px;
   background: linear-gradient(135deg, var(--accent), var(--accent-dark));
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   color: #000;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-top: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .farm-transfer-btn:hover {
   opacity: 0.9;
@@ -3701,6 +3708,12 @@ s input {
   }
   .farm-transfer-card {
     max-width: 100%;
-    padding: 18px 20px;
+    padding: 14px 16px;
+  }
+  .farm-transfer-inline {
+    flex-direction: column;
+  }
+  .farm-transfer-inline input {
+    width: 100%;
   }
 }

@@ -200,9 +200,8 @@
                 <div class="farms-overview-players">
                     <% farm.players.forEach(function(p) { %>
                         <div class="farms-overview-player">
-                            <span class="farms-overview-player-dot" style="background: <%= p.isOnline ? '#00ff7a' : '#555' %>;"></span>
+                            <span class="farms-overview-player-dot <%= p.isOnline ? 'dot-online' : 'dot-offline' %>"></span>
                             <span class="farms-overview-player-name"><%= p.name %></span>
-                            <% if(p.isOnline) { %><span class="farms-overview-online-badge">ONLINE</span><% } %>
                         </div>
                     <% }) %>
                 </div>

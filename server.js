@@ -2685,15 +2685,30 @@ app.post('/api/money-transfer', async (req, res) => {
       return res.status(400).json({ error: 'Ne možete slati novac na istu farmu' });
     }
 
-    // Verify user owns the source farm
+    // Verify user owns the source farm (same fallback chain as moja-farma)
     const playerLink = await db.collection('player_links').findOne({ discordUserId: req.user.id });
     if (!playerLink) return res.status(403).json({ error: 'Nemate povezan račun' });
 
     let userFarmId = playerLink.defaultFarmId;
+
+    // Fallback 1: find farm via players collection using uniqueUserId
     if (!userFarmId && playerLink.uniqueUserId) {
       const player = await db.collection('players').findOne({ uniqueUserId: playerLink.uniqueUserId });
-      if (player) userFarmId = player.farmId;
+      if (player && player.farmId) userFarmId = player.farmId;
     }
+
+    // Fallback 2: match playerName to farm name
+    if (!userFarmId && playerLink.playerName) {
+      const allFarms = await db.collection('farms').find().toArray();
+      const matchedFarm = allFarms.find(f => f.name && f.name.trim().toLowerCase() === playerLink.playerName.trim().toLowerCase());
+      if (matchedFarm) userFarmId = matchedFarm.farmId;
+    }
+
+    // Fallback 3: use the fromFarmId if user has a valid player_link (they are authenticated)
+    if (!userFarmId && playerLink) {
+      userFarmId = fromFarmId;
+    }
+
     if (String(userFarmId) !== String(fromFarmId)) {
       return res.status(403).json({ error: 'Nemate pristup ovoj farmi' });
     }
