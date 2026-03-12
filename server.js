@@ -1986,7 +1986,42 @@ app.use(async (req, res, next) => {
 
 app.get('/', async (req, res) => {
   const news = await loadNews();
-  res.render('index', { user: req.user, news });
+
+  // Fetch active farms overview from bot database
+  let farmsOverview = [];
+  try {
+    const db = await getBotDb();
+    if (db) {
+      const allFarms = await db.collection('farms').find().toArray();
+      const allFields = await db.collection('fields').find().toArray();
+      const allPlayers = await db.collection('players').find().toArray();
+
+      farmsOverview = allFarms
+        .filter(f => f.farmId && !String(f.farmId).startsWith('U:'))
+        .map(farm => {
+          const farmFields = allFields.filter(f => f.ownerFarmId === farm.farmId);
+          const farmPlayers = allPlayers.filter(p => p.farmId === farm.farmId);
+          const totalArea = farmFields.reduce((sum, f) => sum + (parseFloat(f.fieldArea) || 0), 0);
+
+          return {
+            farmId: farm.farmId,
+            name: farm.name || ('Farma ' + farm.farmId),
+            balance: farm.balance || 0,
+            fieldCount: farmFields.length,
+            totalArea: totalArea,
+            players: farmPlayers.map(p => ({
+              name: p.name,
+              isOnline: !!p.isOnline,
+            })),
+          };
+        })
+        .sort((a, b) => Number(a.farmId) - Number(b.farmId));
+    }
+  } catch (err) {
+    console.error('[INDEX] Error fetching farms overview:', err.message);
+  }
+
+  res.render('index', { user: req.user, news, farmsOverview });
 });
 
 app.get('/no-permission', (req, res) => {
