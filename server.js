@@ -2370,14 +2370,26 @@ app.get('/moja-farma', async (req, res) => {
           }
         }
 
-        // Fallback 2: use first available farm
-        if (!farmId) {
-          console.log('[MOJA-FARMA] Fallback 2: searching all farms...');
+        // Fallback 2: match playerName to farm name
+        if (!farmId && playerLink && playerLink.playerName) {
+          console.log('[MOJA-FARMA] Fallback 2: matching playerName to farm name:', playerLink.playerName);
           const allFarms = await db.collection('farms').find().toArray();
           console.log('[MOJA-FARMA] Available farms:', allFarms.map(f => ({ farmId: f.farmId, name: f.name })));
-          if (allFarms.length > 0) {
-            farmId = allFarms[0].farmId;
-            console.log('[MOJA-FARMA] Fallback 2 success: using farmId =', farmId);
+          const matchedFarm = allFarms.find(f => f.name && f.name.trim().toLowerCase() === playerLink.playerName.trim().toLowerCase());
+          if (matchedFarm) {
+            farmId = matchedFarm.farmId;
+            console.log('[MOJA-FARMA] Fallback 2 success: matched farm by name, farmId =', farmId);
+          }
+        }
+
+        // Fallback 3: use first available non-wallet farm
+        if (!farmId) {
+          console.log('[MOJA-FARMA] Fallback 3: using first available farm...');
+          const allFarms = await db.collection('farms').find().toArray();
+          const realFarm = allFarms.find(f => f.farmId && !String(f.farmId).startsWith('U:'));
+          if (realFarm) {
+            farmId = realFarm.farmId;
+            console.log('[MOJA-FARMA] Fallback 3 success: using farmId =', farmId);
           }
         }
 
