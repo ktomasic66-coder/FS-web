@@ -16,7 +16,7 @@
     </div>
 
     <ul>
-        <li><a href="/">Početna</a></li>
+        <li><a href="/" data-i18n="home">Početna</a></li>
         <li><a href="/galerija" data-i18n="gallery">Galerija</a></li>
         <li><a href="/pravila" data-i18n="rules">Pravila</a></li>
         <li><a href="/statistika" data-i18n="statistics">Statistika</a></li>
@@ -37,7 +37,7 @@
 
 <section class="rules-hero">
     <div class="rules-hero-inner">
-        <p class="rules-kicker">Server policy</p>
+        <p class="rules-kicker" data-i18n="serverPolicy">Server policy</p>
         <h1><%= rules.title %></h1>
         <p class="rules-sub"><%= rules.subtitle %></p>
     </div>
@@ -60,13 +60,13 @@
         </div>
     <% } else { %>
         <div class="rules-empty-state">
-            <strong>Pravila jos nisu dodana.</strong>
-            <p>Admin ih moze dodati i urediti unutar admin panela.</p>
+            <strong data-i18n="rulesNotAdded">Pravila jos nisu dodana.</strong>
+            <p data-i18n="rulesNotAddedDesc">Admin ih moze dodati i urediti unutar admin panela.</p>
         </div>
     <% } %>
 
     <div class="rules-warning-banner">
-        <strong>Napomena</strong>
+        <strong data-i18n="note">Napomena</strong>
         <p><%= rules.warning %></p>
     </div>
 </section>
@@ -75,10 +75,10 @@
     <div class="site-footer-inner">
         <div>
             <strong>Slavonska Ravnica</strong>
-            <p>Pravila i informacije za sve clanove zajednice.</p>
+            <p data-i18n="footerDesc">Pravila i informacije za sve clanove zajednice.</p>
         </div>
         <div class="site-footer-links">
-            <a href="/">Početna</a>
+            <a href="/" data-i18n="home">Početna</a>
             <a href="/pravila" data-i18n="rules">Pravila</a>
             <a href="/galerija" data-i18n="gallery">Galerija</a>
             <a href="/statistika" data-i18n="statistics">Statistika</a>

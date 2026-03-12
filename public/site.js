@@ -17,15 +17,48 @@
     'logout': { hr: 'Logout', en: 'Logout' },
     'login': { hr: 'Login', en: 'Login' },
 
+    // Homepage hero
+    'heroTitle': { hr: 'Slavonska Ravnica  FS25 Server', en: 'Slavonska Ravnica  FS25 Server' },
+    'heroDesc': { hr: 'Realističan Farming Simulator 25 multiplayer s fokusom na ekonomiju, timski rad i dugoročni razvoj farmi.', en: 'Realistic Farming Simulator 25 multiplayer focused on economy, teamwork, and long-term farm development.' },
+    'loginDiscord': { hr: 'Prijava putem Discorda', en: 'Login via Discord' },
+    'noPosts': { hr: 'Nema objava.', en: 'No posts.' },
+
+    // Homepage sections
+    'whoAreWe': { hr: 'Tko smo mi', en: 'Who We Are' },
+    'whoAreWeDesc': { hr: 'Slavonska Ravnica je zajednica igrača koji žele kvalitetno i organizirano FS25 iskustvo. Gradimo server gdje trud ima vrijednost, a napredak dolazi kroz rad i suradnju. Kod nas farme imaju priču.', en: 'Slavonska Ravnica is a community of players who want a quality and organized FS25 experience. We build a server where effort has value, and progress comes through work and cooperation. Our farms have a story.' },
+    'realisticEcon': { hr: '🚜 Realistična ekonomija', en: '🚜 Realistic Economy' },
+    'realisticEconDesc': { hr: 'Balansiran sustav napretka bez preskakanja faza.', en: 'Balanced progression system without skipping phases.' },
+    'activeCommunity': { hr: '👥 Aktivna zajednica', en: '👥 Active Community' },
+    'activeCommunityDesc': { hr: 'Ozbiljna i organizirana ekipa.', en: 'Serious and organized team.' },
+    'events': { hr: '🏆 Eventovi', en: '🏆 Events' },
+    'eventsDesc': { hr: 'Redovni izazovi i zajednički projekti.', en: 'Regular challenges and community projects.' },
+    'stableServer': { hr: '🛠 Stabilan server', en: '🛠 Stable Server' },
+    'stableServerDesc': { hr: 'Optimizirano i dugoročno iskustvo.', en: 'Optimized and long-term experience.' },
+    'howToJoin': { hr: 'Kako se pridružiti', en: 'How to Join' },
+    'step1': { hr: 'Prijavi se putem Discorda', en: 'Sign in via Discord' },
+    'step2': { hr: 'Pridruži se Discordu', en: 'Join our Discord' },
+    'step3': { hr: 'Otvori tiket za role PLAYER', en: 'Open a ticket for PLAYER role' },
+    'step4': { hr: 'Kreni graditi svoju farmu', en: 'Start building your farm' },
+    'readyForMultiplayer': { hr: 'Spreman za ozbiljan multiplayer?', en: 'Ready for serious multiplayer?' },
+    'loginToJoin': { hr: 'Prijavi se da bi se pridružio', en: 'Sign in to join' },
+    'joinCommunity': { hr: 'Pridruži se zajednici', en: 'Join the community' },
+
+    // Farms overview
+    'activeFarms': { hr: '🌾 Aktivne Farme', en: '🌾 Active Farms' },
+    'balance': { hr: 'Stanje', en: 'Balance' },
+    'area': { hr: 'Površina', en: 'Area' },
+    'noPlayersOnFarm': { hr: 'Nema igrača na farmi', en: 'No players on farm' },
+    'news': { hr: '📰 Novosti', en: '📰 News' },
+
     // Farm page
     'farmManagement': { hr: 'Upravljanje farmom', en: 'Farm Management' },
     'accountBalance': { hr: 'Stanje računa', en: 'Account Balance' },
     'sendMoney': { hr: '💸 Pošalji novac', en: '💸 Send Money' },
     'targetFarm': { hr: 'Ciljna farma', en: 'Target Farm' },
-    'selectFarm': { hr: '-- Odaberi farmu --', en: '-- Select Farm --' },
+    'selectFarm': { hr: '-- Farma --', en: '-- Farm --' },
     'amount': { hr: 'Iznos (€)', en: 'Amount (€)' },
-    'queueTransfer': { hr: '📋 Zakaži prijenos', en: '📋 Queue Transfer' },
-    'transferNote': { hr: '* Prijenos se izvršava tek nakon sljedećeg spremanja igre (savegame)', en: '* Transfer executes only after the next savegame' },
+    'queueTransfer': { hr: '📋 Zakaži', en: '📋 Queue' },
+    'transferNote': { hr: '* Izvršava se nakon sljedećeg savegame-a', en: '* Executes after the next savegame' },
     'vehicles': { hr: 'Vozila', en: 'Vehicles' },
     'fields': { hr: 'Polja', en: 'Fields' },
     'animals': { hr: 'Životinje', en: 'Animals' },
@@ -38,13 +71,34 @@
     'noProduction': { hr: 'Nema proizvodnje', en: 'No production' },
     'emptyStorage': { hr: 'Skladište je prazno', en: 'Storage is empty' },
 
-    // Homepage
-    'activeFarms': { hr: '🌾 Aktivne Farme', en: '🌾 Active Farms' },
-    'balance': { hr: 'Stanje', en: 'Balance' },
-    'area': { hr: 'Površina', en: 'Area' },
-    'noPlayersOnFarm': { hr: 'Nema igrača na farmi', en: 'No players on farm' },
-    'whoAreWe': { hr: 'Tko smo mi', en: 'Who We Are' },
-    'news': { hr: 'Novosti', en: 'News' },
+    // Gallery
+    'communityMedia': { hr: 'Community media', en: 'Community Media' },
+    'galleryTitle': { hr: 'Galerija Zajednice', en: 'Community Gallery' },
+    'gallerySubtitle': { hr: 'Podijeli trenutke sa servera, reagiraj na objave i pregledaj komentare u proširenom prikazu.', en: 'Share server moments, react to posts, and view comments in expanded view.' },
+    'chooseImage': { hr: 'Odaberi sliku', en: 'Choose image' },
+    'imageDesc': { hr: 'Opis slike', en: 'Image description' },
+    'publishImage': { hr: 'Objavi sliku', en: 'Publish image' },
+
+    // Profile
+    'myProfile': { hr: 'Moj Profil', en: 'My Profile' },
+    'noExtraRoles': { hr: 'Nema dodatnih rola', en: 'No additional roles' },
+
+    // Pravila
+    'serverPolicy': { hr: 'Server policy', en: 'Server Policy' },
+    'rulesNotAdded': { hr: 'Pravila jos nisu dodana.', en: 'Rules have not been added yet.' },
+    'rulesNotAddedDesc': { hr: 'Admin ih moze dodati i urediti unutar admin panela.', en: 'Admin can add and edit them in the admin panel.' },
+    'note': { hr: 'Napomena', en: 'Note' },
+    'footerDesc': { hr: 'Pravila i informacije za sve clanove zajednice.', en: 'Rules and information for all community members.' },
+
+    // Statistika
+    'serverStats': { hr: 'Statistika Servera', en: 'Server Statistics' },
+    'serverStatsDesc': { hr: 'Pregled stanja servera, igrača i ukupne statistike farmi.', en: 'Overview of server status, players, and total farm statistics.' },
+    'serverStatus': { hr: 'Status Servera', en: 'Server Status' },
+    'playersOnline': { hr: 'Igrači Online', en: 'Players Online' },
+    'discordMembers': { hr: 'Discord Članovi', en: 'Discord Members' },
+    'totalFarms': { hr: 'Ukupno Farmi', en: 'Total Farms' },
+    'totalFields': { hr: 'Ukupno Polja', en: 'Total Fields' },
+    'totalVehicles': { hr: 'Ukupno Vozila', en: 'Total Vehicles' },
 
     // Filter
     'all': { hr: 'Sve', en: 'All' },

@@ -14,7 +14,7 @@
         <span>Slavonska Ravnica</span>
     </div>
     <ul>
-        <li><a href="/">Početna</a></li>
+        <li><a href="/" data-i18n="home">Početna</a></li>
         <li><a href="/galerija" data-i18n="gallery">Galerija</a></li>
         <li><a href="/pravila" data-i18n="rules">Pravila</a></li>
         <li><a href="/statistika" data-i18n="statistics">Statistika</a></li>
@@ -32,28 +32,45 @@
     </ul>
 </nav>
 
-<div class="hero">
-    <h1>Statistika Servera</h1>
+<div class="admin-page">
+    <div class="admin-topbar">
+        <p class="admin-kicker" data-i18n="serverPolicy">Server info</p>
+        <h1 data-i18n="serverStats">Statistika Servera</h1>
+        <p class="admin-subtitle" data-i18n="serverStatsDesc">Pregled stanja servera, igrača i ukupne statistike farmi.</p>
+    </div>
 
-    <div class="stats-container">
-
-        <div class="stat-card">
-            <h2>Status Servera</h2>
-            <p class="status <%= stats.serverStatus.toLowerCase() %>">
-                <%= stats.serverStatus %>
-            </p>
+    <div class="admin-stats-grid">
+        <div class="admin-stat-card">
+            <span class="admin-stat-label" data-i18n="serverStatus">Status Servera</span>
+            <strong class="status <%= stats.serverStatus.toLowerCase() %>"><%= stats.serverStatus %></strong>
         </div>
-
-        <div class="stat-card">
-            <h2>Igrači Online</h2>
-            <p><%= stats.playersOnline %> / <%= stats.maxPlayers %></p>
+        <div class="admin-stat-card">
+            <span class="admin-stat-label" data-i18n="playersOnline">Igrači Online</span>
+            <strong><%= stats.playersOnline %> / <%= stats.maxPlayers %></strong>
         </div>
-
-        <div class="stat-card">
-            <h2>Discord Članovi</h2>
-            <p><%= stats.discordMembers %></p>
+        <div class="admin-stat-card">
+            <span class="admin-stat-label" data-i18n="discordMembers">Discord Članovi</span>
+            <strong><%= stats.discordMembers %></strong>
         </div>
+        <div class="admin-stat-card">
+            <span class="admin-stat-label" data-i18n="totalFarms">Ukupno Farmi</span>
+            <strong><%= stats.totalFarms %></strong>
+        </div>
+    </div>
 
+    <div class="admin-stats-grid">
+        <div class="admin-stat-card">
+            <span class="admin-stat-label" data-i18n="totalFields">Ukupno Polja</span>
+            <strong><%= stats.totalFields %></strong>
+        </div>
+        <div class="admin-stat-card">
+            <span class="admin-stat-label" data-i18n="totalVehicles">Ukupno Vozila</span>
+            <strong><%= stats.totalVehicles %></strong>
+        </div>
+        <div class="admin-stat-card">
+            <span class="admin-stat-label" data-i18n="players">Igrači</span>
+            <strong><%= stats.totalPlayers %></strong>
+        </div>
     </div>
 </div>
 

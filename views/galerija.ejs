@@ -16,7 +16,7 @@
         <span>Slavonska Ravnica</span>
     </div>
     <ul>
-        <li><a href="/">Početna</a></li>
+        <li><a href="/" data-i18n="home">Početna</a></li>
         <li><a href="/galerija" data-i18n="gallery">Galerija</a></li>
         <li><a href="/pravila" data-i18n="rules">Pravila</a></li>
         <li><a href="/statistika" data-i18n="statistics">Statistika</a></li>
@@ -36,24 +36,24 @@
 
 <section class="gallery-shell">
     <div class="gallery-hero-panel">
-        <p class="gallery-kicker">Community media</p>
-        <h1 class="gallery-title">Galerija Zajednice</h1>
-        <p class="gallery-subtitle">Podijeli trenutke sa servera, reagiraj na objave i pregledaj komentare u proširenom prikazu.</p>
+        <p class="gallery-kicker" data-i18n="communityMedia">Community media</p>
+        <h1 class="gallery-title" data-i18n="galleryTitle">Galerija Zajednice</h1>
+        <p class="gallery-subtitle" data-i18n="gallerySubtitle">Podijeli trenutke sa servera, reagiraj na objave i pregledaj komentare u proširenom prikazu.</p>
     </div>
 
     <% if (user && canUpload) { %>
     <form action="/upload" method="POST" enctype="multipart/form-data" class="upload-form upload-form-pro" id="gallery-upload-form">
         <div class="upload-form-fields">
             <label class="upload-field">
-                <span>Odaberi sliku</span>
+                <span data-i18n="chooseImage">Odaberi sliku</span>
                 <input type="file" name="image" required>
             </label>
             <label class="upload-field upload-field-wide">
-                <span>Opis slike</span>
+                <span data-i18n="imageDesc">Opis slike</span>
                 <textarea name="description" placeholder="Dodaj kratak opis, priču ili detalj sa slike..."></textarea>
             </label>
         </div>
-        <button class="btn-primary" type="submit">Objavi sliku</button>
+        <button class="btn-primary" type="submit" data-i18n="publishImage">Objavi sliku</button>
     </form>
     <% } %>
 

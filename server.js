@@ -2358,17 +2358,57 @@ app.post('/admin/discord-sync', requireAdmin, async (req, res) => {
   res.redirect('/admin#bot-settings');
 });
 
-/* ===== STATISTIKA (G-Portal) ===== */
+/* ===== STATISTIKA ===== */
 
 app.get('/statistika', async (req, res) => {
-  const playerStats = await getPlayerStats();
-
-  const stats = {
-    serverStatus: playerStats.serverStatus,
-    playersOnline: playerStats.playersOnline,
-    maxPlayers: playerStats.maxPlayers,
+  let stats = {
+    serverStatus: 'Offline',
+    playersOnline: 0,
+    maxPlayers: '-',
+    totalPlayers: 0,
     discordMembers: discordMemberCount,
+    totalFarms: 0,
+    totalFields: 0,
+    totalVehicles: 0,
   };
+
+  try {
+    // Try G-Portal / Steam Query first
+    const playerStats = await getPlayerStats();
+    stats.serverStatus = playerStats.serverStatus;
+    stats.playersOnline = playerStats.playersOnline;
+    stats.maxPlayers = playerStats.maxPlayers;
+  } catch (e) {}
+
+  try {
+    // Enrich with MongoDB data
+    const db = await getBotDb();
+    if (db) {
+      const allPlayers = await db.collection('players').find().toArray();
+      const allFarms = await db.collection('farms').find().toArray();
+      const allFields = await db.collection('fields').find().toArray();
+      const allVehicles = await db.collection('vehicles').find().toArray();
+
+      const onlinePlayers = allPlayers.filter(p => !!p.isOnline);
+      stats.totalPlayers = allPlayers.length;
+      stats.totalFarms = allFarms.filter(f => f.farmId && !String(f.farmId).startsWith('U:')).length;
+      stats.totalFields = allFields.length;
+      stats.totalVehicles = allVehicles.length;
+
+      // If G-Portal didn't work, use MongoDB online count
+      if (stats.serverStatus === 'Offline' || stats.playersOnline === '-') {
+        if (onlinePlayers.length > 0) {
+          stats.serverStatus = 'Online';
+          stats.playersOnline = onlinePlayers.length;
+        }
+        if (stats.maxPlayers === '-') {
+          stats.maxPlayers = allPlayers.length || 16;
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[STATISTIKA] MongoDB error:', e.message);
+  }
 
   res.render('statistika', { user: req.user, stats });
 });
