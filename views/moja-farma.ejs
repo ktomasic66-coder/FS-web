@@ -40,11 +40,11 @@
 <!-- HERO - Farm Name & Balance -->
 <section class="farm-hero">
     <div class="farm-hero-content">
-        <h1 class="farm-title"><%= farm.farmName %></h1>
+        <h1 class="farm-title"><%= farm.name %></h1>
         <p class="farm-subtitle">Upravljanje farmom</p>
         <div class="farm-balance-card">
             <span class="farm-balance-label">Stanje računa</span>
-            <span class="farm-balance-amount"><%= farm.balance.toLocaleString('hr-HR') %> €</span>
+            <span class="farm-balance-amount"><%= Number(farm.balance).toLocaleString('hr-HR') %> €</span>
         </div>
     </div>
 </section>
@@ -53,24 +53,63 @@
 <section class="farm-section">
     <div class="farm-grid">
 
-        <!-- Oprema -->
+        <!-- Vozila / Oprema -->
         <div class="farm-card">
             <div class="farm-card-header">
                 <span class="farm-card-icon">🚜</span>
-                <h2>Oprema</h2>
+                <h2>Vozila</h2>
             </div>
             <div class="farm-card-body">
-                <% if(farm.equipment && farm.equipment.length > 0) { %>
+                <% if(farm.vehicles && farm.vehicles.length > 0) { %>
                     <ul class="farm-list">
-                        <% farm.equipment.forEach(function(eq){ %>
-                            <li><span class="farm-list-dot"></span><%= eq %></li>
+                        <% farm.vehicles.forEach(function(v){ %>
+                            <li>
+                                <span class="farm-list-dot"></span>
+                                <div style="flex:1">
+                                    <strong><%= v.name %></strong>
+                                    <div style="font-size:12px; opacity:0.5; margin-top:2px;">
+                                        <% if(v.fuelLevel != null) { %>Gorivo: <%= Math.round(v.fuelLevel) %>%<% } %>
+                                        <% if(v.damage != null && v.damage > 0) { %> · Šteta: <%= Math.round(v.damage * 100) %>%<% } %>
+                                    </div>
+                                </div>
+                            </li>
                         <% }) %>
                     </ul>
                 <% } else { %>
-                    <p class="farm-empty">Nema opreme</p>
+                    <p class="farm-empty">Nema vozila</p>
                 <% } %>
             </div>
-            <div class="farm-card-count"><%= farm.equipment ? farm.equipment.length : 0 %> stavki</div>
+            <div class="farm-card-count"><%= farm.vehicles ? farm.vehicles.length : 0 %> vozila</div>
+        </div>
+
+        <!-- Polja -->
+        <div class="farm-card">
+            <div class="farm-card-header">
+                <span class="farm-card-icon">🌾</span>
+                <h2>Polja</h2>
+            </div>
+            <div class="farm-card-body">
+                <% if(farm.fields && farm.fields.length > 0) { %>
+                    <ul class="farm-list">
+                        <% farm.fields.forEach(function(f){ %>
+                            <li>
+                                <span class="farm-list-dot"></span>
+                                <div style="flex:1">
+                                    <strong>Polje <%= f.fieldId %></strong>
+                                    <div style="font-size:12px; opacity:0.5; margin-top:2px;">
+                                        <% if(f.fruitName) { %><%= f.fruitName %><% } else { %>Prazno<% } %>
+                                        <% if(f.fieldArea) { %> · <%= Number(f.fieldArea).toFixed(2) %> ha<% } %>
+                                        <% if(f.growthStage) { %> · Rast: <%= f.growthStage %><% } %>
+                                    </div>
+                                </div>
+                            </li>
+                        <% }) %>
+                    </ul>
+                <% } else { %>
+                    <p class="farm-empty">Nema polja</p>
+                <% } %>
+            </div>
+            <div class="farm-card-count"><%= farm.fields ? farm.fields.length : 0 %> polja</div>
         </div>
 
         <!-- Životinje -->
@@ -82,15 +121,27 @@
             <div class="farm-card-body">
                 <% if(farm.animals && farm.animals.length > 0) { %>
                     <ul class="farm-list">
-                        <% farm.animals.forEach(function(an){ %>
-                            <li><span class="farm-list-dot"></span><%= an %></li>
+                        <% farm.animals.forEach(function(a){ %>
+                            <li>
+                                <span class="farm-list-dot"></span>
+                                <div style="flex:1">
+                                    <strong><%= a.name || a.animalType %></strong>
+                                    <div style="font-size:12px; opacity:0.5; margin-top:2px;">
+                                        <%= a.numAnimals || 0 %>/<%= a.maxAnimals || 0 %> životinja
+                                        <% if(a.health != null) { %> · Zdravlje: <%= Math.round(a.health) %>%<% } %>
+                                        <% if(a.productivity != null) { %> · Produktivnost: <%= Math.round(a.productivity) %>%<% } %>
+                                    </div>
+                                </div>
+                            </li>
                         <% }) %>
                     </ul>
                 <% } else { %>
                     <p class="farm-empty">Nema životinja</p>
                 <% } %>
             </div>
-            <div class="farm-card-count"><%= farm.animals ? farm.animals.length : 0 %> stavki</div>
+            <div class="farm-card-count">
+                <%= farm.animals ? farm.animals.reduce(function(sum, a){ return sum + (a.numAnimals || 0); }, 0) : 0 %> ukupno životinja
+            </div>
         </div>
 
         <!-- Proizvodnja -->
@@ -102,56 +153,83 @@
             <div class="farm-card-body">
                 <% if(farm.productions && farm.productions.length > 0) { %>
                     <ul class="farm-list">
-                        <% farm.productions.forEach(function(pr){ %>
-                            <li><span class="farm-list-dot"></span><%= pr %></li>
+                        <% farm.productions.forEach(function(p){ %>
+                            <li>
+                                <span class="farm-list-dot"></span>
+                                <div style="flex:1">
+                                    <strong><%= p.name %></strong>
+                                    <div style="font-size:12px; opacity:0.5; margin-top:2px;">
+                                        <% if(p.status) { %><%= p.status %><% } %>
+                                        <% if(p.isOwned === false) { %> · Nije u vlasništvu<% } %>
+                                    </div>
+                                </div>
+                            </li>
                         <% }) %>
                     </ul>
                 <% } else { %>
                     <p class="farm-empty">Nema proizvodnje</p>
                 <% } %>
             </div>
-            <div class="farm-card-count"><%= farm.productions ? farm.productions.length : 0 %> stavki</div>
+            <div class="farm-card-count"><%= farm.productions ? farm.productions.length : 0 %> proizvodnji</div>
         </div>
 
-        <!-- Skladište -->
-        <div class="farm-card">
+        <!-- Skladišta (Silos) -->
+        <div class="farm-card farm-card-wide">
             <div class="farm-card-header">
                 <span class="farm-card-icon">📦</span>
-                <h2>Skladište</h2>
+                <h2>Skladišta</h2>
             </div>
             <div class="farm-card-body">
-                <% if(farm.storage && farm.storage.length > 0) { %>
-                    <ul class="farm-list">
-                        <% farm.storage.forEach(function(st){ %>
-                            <li><span class="farm-list-dot"></span><%= st %></li>
+                <% if(farm.silos && farm.silos.length > 0) { %>
+                    <ul class="farm-list farm-list-crops">
+                        <% farm.silos.forEach(function(s){ %>
+                            <li>
+                                <span class="farm-list-dot"></span>
+                                <div style="flex:1">
+                                    <strong><%= s.name %></strong>
+                                    <div style="font-size:12px; opacity:0.5; margin-top:2px;">
+                                        <% if(s.totalFill != null && s.capacity) { %>
+                                            <%= Math.round(s.totalFill).toLocaleString('hr-HR') %> / <%= Math.round(s.capacity).toLocaleString('hr-HR') %> L
+                                            (<%= s.percent != null ? Math.round(s.percent) : Math.round((s.totalFill / s.capacity) * 100) %>%)
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </li>
                         <% }) %>
                     </ul>
                 <% } else { %>
                     <p class="farm-empty">Skladište je prazno</p>
                 <% } %>
             </div>
-            <div class="farm-card-count"><%= farm.storage ? farm.storage.length : 0 %> stavki</div>
+            <div class="farm-card-count"><%= farm.silos ? farm.silos.length : 0 %> skladišta</div>
         </div>
 
-        <!-- Kalendar usjeva -->
+        <!-- Igrači na farmi -->
+        <% if(farm.players && farm.players.length > 0) { %>
         <div class="farm-card farm-card-wide">
             <div class="farm-card-header">
-                <span class="farm-card-icon">🌾</span>
-                <h2>Kalendar usjeva</h2>
+                <span class="farm-card-icon">👥</span>
+                <h2>Igrači</h2>
             </div>
             <div class="farm-card-body">
-                <% if(farm.cropCalendar && farm.cropCalendar.length > 0) { %>
-                    <ul class="farm-list farm-list-crops">
-                        <% farm.cropCalendar.forEach(function(cc){ %>
-                            <li><span class="farm-list-dot"></span><%= cc %></li>
-                        <% }) %>
-                    </ul>
-                <% } else { %>
-                    <p class="farm-empty">Nema usjeva u kalendaru</p>
-                <% } %>
+                <ul class="farm-list farm-list-crops">
+                    <% farm.players.forEach(function(pl){ %>
+                        <li>
+                            <span class="farm-list-dot" style="background: <%= pl.isOnline ? '#00ff7a' : '#666' %>;"></span>
+                            <div style="flex:1">
+                                <strong><%= pl.name %></strong>
+                                <div style="font-size:12px; opacity:0.5; margin-top:2px;">
+                                    <% if(pl.isOnline) { %>🟢 Online<% } else { %>⚫ Offline<% } %>
+                                    <% if(pl.playTime) { %> · <%= Math.round(pl.playTime / 60) %>h odigrano<% } %>
+                                </div>
+                            </div>
+                        </li>
+                    <% }) %>
+                </ul>
             </div>
-            <div class="farm-card-count"><%= farm.cropCalendar ? farm.cropCalendar.length : 0 %> usjeva</div>
+            <div class="farm-card-count"><%= farm.players.length %> igrača</div>
         </div>
+        <% } %>
 
     </div>
 </section>

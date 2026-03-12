@@ -2296,15 +2296,48 @@ app.get('/statistika', async (req, res) => {
 /* ===== GALERIJA ===== */
 
 app.get('/moja-farma', async (req, res) => {
-  let farm = null;
-  if (req.user) {
+  let farmData = null;
+
+  if (req.user && mongoose.connection.readyState === 1) {
     try {
-      farm = await Farm.findOne({ userId: req.user.id });
+      const db = mongoose.connection.db;
+
+      // Find player link by Discord user ID
+      const playerLink = await db.collection('player_links').findOne({ discordUserId: req.user.id });
+
+      if (playerLink) {
+        const farmId = playerLink.defaultFarmId;
+        const farm = farmId ? await db.collection('farms').findOne({ farmId }) : null;
+
+        if (farm) {
+          const [fields, vehicles, silos, productions, animals, players] = await Promise.all([
+            db.collection('fields').find({ ownerFarmId: farmId }).toArray(),
+            db.collection('vehicles').find({ farmId }).toArray(),
+            db.collection('silos').find({ farmId }).toArray(),
+            db.collection('productions').find({ farmId }).toArray(),
+            db.collection('animals').find({ farmId }).toArray(),
+            db.collection('players').find({ farmId }).toArray(),
+          ]);
+
+          farmData = {
+            farmId: farm.farmId,
+            name: farm.name || ('Farma ' + farm.farmId),
+            balance: farm.balance || 0,
+            fields,
+            vehicles,
+            silos,
+            productions,
+            animals,
+            players,
+          };
+        }
+      }
     } catch (err) {
       console.error('Greška pri dohvaćanju farme:', err.message);
     }
   }
-  res.render('moja-farma', { user: req.user, farm });
+
+  res.render('moja-farma', { user: req.user, farm: farmData });
 });
 
 app.get('/galerija', async (req, res) => {
