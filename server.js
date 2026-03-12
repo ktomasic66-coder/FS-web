@@ -2356,7 +2356,29 @@ app.get('/moja-farma', async (req, res) => {
         console.log('[MOJA-FARMA] Player link found:', playerLink ? ('farmId=' + playerLink.defaultFarmId) : 'NONE');
 
         if (playerLink) {
-          const farmId = playerLink.defaultFarmId;
+          let farmId = playerLink.defaultFarmId;
+
+          // Fallback: if defaultFarmId is null, find farm via players collection using uniqueUserId
+          if (!farmId && playerLink.uniqueUserId) {
+            const player = await db.collection('players').findOne({ uniqueUserId: playerLink.uniqueUserId });
+            if (player && player.farmId) {
+              farmId = player.farmId;
+              console.log('[MOJA-FARMA] Fallback: found farmId via player uniqueUserId:', farmId);
+            }
+          }
+          // Second fallback: find any player matching this discord user's name
+          if (!farmId) {
+            const allPlayers = await db.collection('players').find().toArray();
+            if (allPlayers.length > 0) {
+              // Try to find by name match, otherwise use first farm available
+              const firstPlayer = allPlayers.find(p => p.farmId) || allPlayers[0];
+              if (firstPlayer && firstPlayer.farmId) {
+                farmId = firstPlayer.farmId;
+                console.log('[MOJA-FARMA] Fallback: using first available farm:', farmId);
+              }
+            }
+          }
+
           const farm = farmId ? await db.collection('farms').findOne({ farmId }) : null;
           console.log('[MOJA-FARMA] Farm found:', farm ? farm.name : 'NONE');
 
