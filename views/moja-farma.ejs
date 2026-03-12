@@ -54,7 +54,7 @@
     <div class="farm-grid">
 
         <!-- Vozila / Oprema -->
-        <div class="farm-card">
+        <div class="farm-card farm-card-clickable" onclick="openModal('modal-vozila')">
             <div class="farm-card-header">
                 <span class="farm-card-icon">🚜</span>
                 <h2>Vozila</h2>
@@ -62,19 +62,30 @@
             <div class="farm-card-body">
                 <% if(farm.vehicles && farm.vehicles.length > 0) { %>
                     <ul class="farm-list">
-                        <% farm.vehicles.forEach(function(v){ %>
+                        <% farm.vehicles.slice(0, 5).forEach(function(v){ %>
                             <li>
-                                <span class="farm-list-dot"></span>
+                                <span class="farm-list-dot" style="background: <%= (v.damage != null && Math.min(v.damage * 100, 100) > 50) ? '#ff4444' : '#00ff7a' %>"></span>
                                 <div style="flex:1">
                                     <strong><%= v.name %></strong>
-                                    <div style="font-size:12px; opacity:0.5; margin-top:2px;">
-                                        <% if(v.fuelLevel != null) { %>Gorivo: <%= Math.round(v.fuelLevel) %>%<% } %>
-                                        <% if(v.damage != null && v.damage > 0) { %> · Šteta: <%= Math.round(v.damage * 100) %>%<% } %>
+                                    <div class="farm-bars-mini">
+                                        <% var fuelPct = v.fuelLevel != null ? Math.min(Math.round(v.fuelLevel * 100), 100) : 0; %>
+                                        <% var dmgPct = v.damage != null ? Math.min(Math.round(v.damage * 100), 100) : 0; %>
+                                        <div class="farm-bar-mini">
+                                            <span>⛽ <%= fuelPct %>%</span>
+                                            <div class="farm-progress"><div class="farm-progress-fill fuel" style="width:<%= fuelPct %>%"></div></div>
+                                        </div>
+                                        <div class="farm-bar-mini">
+                                            <span>🔧 <%= dmgPct %>%</span>
+                                            <div class="farm-progress"><div class="farm-progress-fill damage" style="width:<%= dmgPct %>%"></div></div>
+                                        </div>
                                     </div>
                                 </div>
                             </li>
                         <% }) %>
                     </ul>
+                    <% if(farm.vehicles.length > 5) { %>
+                        <p class="farm-more">+ još <%= farm.vehicles.length - 5 %> vozila... klikni za sve</p>
+                    <% } %>
                 <% } else { %>
                     <p class="farm-empty">Nema vozila</p>
                 <% } %>
@@ -83,7 +94,7 @@
         </div>
 
         <!-- Polja -->
-        <div class="farm-card">
+        <div class="farm-card farm-card-clickable" onclick="openModal('modal-polja')">
             <div class="farm-card-header">
                 <span class="farm-card-icon">🌾</span>
                 <h2>Polja</h2>
@@ -91,20 +102,29 @@
             <div class="farm-card-body">
                 <% if(farm.fields && farm.fields.length > 0) { %>
                     <ul class="farm-list">
-                        <% farm.fields.forEach(function(f){ %>
+                        <% farm.fields.slice(0, 5).forEach(function(f){ %>
                             <li>
                                 <span class="farm-list-dot"></span>
                                 <div style="flex:1">
                                     <strong>Polje <%= f.fieldId %></strong>
-                                    <div style="font-size:12px; opacity:0.5; margin-top:2px;">
-                                        <% if(f.fruitName) { %><%= f.fruitName %><% } else { %>Prazno<% } %>
+                                    <div style="font-size:12px; opacity:0.6; margin-top:2px;">
+                                        <% if(f.fruitName && f.fruitName !== 'None') { %><%= f.fruitName %><% } else { %>Prazno<% } %>
                                         <% if(f.fieldArea) { %> · <%= Number(f.fieldArea).toFixed(2) %> ha<% } %>
-                                        <% if(f.growthStage) { %> · Rast: <%= f.growthStage %><% } %>
+                                        <% if(f.growthStage && f.growthStage !== 'Unknown') { %> · <%= f.growthStage %><% } %>
+                                    </div>
+                                    <div class="farm-field-tags">
+                                        <% if(f.plowingInfo && f.plowingInfo !== 'None' && f.plowingInfo !== 'OK') { %><span class="farm-tag warn">🔄 Oranje</span><% } %>
+                                        <% if(f.limeInfo && f.limeInfo !== 'None' && f.limeInfo !== 'OK') { %><span class="farm-tag warn">�ite Vapno</span><% } %>
+                                        <% if(f.fertilizationInfo && f.fertilizationInfo !== 'None' && f.fertilizationInfo !== 'OK' && f.fertilizationInfo !== 'Full') { %><span class="farm-tag info">🌿 Gnojivo</span><% } %>
+                                        <% if(f.weedInfo && f.weedInfo !== 'None' && f.weedInfo !== 'OK') { %><span class="farm-tag warn">🌿 Korovi</span><% } %>
                                     </div>
                                 </div>
                             </li>
                         <% }) %>
                     </ul>
+                    <% if(farm.fields.length > 5) { %>
+                        <p class="farm-more">+ još <%= farm.fields.length - 5 %> polja... klikni za sve</p>
+                    <% } %>
                 <% } else { %>
                     <p class="farm-empty">Nema polja</p>
                 <% } %>
@@ -113,7 +133,7 @@
         </div>
 
         <!-- Životinje -->
-        <div class="farm-card">
+        <div class="farm-card farm-card-clickable" onclick="openModal('modal-zivotinje')">
             <div class="farm-card-header">
                 <span class="farm-card-icon">🐄</span>
                 <h2>Životinje</h2>
@@ -123,13 +143,21 @@
                     <ul class="farm-list">
                         <% farm.animals.forEach(function(a){ %>
                             <li>
-                                <span class="farm-list-dot"></span>
+                                <span class="farm-list-dot" style="background: <%= (a.health != null && a.health < 70) ? '#ffaa00' : '#00ff7a' %>"></span>
                                 <div style="flex:1">
                                     <strong><%= a.name || a.animalType %></strong>
+                                    <div class="farm-bars-mini">
+                                        <div class="farm-bar-mini">
+                                            <span>❤️ <%= a.health != null ? Math.round(a.health) : 0 %>%</span>
+                                            <div class="farm-progress"><div class="farm-progress-fill health" style="width:<%= a.health != null ? Math.min(Math.round(a.health), 100) : 0 %>%"></div></div>
+                                        </div>
+                                        <div class="farm-bar-mini">
+                                            <span>📈 <%= a.productivity != null ? Math.round(a.productivity) : 0 %>%</span>
+                                            <div class="farm-progress"><div class="farm-progress-fill productivity" style="width:<%= a.productivity != null ? Math.min(Math.round(a.productivity), 100) : 0 %>%"></div></div>
+                                        </div>
+                                    </div>
                                     <div style="font-size:12px; opacity:0.5; margin-top:2px;">
-                                        <%= a.numAnimals || 0 %>/<%= a.maxAnimals || 0 %> životinja
-                                        <% if(a.health != null) { %> · Zdravlje: <%= Math.round(a.health) %>%<% } %>
-                                        <% if(a.productivity != null) { %> · Produktivnost: <%= Math.round(a.productivity) %>%<% } %>
+                                        <%= a.numAnimals || 0 %>/<%= a.maxAnimals || '?' %> životinja
                                     </div>
                                 </div>
                             </li>
@@ -145,7 +173,7 @@
         </div>
 
         <!-- Proizvodnja -->
-        <div class="farm-card">
+        <div class="farm-card farm-card-clickable" onclick="openModal('modal-proizvodnja')">
             <div class="farm-card-header">
                 <span class="farm-card-icon">🏭</span>
                 <h2>Proizvodnja</h2>
@@ -155,12 +183,12 @@
                     <ul class="farm-list">
                         <% farm.productions.forEach(function(p){ %>
                             <li>
-                                <span class="farm-list-dot"></span>
+                                <span class="farm-list-dot" style="background: <%= p.isOwned !== false ? '#00ff7a' : '#666' %>"></span>
                                 <div style="flex:1">
                                     <strong><%= p.name %></strong>
                                     <div style="font-size:12px; opacity:0.5; margin-top:2px;">
-                                        <% if(p.status) { %><%= p.status %><% } %>
-                                        <% if(p.isOwned === false) { %> · Nije u vlasništvu<% } %>
+                                        <% if(p.status && p.status !== 'N/A') { %><%= p.status %><% } else { %>—<% } %>
+                                        <% if(p.isOwned === false) { %> · <span style="color:#ff6b6b">Nije kupljeno</span><% } %>
                                     </div>
                                 </div>
                             </li>
@@ -174,7 +202,7 @@
         </div>
 
         <!-- Skladišta (Silos) -->
-        <div class="farm-card farm-card-wide">
+        <div class="farm-card farm-card-wide farm-card-clickable" onclick="openModal('modal-skladista')">
             <div class="farm-card-header">
                 <span class="farm-card-icon">📦</span>
                 <h2>Skladišta</h2>
@@ -183,15 +211,14 @@
                 <% if(farm.silos && farm.silos.length > 0) { %>
                     <ul class="farm-list farm-list-crops">
                         <% farm.silos.forEach(function(s){ %>
+                            <% var fillPct = s.percent != null ? Math.round(s.percent) : (s.totalFill && s.capacity ? Math.round((s.totalFill / s.capacity) * 100) : 0); %>
                             <li>
-                                <span class="farm-list-dot"></span>
+                                <span class="farm-list-dot" style="background: <%= fillPct > 80 ? '#ffaa00' : '#00ff7a' %>"></span>
                                 <div style="flex:1">
                                     <strong><%= s.name %></strong>
-                                    <div style="font-size:12px; opacity:0.5; margin-top:2px;">
-                                        <% if(s.totalFill != null && s.capacity) { %>
-                                            <%= Math.round(s.totalFill).toLocaleString('hr-HR') %> / <%= Math.round(s.capacity).toLocaleString('hr-HR') %> L
-                                            (<%= s.percent != null ? Math.round(s.percent) : Math.round((s.totalFill / s.capacity) * 100) %>%)
-                                        <% } %>
+                                    <div class="farm-bar-mini" style="margin-top:6px;">
+                                        <span style="font-size:11px; opacity:0.6;"><%= Math.round(s.totalFill || 0).toLocaleString('hr-HR') %> / <%= Math.round(s.capacity || 0).toLocaleString('hr-HR') %> L</span>
+                                        <div class="farm-progress"><div class="farm-progress-fill storage" style="width:<%= Math.min(fillPct, 100) %>%"></div></div>
                                     </div>
                                 </div>
                             </li>
@@ -233,6 +260,360 @@
 
     </div>
 </section>
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- VOZILA MODAL -->
+<div class="farm-modal-overlay" id="modal-vozila" onclick="closeModalOutside(event, 'modal-vozila')">
+    <div class="farm-modal">
+        <div class="farm-modal-header">
+            <h2>🚜 Vozila (<%= farm.vehicles ? farm.vehicles.length : 0 %>)</h2>
+            <button class="farm-modal-close" onclick="closeModal('modal-vozila')">✕</button>
+        </div>
+        <div class="farm-modal-body">
+            <% if(farm.vehicles && farm.vehicles.length > 0) { %>
+                <div class="farm-modal-grid">
+                    <% farm.vehicles.forEach(function(v){ %>
+                        <% var fuelPct = v.fuelLevel != null ? Math.min(Math.round(v.fuelLevel * 100), 100) : 0; %>
+                        <% var dmgPct = v.damage != null ? Math.min(Math.round(v.damage * 100), 100) : 0; %>
+                        <% var dirtPct = v.dirt != null ? Math.min(Math.round(v.dirt * 100), 100) : 0; %>
+                        <% var defPct = v.defLevel != null ? Math.min(Math.round(v.defLevel * 100), 100) : 0; %>
+                        <div class="farm-detail-card">
+                            <h3><%= v.name %></h3>
+                            <% if(v.vehType) { %><p class="farm-detail-type"><%= v.vehType %></p><% } %>
+                            <div class="farm-detail-bars">
+                                <div class="farm-detail-bar-row">
+                                    <span class="farm-detail-bar-label">⛽ Gorivo</span>
+                                    <div class="farm-progress-lg"><div class="farm-progress-fill fuel" style="width:<%= fuelPct %>%"></div></div>
+                                    <span class="farm-detail-bar-val"><%= fuelPct %>%</span>
+                                </div>
+                                <% if(v.fuelType === 'ELECTRICCHARGE') { %>
+                                <div class="farm-detail-bar-row">
+                                    <span class="farm-detail-bar-label">🔋 Baterija</span>
+                                    <div class="farm-progress-lg"><div class="farm-progress-fill fuel" style="width:<%= fuelPct %>%"></div></div>
+                                    <span class="farm-detail-bar-val"><%= fuelPct %>%</span>
+                                </div>
+                                <% } %>
+                                <% if(v.defLevel != null && v.defLevel > 0) { %>
+                                <div class="farm-detail-bar-row">
+                                    <span class="farm-detail-bar-label">💧 DEF/AdBlue</span>
+                                    <div class="farm-progress-lg"><div class="farm-progress-fill def" style="width:<%= defPct %>%"></div></div>
+                                    <span class="farm-detail-bar-val"><%= defPct %>%</span>
+                                </div>
+                                <% } %>
+                                <div class="farm-detail-bar-row">
+                                    <span class="farm-detail-bar-label">🔧 Šteta</span>
+                                    <div class="farm-progress-lg"><div class="farm-progress-fill damage" style="width:<%= dmgPct %>%"></div></div>
+                                    <span class="farm-detail-bar-val"><%= dmgPct %>%</span>
+                                </div>
+                                <div class="farm-detail-bar-row">
+                                    <span class="farm-detail-bar-label">💩 Prljavština</span>
+                                    <div class="farm-progress-lg"><div class="farm-progress-fill dirt" style="width:<%= dirtPct %>%"></div></div>
+                                    <span class="farm-detail-bar-val"><%= dirtPct %>%</span>
+                                </div>
+                            </div>
+                            <% if(v.fillUnits && Array.isArray(v.fillUnits) && v.fillUnits.length > 0) { %>
+                                <div class="farm-detail-fills">
+                                    <p class="farm-detail-fills-title">Punjenja:</p>
+                                    <% v.fillUnits.forEach(function(fu){ %>
+                                        <% if(fu.fillLevel > 0) { %>
+                                        <div class="farm-detail-bar-row">
+                                            <span class="farm-detail-bar-label"><%= fu.fillType %></span>
+                                            <div class="farm-progress-lg"><div class="farm-progress-fill storage" style="width:<%= Math.min(fu.fillPercentage || 0, 100) %>%"></div></div>
+                                            <span class="farm-detail-bar-val"><%= Math.round(fu.fillLevel).toLocaleString('hr-HR') %> L</span>
+                                        </div>
+                                        <% } %>
+                                    <% }) %>
+                                </div>
+                            <% } %>
+                            <div class="farm-detail-meta">
+                                <% if(v.price) { %><span>💰 <%= Math.round(v.price).toLocaleString('hr-HR') %> €</span><% } %>
+                                <% if(v.fuelType && v.fuelType !== 'ELECTRICCHARGE') { %><span>⛽ <%= v.fuelType %></span><% } %>
+                            </div>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } else { %>
+                <p class="farm-empty">Nema vozila</p>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<!-- POLJA MODAL -->
+<div class="farm-modal-overlay" id="modal-polja" onclick="closeModalOutside(event, 'modal-polja')">
+    <div class="farm-modal">
+        <div class="farm-modal-header">
+            <h2>🌾 Polja (<%= farm.fields ? farm.fields.length : 0 %>)</h2>
+            <button class="farm-modal-close" onclick="closeModal('modal-polja')">✕</button>
+        </div>
+        <div class="farm-modal-body">
+            <% if(farm.fields && farm.fields.length > 0) { %>
+                <div class="farm-modal-grid">
+                    <% farm.fields.forEach(function(f){ %>
+                        <div class="farm-detail-card">
+                            <h3>Polje <%= f.fieldId %></h3>
+                            <div class="farm-detail-info">
+                                <div class="farm-detail-info-row">
+                                    <span>🌱 Kultura</span>
+                                    <strong><%= (f.fruitName && f.fruitName !== 'None') ? f.fruitName : 'Prazno' %></strong>
+                                </div>
+                                <% if(f.fieldArea) { %>
+                                <div class="farm-detail-info-row">
+                                    <span>📐 Površina</span>
+                                    <strong><%= Number(f.fieldArea).toFixed(2) %> ha</strong>
+                                </div>
+                                <% } %>
+                                <% if(f.growthStage && f.growthStage !== 'Unknown') { %>
+                                <div class="farm-detail-info-row">
+                                    <span>📊 Rast</span>
+                                    <strong><%= f.growthStage %></strong>
+                                </div>
+                                <% } %>
+                                <% if(f.fruitStatus && f.fruitStatus !== 'Unknown') { %>
+                                <div class="farm-detail-info-row">
+                                    <span>📋 Status</span>
+                                    <strong><%= f.fruitStatus %></strong>
+                                </div>
+                                <% } %>
+                            </div>
+                            <div class="farm-field-status">
+                                <div class="farm-field-status-item <%= (f.plowingInfo && f.plowingInfo !== 'None' && f.plowingInfo !== 'OK') ? 'needs-action' : 'ok' %>">
+                                    <span class="farm-field-status-icon"><%= (f.plowingInfo && f.plowingInfo !== 'None' && f.plowingInfo !== 'OK') ? '⚠️' : '✅' %></span>
+                                    <span>Oranje</span>
+                                    <span class="farm-field-status-val"><%= f.plowingInfo || '—' %></span>
+                                </div>
+                                <div class="farm-field-status-item <%= (f.limeInfo && f.limeInfo !== 'None' && f.limeInfo !== 'OK') ? 'needs-action' : 'ok' %>">
+                                    <span class="farm-field-status-icon"><%= (f.limeInfo && f.limeInfo !== 'None' && f.limeInfo !== 'OK') ? '⚠️' : '✅' %></span>
+                                    <span>Vapno</span>
+                                    <span class="farm-field-status-val"><%= f.limeInfo || '—' %></span>
+                                </div>
+                                <div class="farm-field-status-item <%= (f.fertilizationInfo && f.fertilizationInfo !== 'None' && f.fertilizationInfo !== 'OK' && f.fertilizationInfo !== 'Full') ? 'needs-action' : 'ok' %>">
+                                    <span class="farm-field-status-icon"><%= (f.fertilizationInfo && f.fertilizationInfo !== 'None' && f.fertilizationInfo !== 'OK' && f.fertilizationInfo !== 'Full') ? '⚠️' : '✅' %></span>
+                                    <span>Gnojivo</span>
+                                    <span class="farm-field-status-val"><%= f.fertilizationInfo || '—' %></span>
+                                </div>
+                                <div class="farm-field-status-item <%= (f.weedInfo && f.weedInfo !== 'None' && f.weedInfo !== 'OK') ? 'needs-action' : 'ok' %>">
+                                    <span class="farm-field-status-icon"><%= (f.weedInfo && f.weedInfo !== 'None' && f.weedInfo !== 'OK') ? '⚠️' : '✅' %></span>
+                                    <span>Korovi</span>
+                                    <span class="farm-field-status-val"><%= f.weedInfo || '—' %></span>
+                                </div>
+                                <% if(f.rollingInfo) { %>
+                                <div class="farm-field-status-item <%= (f.rollingInfo !== 'None' && f.rollingInfo !== 'OK') ? 'needs-action' : 'ok' %>">
+                                    <span class="farm-field-status-icon"><%= (f.rollingInfo !== 'None' && f.rollingInfo !== 'OK') ? '⚠️' : '✅' %></span>
+                                    <span>Valjanje</span>
+                                    <span class="farm-field-status-val"><%= f.rollingInfo %></span>
+                                </div>
+                                <% } %>
+                            </div>
+                            <% if(f.farmlandPrice) { %>
+                                <div class="farm-detail-meta"><span>💰 Cijena: <%= Math.round(f.farmlandPrice).toLocaleString('hr-HR') %> €</span></div>
+                            <% } %>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } else { %>
+                <p class="farm-empty">Nema polja</p>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<!-- ŽIVOTINJE MODAL -->
+<div class="farm-modal-overlay" id="modal-zivotinje" onclick="closeModalOutside(event, 'modal-zivotinje')">
+    <div class="farm-modal">
+        <div class="farm-modal-header">
+            <h2>🐄 Životinje</h2>
+            <button class="farm-modal-close" onclick="closeModal('modal-zivotinje')">✕</button>
+        </div>
+        <div class="farm-modal-body">
+            <% if(farm.animals && farm.animals.length > 0) { %>
+                <div class="farm-modal-grid farm-modal-grid-single">
+                    <% farm.animals.forEach(function(a){ %>
+                        <div class="farm-detail-card">
+                            <h3><%= a.name || a.animalType %></h3>
+                            <p class="farm-detail-type"><%= a.animalType || '' %> · <%= a.numAnimals || 0 %>/<%= a.maxAnimals || '?' %> životinja</p>
+                            <div class="farm-detail-bars">
+                                <div class="farm-detail-bar-row">
+                                    <span class="farm-detail-bar-label">❤️ Zdravlje</span>
+                                    <div class="farm-progress-lg"><div class="farm-progress-fill health" style="width:<%= a.health != null ? Math.min(Math.round(a.health), 100) : 0 %>%"></div></div>
+                                    <span class="farm-detail-bar-val"><%= a.health != null ? Math.round(a.health) : 0 %>%</span>
+                                </div>
+                                <div class="farm-detail-bar-row">
+                                    <span class="farm-detail-bar-label">📈 Produktivnost</span>
+                                    <div class="farm-progress-lg"><div class="farm-progress-fill productivity" style="width:<%= a.productivity != null ? Math.min(Math.round(a.productivity), 100) : 0 %>%"></div></div>
+                                    <span class="farm-detail-bar-val"><%= a.productivity != null ? Math.round(a.productivity) : 0 %>%</span>
+                                </div>
+                                <% if(a.reproduction != null) { %>
+                                <div class="farm-detail-bar-row">
+                                    <span class="farm-detail-bar-label">🔄 Reprodukcija</span>
+                                    <div class="farm-progress-lg"><div class="farm-progress-fill def" style="width:<%= Math.min(Math.round(a.reproduction), 100) %>%"></div></div>
+                                    <span class="farm-detail-bar-val"><%= Math.round(a.reproduction) %>%</span>
+                                </div>
+                                <% } %>
+                            </div>
+                            <% if(a.food && Array.isArray(a.food) && a.food.length > 0) { %>
+                                <div class="farm-detail-fills">
+                                    <p class="farm-detail-fills-title">🍽️ Hrana:</p>
+                                    <% a.food.forEach(function(fd){ %>
+                                        <div class="farm-detail-bar-row">
+                                            <span class="farm-detail-bar-label"><%= fd.title || fd.fillType %></span>
+                                            <div class="farm-progress-lg"><div class="farm-progress-fill storage" style="width:<%= Math.min(fd.percent || 0, 100) %>%"></div></div>
+                                            <span class="farm-detail-bar-val"><%= Math.round(fd.percent || 0) %>%</span>
+                                        </div>
+                                    <% }) %>
+                                </div>
+                            <% } %>
+                            <% if(a.outputs && Array.isArray(a.outputs) && a.outputs.length > 0) { %>
+                                <div class="farm-detail-fills">
+                                    <p class="farm-detail-fills-title">📤 Proizvodi:</p>
+                                    <% a.outputs.forEach(function(o){ %>
+                                        <div class="farm-detail-bar-row">
+                                            <span class="farm-detail-bar-label"><%= o.title || o.fillType %></span>
+                                            <div class="farm-progress-lg"><div class="farm-progress-fill productivity" style="width:<%= Math.min(o.percent || 0, 100) %>%"></div></div>
+                                            <span class="farm-detail-bar-val"><%= Math.round(o.amount || 0).toLocaleString('hr-HR') %> L</span>
+                                        </div>
+                                    <% }) %>
+                                </div>
+                            <% } %>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } else { %>
+                <p class="farm-empty">Nema životinja</p>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<!-- PROIZVODNJA MODAL -->
+<div class="farm-modal-overlay" id="modal-proizvodnja" onclick="closeModalOutside(event, 'modal-proizvodnja')">
+    <div class="farm-modal">
+        <div class="farm-modal-header">
+            <h2>🏭 Proizvodnja</h2>
+            <button class="farm-modal-close" onclick="closeModal('modal-proizvodnja')">✕</button>
+        </div>
+        <div class="farm-modal-body">
+            <% if(farm.productions && farm.productions.length > 0) { %>
+                <div class="farm-modal-grid farm-modal-grid-single">
+                    <% farm.productions.forEach(function(p){ %>
+                        <div class="farm-detail-card">
+                            <h3><%= p.name %></h3>
+                            <div class="farm-detail-info">
+                                <div class="farm-detail-info-row">
+                                    <span>📋 Status</span>
+                                    <strong><%= p.status || 'N/A' %></strong>
+                                </div>
+                                <div class="farm-detail-info-row">
+                                    <span>🏷️ Vlasništvo</span>
+                                    <strong style="color: <%= p.isOwned !== false ? '#00ff7a' : '#ff6b6b' %>"><%= p.isOwned !== false ? 'Da' : 'Ne' %></strong>
+                                </div>
+                            </div>
+                            <% if(p.inputs && Array.isArray(p.inputs) && p.inputs.length > 0) { %>
+                                <div class="farm-detail-fills">
+                                    <p class="farm-detail-fills-title">📥 Ulazi:</p>
+                                    <% p.inputs.forEach(function(inp){ %>
+                                        <% var inpPct = inp.capacity ? Math.min(Math.round((inp.amount / inp.capacity) * 100), 100) : 0; %>
+                                        <div class="farm-detail-bar-row">
+                                            <span class="farm-detail-bar-label"><%= inp.fillType %></span>
+                                            <div class="farm-progress-lg"><div class="farm-progress-fill storage" style="width:<%= inpPct %>%"></div></div>
+                                            <span class="farm-detail-bar-val"><%= Math.round(inp.amount || 0).toLocaleString('hr-HR') %> L</span>
+                                        </div>
+                                    <% }) %>
+                                </div>
+                            <% } %>
+                            <% if(p.outputs && Array.isArray(p.outputs) && p.outputs.length > 0) { %>
+                                <div class="farm-detail-fills">
+                                    <p class="farm-detail-fills-title">📤 Izlazi:</p>
+                                    <% p.outputs.forEach(function(out){ %>
+                                        <% var outPct = out.capacity ? Math.min(Math.round((out.amount / out.capacity) * 100), 100) : 0; %>
+                                        <div class="farm-detail-bar-row">
+                                            <span class="farm-detail-bar-label"><%= out.fillType %></span>
+                                            <div class="farm-progress-lg"><div class="farm-progress-fill productivity" style="width:<%= outPct %>%"></div></div>
+                                            <span class="farm-detail-bar-val"><%= Math.round(out.amount || 0).toLocaleString('hr-HR') %> L</span>
+                                        </div>
+                                    <% }) %>
+                                </div>
+                            <% } %>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } else { %>
+                <p class="farm-empty">Nema proizvodnje</p>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<!-- SKLADIŠTA MODAL -->
+<div class="farm-modal-overlay" id="modal-skladista" onclick="closeModalOutside(event, 'modal-skladista')">
+    <div class="farm-modal">
+        <div class="farm-modal-header">
+            <h2>📦 Skladišta</h2>
+            <button class="farm-modal-close" onclick="closeModal('modal-skladista')">✕</button>
+        </div>
+        <div class="farm-modal-body">
+            <% if(farm.silos && farm.silos.length > 0) { %>
+                <div class="farm-modal-grid farm-modal-grid-single">
+                    <% farm.silos.forEach(function(s){ %>
+                        <% var fillPct = s.percent != null ? Math.round(s.percent) : (s.totalFill && s.capacity ? Math.round((s.totalFill / s.capacity) * 100) : 0); %>
+                        <div class="farm-detail-card">
+                            <h3><%= s.name %></h3>
+                            <% if(s.typeName) { %><p class="farm-detail-type"><%= s.typeName %></p><% } %>
+                            <div class="farm-detail-bars">
+                                <div class="farm-detail-bar-row">
+                                    <span class="farm-detail-bar-label">📦 Ukupno</span>
+                                    <div class="farm-progress-lg"><div class="farm-progress-fill storage" style="width:<%= Math.min(fillPct, 100) %>%"></div></div>
+                                    <span class="farm-detail-bar-val"><%= fillPct %>%</span>
+                                </div>
+                            </div>
+                            <p style="font-size:12px; opacity:0.5; margin: 8px 0 0;"><%= Math.round(s.totalFill || 0).toLocaleString('hr-HR') %> / <%= Math.round(s.capacity || 0).toLocaleString('hr-HR') %> L</p>
+                            <% if(s.fillLevels && typeof s.fillLevels === 'object') { %>
+                                <div class="farm-detail-fills">
+                                    <p class="farm-detail-fills-title">Sadržaj:</p>
+                                    <% Object.keys(s.fillLevels).forEach(function(key){ %>
+                                        <% if(s.fillLevels[key] > 0) { %>
+                                        <% var itemPct = s.capacity ? Math.min(Math.round((s.fillLevels[key] / s.capacity) * 100), 100) : 0; %>
+                                        <div class="farm-detail-bar-row">
+                                            <span class="farm-detail-bar-label"><%= key %></span>
+                                            <div class="farm-progress-lg"><div class="farm-progress-fill storage" style="width:<%= itemPct %>%"></div></div>
+                                            <span class="farm-detail-bar-val"><%= Math.round(s.fillLevels[key]).toLocaleString('hr-HR') %> L</span>
+                                        </div>
+                                        <% } %>
+                                    <% }) %>
+                                </div>
+                            <% } %>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } else { %>
+                <p class="farm-empty">Skladište je prazno</p>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<script>
+function openModal(id) {
+    document.getElementById(id).classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+    document.body.style.overflow = '';
+}
+function closeModalOutside(e, id) {
+    if (e.target === document.getElementById(id)) closeModal(id);
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.farm-modal-overlay.active').forEach(function(m) {
+            m.classList.remove('active');
+        });
+        document.body.style.overflow = '';
+    }
+});
+</script>
 
 <% } else if (user) { %>
 
