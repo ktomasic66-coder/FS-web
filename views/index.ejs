@@ -74,20 +74,20 @@
 
     <ul>
         <li><a href="/">Početna</a></li>
-        <li><a href="/galerija">Galerija</a></li>
-        <li><a href="/pravila">Pravila</a></li>
-        <li><a href="/statistika">Statistika</a></li>
-        <li><a href="/moja-farma">Moja Farma</a></li>
+        <li><a href="/galerija" data-i18n="gallery">Galerija</a></li>
+        <li><a href="/pravila" data-i18n="rules">Pravila</a></li>
+        <li><a href="/statistika" data-i18n="statistics">Statistika</a></li>
+        <li><a href="/moja-farma" data-i18n="myFarm">Moja Farma</a></li>
 
         <% if(user){ %>
-            <li><a href="/profile">Profil</a></li>
+            <li><a href="/profile" data-i18n="profile">Profil</a></li>
             <% if (canAdminNav) { %>
                 <li><a href="/admin">Admin</a></li>
                 <li><a href="/bot-settings">Bot</a></li>
             <% } %>
-            <li><a href="/logout">Logout</a></li>
+            <li><a href="/logout" data-i18n="logout">Logout</a></li>
         <% } else { %>
-            <li><a href="/auth/discord">Login</a></li>
+            <li><a href="/auth/discord" data-i18n="login">Login</a></li>
         <% } %>
     </ul>
 </nav>
@@ -158,7 +158,7 @@
 <% if (typeof farmsOverview !== 'undefined' && farmsOverview && farmsOverview.length > 0) { %>
 <!-- AKTIVNE FARME -->
 <section class="section farms-overview-section">
-    <h2 class="farms-overview-title">🌾 Aktivne Farme</h2>
+    <h2 class="farms-overview-title" data-i18n="activeFarms">🌾 Aktivne Farme</h2>
     <div class="farms-overview-grid">
         <% 
         const farmColorMap = {
@@ -349,5 +349,5 @@ document.addEventListener("keydown", (e) => {
 </script>
 
 <script src="/modal.js"></script>
-</body>
+<script src="/site.js"></script></body>
 </html>

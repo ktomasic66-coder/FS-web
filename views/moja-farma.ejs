@@ -18,19 +18,19 @@
     </div>
     <ul>
         <li><a href="/">Početna</a></li>
-        <li><a href="/galerija">Galerija</a></li>
-        <li><a href="/pravila">Pravila</a></li>
-        <li><a href="/statistika">Statistika</a></li>
-        <li><a href="/moja-farma">Moja Farma</a></li>
+        <li><a href="/galerija" data-i18n="gallery">Galerija</a></li>
+        <li><a href="/pravila" data-i18n="rules">Pravila</a></li>
+        <li><a href="/statistika" data-i18n="statistics">Statistika</a></li>
+        <li><a href="/moja-farma" data-i18n="myFarm">Moja Farma</a></li>
         <% if(user){ %>
-            <li><a href="/profile">Profil</a></li>
+            <li><a href="/profile" data-i18n="profile">Profil</a></li>
             <% if (canAdminNav) { %>
                 <li><a href="/admin">Admin</a></li>
                 <li><a href="/bot-settings">Bot</a></li>
             <% } %>
-            <li><a href="/logout">Logout</a></li>
+            <li><a href="/logout" data-i18n="logout">Logout</a></li>
         <% } else { %>
-            <li><a href="/auth/discord">Login</a></li>
+            <li><a href="/auth/discord" data-i18n="login">Login</a></li>
         <% } %>
     </ul>
 </nav>
@@ -41,10 +41,37 @@
 <section class="farm-hero">
     <div class="farm-hero-content">
         <h1 class="farm-title"><%= farm.name %></h1>
-        <p class="farm-subtitle">Upravljanje farmom</p>
+        <p class="farm-subtitle" data-i18n="farmManagement">Upravljanje farmom</p>
         <div class="farm-balance-card">
-            <span class="farm-balance-label">Stanje računa</span>
+            <span class="farm-balance-label" data-i18n="accountBalance">Stanje računa</span>
             <span class="farm-balance-amount"><%= Number(farm.balance).toLocaleString('hr-HR') %> €</span>
+        </div>
+
+        <!-- Money Transfer -->
+        <div class="farm-transfer-card">
+            <h3 data-i18n="sendMoney">💸 Pošalji novac</h3>
+            <form id="transfer-form" class="farm-transfer-form">
+                <input type="hidden" name="fromFarmId" value="<%= farm.farmId %>">
+                <div class="farm-transfer-row">
+                    <label data-i18n="targetFarm">Ciljna farma</label>
+                    <select name="toFarmId" id="transfer-target" required>
+                        <option value="" data-i18n="selectFarm">-- Odaberi farmu --</option>
+                        <% if(typeof otherFarms !== 'undefined' && otherFarms.length > 0) { %>
+                            <% otherFarms.forEach(function(of){ %>
+                                <option value="<%= of.farmId %>"><%= of.name %> (F<%= of.farmId %>)</option>
+                            <% }) %>
+                        <% } %>
+                    </select>
+                </div>
+                <div class="farm-transfer-row">
+                    <label data-i18n="amount">Iznos (€)</label>
+                    <input type="number" name="amount" id="transfer-amount" min="1" max="<%= Math.floor(farm.balance) %>" placeholder="0" required>
+                </div>
+                <button type="submit" class="farm-transfer-btn" data-i18n="queueTransfer">📋 Zakaži prijenos</button>
+                <p class="farm-transfer-note" data-i18n="transferNote">* Prijenos se izvršava tek nakon sljedećeg spremanja igre (savegame)</p>
+            </form>
+            <div id="transfer-result" class="farm-transfer-result" style="display:none;"></div>
+            <div id="pending-transfers" class="farm-pending-transfers"></div>
         </div>
     </div>
 </section>
@@ -722,6 +749,79 @@ function updateNoResults(modal) {
         existing.remove();
     }
 }
+
+// Money Transfer
+var transferForm = document.getElementById('transfer-form');
+if (transferForm) {
+    loadPendingTransfers();
+    transferForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var fromFarmId = this.querySelector('[name="fromFarmId"]').value;
+        var toFarmId = this.querySelector('[name="toFarmId"]').value;
+        var amount = parseInt(this.querySelector('[name="amount"]').value);
+        var resultDiv = document.getElementById('transfer-result');
+
+        if (!toFarmId || !amount || amount < 1) {
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'farm-transfer-result error';
+            resultDiv.textContent = 'Odaberi farmu i unesi iznos.';
+            return;
+        }
+
+        fetch('/api/money-transfer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fromFarmId: fromFarmId, toFarmId: toFarmId, amount: amount })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            resultDiv.style.display = 'block';
+            if (data.success) {
+                resultDiv.className = 'farm-transfer-result success';
+                resultDiv.textContent = data.message || 'Prijenos zakazan!';
+                document.getElementById('transfer-amount').value = '';
+                loadPendingTransfers();
+            } else {
+                resultDiv.className = 'farm-transfer-result error';
+                resultDiv.textContent = data.error || 'Greška pri zakazivanju.';
+            }
+        })
+        .catch(function() {
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'farm-transfer-result error';
+            resultDiv.textContent = 'Greška pri slanju zahtjeva.';
+        });
+    });
+}
+
+function loadPendingTransfers() {
+    var container = document.getElementById('pending-transfers');
+    if (!container) return;
+    fetch('/api/money-transfer/pending')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (!data.transfers || data.transfers.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+        var html = '<h4>⏳ Zakazani prijenosi</h4><ul>';
+        data.transfers.forEach(function(t) {
+            html += '<li><span>' + t.toFarmName + '</span><span class="farm-transfer-amount">' +
+                Number(t.amount).toLocaleString('hr-HR') + ' €</span>' +
+                '<button class="farm-transfer-cancel" onclick="cancelTransfer(\'' + t._id + '\')">✕</button></li>';
+        });
+        html += '</ul>';
+        container.innerHTML = html;
+    })
+    .catch(function() { container.innerHTML = ''; });
+}
+
+function cancelTransfer(id) {
+    fetch('/api/money-transfer/' + id, { method: 'DELETE' })
+    .then(function(r) { return r.json(); })
+    .then(function() { loadPendingTransfers(); })
+    .catch(function() {});
+}
 </script>
 
 <% } else if (user) { %>
@@ -772,5 +872,5 @@ particlesJS('particles-js', {
 </script>
 
 <script src="/modal.js"></script>
-</body>
+<script src="/site.js"></script></body>
 </html>

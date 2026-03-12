@@ -15,19 +15,19 @@
     </div>
     <ul>
         <li><a href="/">Početna</a></li>
-        <li><a href="/galerija">Galerija</a></li>
-        <li><a href="/pravila">Pravila</a></li>
-        <li><a href="/statistika">Statistika</a></li>
-        <li><a href="/moja-farma">Moja Farma</a></li>
+        <li><a href="/galerija" data-i18n="gallery">Galerija</a></li>
+        <li><a href="/pravila" data-i18n="rules">Pravila</a></li>
+        <li><a href="/statistika" data-i18n="statistics">Statistika</a></li>
+        <li><a href="/moja-farma" data-i18n="myFarm">Moja Farma</a></li>
         <% if(user){ %>
-            <li><a href="/profile">Profil</a></li>
+            <li><a href="/profile" data-i18n="profile">Profil</a></li>
             <% if (canAdminNav) { %>
                 <li><a href="/admin">Admin</a></li>
                 <li><a href="/bot-settings">Bot</a></li>
             <% } %>
-            <li><a href="/logout">Logout</a></li>
+            <li><a href="/logout" data-i18n="logout">Logout</a></li>
         <% } else { %>
-            <li><a href="/auth/discord">Login</a></li>
+            <li><a href="/auth/discord" data-i18n="login">Login</a></li>
         <% } %>
     </ul>
 </nav>
@@ -58,5 +58,5 @@
 </div>
 
 <script src="/modal.js"></script>
-</body>
+<script src="/site.js"></script></body>
 </html>

@@ -1999,8 +1999,9 @@ app.get('/', async (req, res) => {
       farmsOverview = allFarms
         .filter(f => f.farmId && !String(f.farmId).startsWith('U:'))
         .map(farm => {
-          const farmFields = allFields.filter(f => f.ownerFarmId === farm.farmId);
-          const farmPlayers = allPlayers.filter(p => p.farmId === farm.farmId);
+          const fid = String(farm.farmId);
+          const farmFields = allFields.filter(f => String(f.ownerFarmId) === fid);
+          const farmPlayers = allPlayers.filter(p => String(p.farmId) === fid);
           const totalArea = farmFields.reduce((sum, f) => sum + (parseFloat(f.fieldArea) || 0), 0);
 
           return {
@@ -2457,13 +2458,22 @@ app.get('/moja-farma', async (req, res) => {
             };
           }
         }
+
+        // Fetch all farms for transfer dropdown (exclude current farm)
+        var allFarmsForTransfer = [];
+        try {
+          const allF = await db.collection('farms').find().toArray();
+          allFarmsForTransfer = allF
+            .filter(f => f.farmId && !String(f.farmId).startsWith('U:') && String(f.farmId) !== String(farmId))
+            .map(f => ({ farmId: f.farmId, name: f.name || ('Farma ' + f.farmId) }));
+        } catch(e) {}
       }
     } catch (err) {
       console.error('[MOJA-FARMA] Greška pri dohvaćanju farme:', err.message);
     }
   }
 
-  res.render('moja-farma', { user: req.user, farm: farmData });
+  res.render('moja-farma', { user: req.user, farm: farmData, otherFarms: allFarmsForTransfer || [] });
 });
 
 app.get('/galerija', async (req, res) => {
@@ -2654,6 +2664,140 @@ app.get(
 
 app.get('/logout', (req, res) => {
   req.logout(() => res.redirect('/'));
+});
+
+/* ===== MONEY TRANSFER API ===== */
+
+// Create a pending transfer
+app.post('/api/money-transfer', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Niste prijavljeni' });
+  try {
+    const db = await getBotDb();
+    if (!db) return res.status(500).json({ error: 'Baza nedostupna' });
+
+    const { fromFarmId, toFarmId, amount } = req.body;
+    const transferAmount = parseInt(amount);
+
+    if (!fromFarmId || !toFarmId || !transferAmount || transferAmount < 1) {
+      return res.status(400).json({ error: 'Neispravan zahtjev' });
+    }
+    if (String(fromFarmId) === String(toFarmId)) {
+      return res.status(400).json({ error: 'Ne možete slati novac na istu farmu' });
+    }
+
+    // Verify user owns the source farm
+    const playerLink = await db.collection('player_links').findOne({ discordUserId: req.user.id });
+    if (!playerLink) return res.status(403).json({ error: 'Nemate povezan račun' });
+
+    let userFarmId = playerLink.defaultFarmId;
+    if (!userFarmId && playerLink.uniqueUserId) {
+      const player = await db.collection('players').findOne({ uniqueUserId: playerLink.uniqueUserId });
+      if (player) userFarmId = player.farmId;
+    }
+    if (String(userFarmId) !== String(fromFarmId)) {
+      return res.status(403).json({ error: 'Nemate pristup ovoj farmi' });
+    }
+
+    // Check balance
+    const fromFarm = await db.collection('farms').findOne({ farmId: String(fromFarmId) });
+    if (!fromFarm || (fromFarm.balance || 0) < transferAmount) {
+      return res.status(400).json({ error: 'Nedovoljno sredstava na računu' });
+    }
+
+    // Get target farm name
+    const toFarm = await db.collection('farms').findOne({ farmId: String(toFarmId) });
+    const toFarmName = toFarm ? toFarm.name : ('Farma ' + toFarmId);
+
+    // Check total pending doesn't exceed balance
+    const pendingTotal = await db.collection('pending_transfers').aggregate([
+      { $match: { fromFarmId: String(fromFarmId), status: 'pending' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]).toArray();
+    const alreadyPending = pendingTotal.length > 0 ? pendingTotal[0].total : 0;
+
+    if (alreadyPending + transferAmount > (fromFarm.balance || 0)) {
+      return res.status(400).json({ error: 'Ukupni zakazani prijenosi premašuju stanje računa' });
+    }
+
+    await db.collection('pending_transfers').insertOne({
+      fromFarmId: String(fromFarmId),
+      toFarmId: String(toFarmId),
+      toFarmName,
+      amount: transferAmount,
+      requestedBy: req.user.id,
+      requestedByName: req.user.username,
+      status: 'pending',
+      createdAt: new Date()
+    });
+
+    res.json({ success: true, message: 'Prijenos od ' + transferAmount.toLocaleString('hr-HR') + ' € zakazan za ' + toFarmName });
+  } catch (err) {
+    console.error('[TRANSFER] Error:', err.message);
+    res.status(500).json({ error: 'Greška na serveru' });
+  }
+});
+
+// Get pending transfers for current user
+app.get('/api/money-transfer/pending', async (req, res) => {
+  if (!req.user) return res.status(401).json({ transfers: [] });
+  try {
+    const db = await getBotDb();
+    if (!db) return res.json({ transfers: [] });
+
+    const playerLink = await db.collection('player_links').findOne({ discordUserId: req.user.id });
+    if (!playerLink) return res.json({ transfers: [] });
+
+    let userFarmId = playerLink.defaultFarmId;
+    if (!userFarmId && playerLink.uniqueUserId) {
+      const player = await db.collection('players').findOne({ uniqueUserId: playerLink.uniqueUserId });
+      if (player) userFarmId = player.farmId;
+    }
+    if (!userFarmId) return res.json({ transfers: [] });
+
+    const transfers = await db.collection('pending_transfers')
+      .find({ fromFarmId: String(userFarmId), status: 'pending' })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    res.json({ transfers });
+  } catch (err) {
+    console.error('[TRANSFER] Pending error:', err.message);
+    res.json({ transfers: [] });
+  }
+});
+
+// Cancel a pending transfer
+app.delete('/api/money-transfer/:id', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Niste prijavljeni' });
+  try {
+    const db = await getBotDb();
+    if (!db) return res.status(500).json({ error: 'Baza nedostupna' });
+
+    const { ObjectId } = require('mongodb');
+    let objId;
+    try { objId = new ObjectId(req.params.id); } catch(e) {
+      return res.status(400).json({ error: 'Neispravan ID' });
+    }
+
+    const transfer = await db.collection('pending_transfers').findOne({ _id: objId });
+    if (!transfer) return res.status(404).json({ error: 'Prijenos nije pronađen' });
+    if (transfer.requestedBy !== req.user.id) {
+      return res.status(403).json({ error: 'Nemate pristup' });
+    }
+    if (transfer.status !== 'pending') {
+      return res.status(400).json({ error: 'Prijenos je već obrađen' });
+    }
+
+    await db.collection('pending_transfers').updateOne(
+      { _id: objId },
+      { $set: { status: 'cancelled', cancelledAt: new Date() } }
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[TRANSFER] Cancel error:', err.message);
+    res.status(500).json({ error: 'Greška na serveru' });
+  }
 });
 
 /* ===== START ===== */
