@@ -159,6 +159,31 @@
     'loginForFarm': { hr: 'Prijavite se za pristup vašoj farmi', en: 'Log in to access your farm' },
     'loginRequired': { hr: 'Za pregled vaše farme potrebna je prijava putem Discord računa.', en: 'Discord login is required to view your farm.' },
     'loginBtn': { hr: 'Prijava putem Discorda', en: 'Login via Discord' },
+
+    // No-permission page
+    'accessDenied': { hr: '🚫 Pristup odbijen', en: '🚫 Access Denied' },
+    'noRoleAccess': { hr: 'Nemaš potrebnu rolu za pristup ovoj stranici.', en: 'You don\'t have the required role to access this page.' },
+    'checkRoles': { hr: 'Ako smatraš da je ovo greška, provjeri svoje role na Discord serveru.', en: 'If you think this is a mistake, check your roles on the Discord server.' },
+    'backToHome': { hr: 'Povratak na početnu', en: 'Back to Home' },
+
+    // Profile
+    'adminBadge': { hr: '👑 Admin', en: '👑 Admin' },
+    'playerBadge': { hr: '🚜 Player', en: '🚜 Player' },
+
+    // Gallery comments
+    'delete': { hr: 'Obriši', en: 'Delete' },
+    'commentsCount': { hr: 'komentara', en: 'comments' },
+    'commentsHeader': { hr: 'Komentari', en: 'Comments' },
+    'noComments': { hr: 'Još nema komentara.', en: 'No comments yet.' },
+    'addCommentPlaceholder': { hr: 'Dodaj komentar...', en: 'Add a comment...' },
+    'publish': { hr: 'Objavi', en: 'Post' },
+    'allComments': { hr: 'Svi komentari', en: 'All comments' },
+    'noCommentsForImage': { hr: 'Još nema komentara za ovu sliku.', en: 'No comments for this image yet.' },
+    'addComment': { hr: 'Dodaj komentar', en: 'Add a comment' },
+    'writeCommentPlaceholder': { hr: 'Napiši komentar...', en: 'Write a comment...' },
+    'publishComment': { hr: 'Objavi komentar', en: 'Post comment' },
+    'noUploadedImages': { hr: 'Nema uploadanih slika.', en: 'No uploaded images.' },
+    'close': { hr: 'Zatvori', en: 'Close' },
   };
 
   // ===== LANGUAGE =====

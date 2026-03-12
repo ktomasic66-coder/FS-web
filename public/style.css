@@ -1415,7 +1415,7 @@ s input {
 }
 
 .farm-balance-card {
-  display: inline-flex;
+  display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
@@ -1423,6 +1423,9 @@ s input {
   border: 1px solid rgba(var(--accent-rgb),0.25);
   border-radius: 16px;
   padding: 20px 40px;
+  max-width: 420px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .farm-balance-label {
@@ -3548,6 +3551,8 @@ s input {
   margin-top: 16px;
   max-width: 420px;
   width: 100%;
+  margin-left: auto;
+  margin-right: auto;
 }
 .farm-transfer-card h3 {
   margin: 0 0 10px;

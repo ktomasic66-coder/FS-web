@@ -44,7 +44,7 @@
         <p class="farm-subtitle" data-i18n="farmManagement">Upravljanje farmom</p>
         <div class="farm-balance-card">
             <span class="farm-balance-label" data-i18n="accountBalance">Stanje računa</span>
-            <span class="farm-balance-amount"><%= Number(farm.balance).toLocaleString('hr-HR') %> €</span>
+            <span class="farm-balance-amount"><%= Math.round(farm.balance).toLocaleString('hr-HR') %> €</span>
         </div>
 
         <!-- Money Transfer -->
@@ -80,7 +80,7 @@
         <div class="farm-card farm-card-clickable" onclick="openModal('modal-vozila')">
             <div class="farm-card-header">
                 <span class="farm-card-icon">🚜</span>
-                <h2>Vozila</h2>
+                <h2 data-i18n="vehicles">Vozila</h2>
             </div>
             <div class="farm-card-body">
                 <% if(farm.vehicles && farm.vehicles.length > 0) { %>
@@ -89,7 +89,7 @@
                             <li>
                                 <% var fuelPct = v.fuelLevel != null ? Math.min(Math.round(v.fuelLevel * 100), 100) : 0; %>
                                 <% var condPct = v.damage != null ? Math.max(100 - Math.round(v.damage * 100), 0) : 100; %>
-                                <span class="farm-list-dot" style="background: <%= condPct < 50 ? '#ff4444' : '#00ff7a' %>"></span>
+                                <span class="farm-list-dot" style="background: <%= condPct < 50 ? '#ff4444' : 'var(--accent)' %>"></span>
                                 <div style="flex:1">
                                     <strong><%= v.name %></strong>
                                     <div class="farm-bars-mini">
@@ -110,7 +110,7 @@
                         <p class="farm-more">+ još <%= farm.vehicles.length - 5 %> vozila... klikni za sve</p>
                     <% } %>
                 <% } else { %>
-                    <p class="farm-empty">Nema vozila</p>
+                    <p class="farm-empty" data-i18n="noVehicles">Nema vozila</p>
                 <% } %>
             </div>
             <div class="farm-card-count"><%= farm.vehicles ? farm.vehicles.length : 0 %> vozila</div>
@@ -120,7 +120,7 @@
         <div class="farm-card farm-card-clickable" onclick="openModal('modal-polja')">
             <div class="farm-card-header">
                 <span class="farm-card-icon">🌾</span>
-                <h2>Polja</h2>
+                <h2 data-i18n="fields">Polja</h2>
             </div>
             <div class="farm-card-body">
                 <% if(farm.fields && farm.fields.length > 0) { %>
@@ -149,7 +149,7 @@
                         <p class="farm-more">+ još <%= farm.fields.length - 5 %> polja... klikni za sve</p>
                     <% } %>
                 <% } else { %>
-                    <p class="farm-empty">Nema polja</p>
+                    <p class="farm-empty" data-i18n="noFields">Nema polja</p>
                 <% } %>
             </div>
             <div class="farm-card-count"><%= farm.fields ? farm.fields.length : 0 %> polja</div>
@@ -159,14 +159,14 @@
         <div class="farm-card farm-card-clickable" onclick="openModal('modal-zivotinje')">
             <div class="farm-card-header">
                 <span class="farm-card-icon">🐄</span>
-                <h2>Životinje</h2>
+                <h2 data-i18n="animals">Životinje</h2>
             </div>
             <div class="farm-card-body">
                 <% if(farm.animals && farm.animals.length > 0) { %>
                     <ul class="farm-list">
                         <% farm.animals.forEach(function(a){ %>
                             <li>
-                                <span class="farm-list-dot" style="background: <%= (a.health != null && a.health < 70) ? '#ffaa00' : '#00ff7a' %>"></span>
+                                <span class="farm-list-dot" style="background: <%= (a.health != null && a.health < 70) ? '#ffaa00' : 'var(--accent)' %>"></span>
                                 <div style="flex:1">
                                     <strong><%= a.name || a.animalType %></strong>
                                     <div class="farm-bars-mini">
@@ -187,7 +187,7 @@
                         <% }) %>
                     </ul>
                 <% } else { %>
-                    <p class="farm-empty">Nema životinja</p>
+                    <p class="farm-empty" data-i18n="noAnimals">Nema životinja</p>
                 <% } %>
             </div>
             <div class="farm-card-count">
@@ -199,14 +199,14 @@
         <div class="farm-card farm-card-clickable" onclick="openModal('modal-proizvodnja')">
             <div class="farm-card-header">
                 <span class="farm-card-icon">🏭</span>
-                <h2>Proizvodnja</h2>
+                <h2 data-i18n="production">Proizvodnja</h2>
             </div>
             <div class="farm-card-body">
                 <% if(farm.productions && farm.productions.length > 0) { %>
                     <ul class="farm-list">
                         <% farm.productions.forEach(function(p){ %>
                             <li>
-                                <span class="farm-list-dot" style="background: <%= p.isOwned !== false ? '#00ff7a' : '#666' %>"></span>
+                                <span class="farm-list-dot" style="background: <%= p.isOwned !== false ? 'var(--accent)' : '#666' %>"></span>
                                 <div style="flex:1">
                                     <strong><%= p.name %></strong>
                                     <div style="font-size:12px; opacity:0.5; margin-top:2px;">
@@ -218,7 +218,7 @@
                         <% }) %>
                     </ul>
                 <% } else { %>
-                    <p class="farm-empty">Nema proizvodnje</p>
+                    <p class="farm-empty" data-i18n="noProduction">Nema proizvodnje</p>
                 <% } %>
             </div>
             <div class="farm-card-count"><%= farm.productions ? farm.productions.length : 0 %> proizvodnji</div>
@@ -228,7 +228,7 @@
         <div class="farm-card farm-card-wide farm-card-clickable" onclick="openModal('modal-skladista')">
             <div class="farm-card-header">
                 <span class="farm-card-icon">📦</span>
-                <h2>Skladišta</h2>
+                <h2 data-i18n="storage">Skladišta</h2>
             </div>
             <div class="farm-card-body">
                 <% if(farm.silos && farm.silos.length > 0) { %>
@@ -236,7 +236,7 @@
                         <% farm.silos.forEach(function(s){ %>
                             <% var fillPct = s.percent != null ? Math.round(s.percent) : (s.totalFill && s.capacity ? Math.round((s.totalFill / s.capacity) * 100) : 0); %>
                             <li>
-                                <span class="farm-list-dot" style="background: <%= fillPct > 80 ? '#ffaa00' : '#00ff7a' %>"></span>
+                                <span class="farm-list-dot" style="background: <%= fillPct > 80 ? '#ffaa00' : 'var(--accent)' %>"></span>
                                 <div style="flex:1">
                                     <strong><%= s.name %></strong>
                                     <div class="farm-bar-mini" style="margin-top:6px;">
@@ -248,7 +248,7 @@
                         <% }) %>
                     </ul>
                 <% } else { %>
-                    <p class="farm-empty">Skladište je prazno</p>
+                    <p class="farm-empty" data-i18n="emptyStorage">Skladište je prazno</p>
                 <% } %>
             </div>
             <div class="farm-card-count"><%= farm.silos ? farm.silos.length : 0 %> skladišta</div>
@@ -259,13 +259,13 @@
         <div class="farm-card farm-card-wide">
             <div class="farm-card-header">
                 <span class="farm-card-icon">👥</span>
-                <h2>Igrači</h2>
+                <h2 data-i18n="players">Igrači</h2>
             </div>
             <div class="farm-card-body">
                 <ul class="farm-list farm-list-crops">
                     <% farm.players.forEach(function(pl){ %>
                         <li>
-                            <span class="farm-list-dot" style="background: <%= pl.isOnline ? '#00ff7a' : '#666' %>;"></span>
+                            <span class="farm-list-dot" style="background: <%= pl.isOnline ? 'var(--accent)' : '#666' %>;"></span>
                             <div style="flex:1">
                                 <strong><%= pl.name %></strong>
                                 <div style="font-size:12px; opacity:0.5; margin-top:2px;">
@@ -366,7 +366,7 @@
                     <% }) %>
                 </div>
             <% } else { %>
-                <p class="farm-empty">Nema vozila</p>
+                <p class="farm-empty" data-i18n="noVehicles">Nema vozila</p>
             <% } %>
         </div>
     </div>
@@ -456,7 +456,7 @@
                     <% }) %>
                 </div>
             <% } else { %>
-                <p class="farm-empty">Nema polja</p>
+                <p class="farm-empty" data-i18n="noFields">Nema polja</p>
             <% } %>
         </div>
     </div>
@@ -530,7 +530,7 @@
                     <% }) %>
                 </div>
             <% } else { %>
-                <p class="farm-empty">Nema životinja</p>
+                <p class="farm-empty" data-i18n="noAnimals">Nema životinja</p>
             <% } %>
         </div>
     </div>
@@ -564,7 +564,7 @@
                                 </div>
                                 <div class="farm-detail-info-row">
                                     <span>🏷️ Vlasništvo</span>
-                                    <strong style="color: <%= p.isOwned !== false ? '#00ff7a' : '#ff6b6b' %>"><%= p.isOwned !== false ? 'Da' : 'Ne' %></strong>
+                                    <strong style="color: <%= p.isOwned !== false ? 'var(--accent)' : '#ff6b6b' %>"><%= p.isOwned !== false ? 'Da' : 'Ne' %></strong>
                                 </div>
                             </div>
                             <% if(p.inputs && Array.isArray(p.inputs) && p.inputs.length > 0) { %>
@@ -597,7 +597,7 @@
                     <% }) %>
                 </div>
             <% } else { %>
-                <p class="farm-empty">Nema proizvodnje</p>
+                <p class="farm-empty" data-i18n="noProduction">Nema proizvodnje</p>
             <% } %>
         </div>
     </div>
@@ -653,7 +653,7 @@
                     <% }) %>
                 </div>
             <% } else { %>
-                <p class="farm-empty">Skladište je prazno</p>
+                <p class="farm-empty" data-i18n="emptyStorage">Skladište je prazno</p>
             <% } %>
         </div>
     </div>
@@ -803,7 +803,7 @@ function loadPendingTransfers() {
         var html = '<h4>⏳ Zakazani prijenosi</h4><ul>';
         data.transfers.forEach(function(t) {
             html += '<li><span>' + t.toFarmName + '</span><span class="farm-transfer-amount">' +
-                Number(t.amount).toLocaleString('hr-HR') + ' €</span>' +
+                Math.round(Number(t.amount)).toLocaleString('hr-HR') + ' €</span>' +
                 '<button class="farm-transfer-cancel" onclick="cancelTransfer(\'' + t._id + '\')">✕</button></li>';
         });
         html += '</ul>';
@@ -825,12 +825,12 @@ function cancelTransfer(id) {
 <!-- No Farm State -->
 <section class="farm-hero">
     <div class="farm-hero-content">
-        <h1 class="farm-title">Moja Farma</h1>
-        <p class="farm-subtitle">Nemate još kreiranu farmu</p>
+        <h1 class="farm-title" data-i18n="myFarm">Moja Farma</h1>
+        <p class="farm-subtitle" data-i18n="noFarmYet">Nemate još kreiranu farmu</p>
         <div class="farm-no-data">
             <span class="farm-no-data-icon">🌱</span>
-            <p>Javite se adminu ili kreirajte farmu putem Discord bota da započnete svoje poljoprivredno carstvo.</p>
-            <a href="https://discord.gg/slavonskaravnica" class="btn-primary" target="_blank">Pridružite se Discordu</a>
+            <p data-i18n="contactAdmin">Javite se adminu ili kreirajte farmu putem Discord bota da započnete svoje poljoprivredno carstvo.</p>
+            <a href="https://discord.gg/slavonskaravnica" class="btn-primary" target="_blank" data-i18n="joinDiscord">Pridružite se Discordu</a>
         </div>
     </div>
 </section>
@@ -840,12 +840,12 @@ function cancelTransfer(id) {
 <!-- Not Logged In State -->
 <section class="farm-hero">
     <div class="farm-hero-content">
-        <h1 class="farm-title">Moja Farma</h1>
-        <p class="farm-subtitle">Prijavite se za pristup vašoj farmi</p>
+        <h1 class="farm-title" data-i18n="myFarm">Moja Farma</h1>
+        <p class="farm-subtitle" data-i18n="loginForFarm">Prijavite se za pristup vašoj farmi</p>
         <div class="farm-no-data">
             <span class="farm-no-data-icon">🔒</span>
-            <p>Za prikaz vaše farme morate biti prijavljeni putem Discorda.</p>
-            <a href="/auth/discord" class="btn-primary">Prijava putem Discorda</a>
+            <p data-i18n="loginRequired">Za prikaz vaše farme morate biti prijavljeni putem Discorda.</p>
+            <a href="/auth/discord" class="btn-primary" data-i18n="loginBtn">Prijava putem Discorda</a>
         </div>
     </div>
 </section>
@@ -857,12 +857,12 @@ function cancelTransfer(id) {
 particlesJS('particles-js', {
     particles: {
         number: { value: 60 },
-        color: { value: '#00ff7a' },
+        color: { value: getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#ffd700' },
         shape: { type: 'circle' },
         opacity: { value: 0.3 },
         size: { value: 3 },
         move: { enable: true, speed: 1 },
-        line_linked: { enable: true, color: '#00ff7a', opacity: 0.1 }
+        line_linked: { enable: true, color: getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#ffd700', opacity: 0.1 }
     }
 });
 </script>

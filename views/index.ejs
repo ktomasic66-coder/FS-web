@@ -184,7 +184,7 @@
                 </div>
                 <div class="farms-overview-stats">
                     <div class="farms-overview-stat">
-                        <span class="farms-overview-stat-val" style="color: <%= fc.accent %>;"><%= Number(farm.balance).toLocaleString('hr-HR') %> €</span>
+                        <span class="farms-overview-stat-val" style="color: <%= fc.accent %>;"><%= Math.round(farm.balance).toLocaleString('hr-HR') %> €</span>
                         <span class="farms-overview-stat-label" data-i18n="balance">Stanje</span>
                     </div>
                     <div class="farms-overview-stat">

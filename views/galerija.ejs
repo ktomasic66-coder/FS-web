@@ -73,7 +73,7 @@
                 <% if (isAdmin) { %>
                 <form action="/delete" method="POST" data-confirm="Obrisati sliku?" data-confirm-title="Brisanje slike" data-confirm-ok="Obriši">
                     <input type="hidden" name="image" value="<%= img.filename %>">
-                    <button type="submit" class="gallery-delete-btn">Obriši</button>
+                    <button type="submit" class="gallery-delete-btn" data-i18n="delete">Obriši</button>
                 </form>
                 <% } %>
             </div>
@@ -83,7 +83,7 @@
                     <img src="<%= avatarSrc %>" alt="<%= img.uploaderName %>">
                     <div>
                         <span><%= img.uploaderName %></span>
-                        <small><%= img.comments ? img.comments.length : 0 %> komentara</small>
+                        <small><%= img.comments ? img.comments.length : 0 %> <span data-i18n="commentsCount">komentara</span></small>
                     </div>
                 </div>
 
@@ -120,7 +120,7 @@
 
                 <div class="comments comments-preview">
                     <div class="comments-header">
-                        <strong>Komentari</strong>
+                        <strong data-i18n="commentsHeader">Komentari</strong>
                         <% if ((img.comments || []).length > 3) { %>
                             <button type="button" class="comments-more-link" onclick="openGalleryModal('modal-<%= index %>')">
                                 Prikaži sve
@@ -136,14 +136,14 @@
                             </div>
                         <% }) %>
                     <% } else { %>
-                        <p class="comment-empty">Još nema komentara.</p>
+                        <p class="comment-empty" data-i18n="noComments">Još nema komentara.</p>
                     <% } %>
 
                     <% if (user) { %>
                     <form action="/comment/<%= img.filename %>" method="POST" class="comment-form comment-form-inline">
                         <input type="hidden" name="returnTo" value="/galerija?open=<%= encodeURIComponent(img.filename) %>">
-                        <input type="text" name="comment" placeholder="Dodaj komentar..." required>
-                        <button type="submit">Objavi</button>
+                        <input type="text" name="comment" placeholder="Dodaj komentar..." data-i18n="addCommentPlaceholder" required>
+                        <button type="submit" data-i18n="publish">Objavi</button>
                     </form>
                     <% } %>
                 </div>
@@ -160,7 +160,7 @@
                                 <img src="<%= avatarSrc %>" alt="<%= img.uploaderName %>">
                                 <div>
                                     <span><%= img.uploaderName %></span>
-                                    <small><%= img.comments ? img.comments.length : 0 %> komentara</small>
+                                    <small><%= img.comments ? img.comments.length : 0 %> <span data-i18n="commentsCount">komentara</span></small>
                                 </div>
                             </div>
                             <% if (img.description) { %>
@@ -195,7 +195,7 @@
                         </div>
 
                         <div class="gallery-lightbox-comments">
-                            <h3>Svi komentari</h3>
+                            <h3 data-i18n="allComments">Svi komentari</h3>
                             <% if (img.comments && img.comments.length > 0) { %>
                                 <% img.comments.forEach(function(c){ %>
                                     <div class="comment comment-modal">
@@ -207,16 +207,16 @@
                                     </div>
                                 <% }) %>
                             <% } else { %>
-                                <p class="comment-empty">Još nema komentara za ovu sliku.</p>
+                                <p class="comment-empty" data-i18n="noCommentsForImage">Još nema komentara za ovu sliku.</p>
                             <% } %>
                         </div>
 
                         <% if (user) { %>
                         <form action="/comment/<%= img.filename %>" method="POST" class="comment-form comment-form-modal">
                             <input type="hidden" name="returnTo" value="/galerija?open=<%= encodeURIComponent(img.filename) %>">
-                            <label>Dodaj komentar</label>
-                            <textarea name="comment" placeholder="Napiši komentar..." required></textarea>
-                            <button type="submit">Objavi komentar</button>
+                            <label data-i18n="addComment">Dodaj komentar</label>
+                            <textarea name="comment" placeholder="Napiši komentar..." data-i18n="writeCommentPlaceholder" required></textarea>
+                            <button type="submit" data-i18n="publishComment">Objavi komentar</button>
                         </form>
                         <% } %>
                     </aside>
@@ -225,13 +225,13 @@
         </article>
         <% }) %>
     <% } else { %>
-        <p class="gallery-empty-state">Nema uploadanih slika.</p>
+        <p class="gallery-empty-state" data-i18n="noUploadedImages">Nema uploadanih slika.</p>
     <% } %>
     </div>
 </section>
 
 <div id="gallery-lightbox" class="gallery-lightbox-overlay" onclick="closeGalleryModal(event)">
-    <button type="button" class="gallery-lightbox-close" onclick="closeGalleryModal(event)">Zatvori</button>
+    <button type="button" class="gallery-lightbox-close" onclick="closeGalleryModal(event)" data-i18n="close">Zatvori</button>
     <div id="gallery-lightbox-content"></div>
 </div>
 
