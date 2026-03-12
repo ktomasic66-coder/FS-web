@@ -32,46 +32,164 @@
     </ul>
 </nav>
 
-<div class="admin-page">
-    <div class="admin-topbar">
-        <p class="admin-kicker" data-i18n="serverPolicy">Server info</p>
-        <h1 data-i18n="serverStats">Statistika Servera</h1>
-        <p class="admin-subtitle" data-i18n="serverStatsDesc">Pregled stanja servera, igrača i ukupne statistike farmi.</p>
-    </div>
+<div class="stats-page">
 
-    <div class="admin-stats-grid">
-        <div class="admin-stat-card">
-            <span class="admin-stat-label" data-i18n="serverStatus">Status Servera</span>
-            <strong class="status <%= stats.serverStatus.toLowerCase() %>"><%= stats.serverStatus %></strong>
-        </div>
-        <div class="admin-stat-card">
-            <span class="admin-stat-label" data-i18n="playersOnline">Igrači Online</span>
-            <strong><%= stats.playersOnline %> / <%= stats.maxPlayers %></strong>
-        </div>
-        <div class="admin-stat-card">
-            <span class="admin-stat-label" data-i18n="discordMembers">Discord Članovi</span>
-            <strong><%= stats.discordMembers %></strong>
-        </div>
-        <div class="admin-stat-card">
-            <span class="admin-stat-label" data-i18n="totalFarms">Ukupno Farmi</span>
-            <strong><%= stats.totalFarms %></strong>
+    <!-- Server Status Header -->
+    <div class="stats-hero">
+        <div class="stats-hero-left">
+            <div class="stats-server-status">
+                <span class="stats-status-dot <%= stats.serverStatus === 'Online' ? 'dot-online' : 'dot-offline' %>"></span>
+                <span class="stats-status-text" data-i18n="<%= stats.serverStatus === 'Online' ? 'serverOnline' : 'serverOffline' %>">
+                    Server <%= stats.serverStatus === 'Online' ? 'Online' : 'Offline' %>
+                </span>
+            </div>
+            <h1 class="stats-title"><%= stats.serverName || 'Slavonska Ravnica' %></h1>
+            <div class="stats-meta">
+                <% if (stats.mapName) { %>
+                    <span class="stats-meta-item">🗺️ <span data-i18n="map">Mapa</span>: <strong><%= stats.mapName %></strong></span>
+                <% } %>
+                <% if (stats.modCount) { %>
+                    <span class="stats-meta-item">🧩 <span data-i18n="mods">Modovi</span>: <strong><%= stats.modCount %></strong></span>
+                <% } %>
+                <span class="stats-meta-item">👥 <span data-i18n="playersOnline">Igrači Online</span>: <strong><%= stats.playersOnline %>/<%= stats.maxPlayers %></strong></span>
+            </div>
         </div>
     </div>
 
-    <div class="admin-stats-grid">
-        <div class="admin-stat-card">
-            <span class="admin-stat-label" data-i18n="totalFields">Ukupno Polja</span>
-            <strong><%= stats.totalFields %></strong>
-        </div>
-        <div class="admin-stat-card">
-            <span class="admin-stat-label" data-i18n="totalVehicles">Ukupno Vozila</span>
-            <strong><%= stats.totalVehicles %></strong>
-        </div>
-        <div class="admin-stat-card">
-            <span class="admin-stat-label" data-i18n="players">Igrači</span>
-            <strong><%= stats.totalPlayers %></strong>
+    <!-- Online Players -->
+    <% if (stats.onlinePlayers && stats.onlinePlayers.length > 0) { %>
+    <div class="stats-section">
+        <h2 class="stats-section-title" data-i18n="currentlyPlaying">🟢 Trenutno igraju</h2>
+        <div class="stats-online-list">
+            <% stats.onlinePlayers.forEach(function(p) { %>
+                <div class="stats-online-player">
+                    <span class="stats-online-dot"></span>
+                    <span><%= p.name %></span>
+                </div>
+            <% }) %>
         </div>
     </div>
+    <% } %>
+
+    <!-- Main Stats Grid -->
+    <div class="stats-section">
+        <h2 class="stats-section-title" data-i18n="serverOverview">📊 Pregled servera</h2>
+        <div class="stats-grid">
+            <div class="stats-card">
+                <span class="stats-card-icon">👥</span>
+                <div class="stats-card-data">
+                    <strong><%= stats.playersOnline %>/<%= stats.maxPlayers %></strong>
+                    <span data-i18n="playersOnline">Igrači Online</span>
+                </div>
+            </div>
+            <div class="stats-card">
+                <span class="stats-card-icon">🌾</span>
+                <div class="stats-card-data">
+                    <strong><%= stats.totalFarms %></strong>
+                    <span data-i18n="activeFarmsLabel">Aktivne Farme</span>
+                </div>
+            </div>
+            <div class="stats-card">
+                <span class="stats-card-icon">📋</span>
+                <div class="stats-card-data">
+                    <strong><%= stats.totalPlayers %></strong>
+                    <span data-i18n="registeredPlayers">Registrirani Igrači</span>
+                </div>
+            </div>
+            <div class="stats-card">
+                <span class="stats-card-icon">💬</span>
+                <div class="stats-card-data">
+                    <strong><%= stats.discordMembers %></strong>
+                    <span data-i18n="discordMembers">Discord Članovi</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- World Stats -->
+    <div class="stats-section">
+        <h2 class="stats-section-title" data-i18n="worldStats">🌍 Statistika svijeta</h2>
+        <div class="stats-grid stats-grid-3">
+            <div class="stats-card">
+                <span class="stats-card-icon">🌾</span>
+                <div class="stats-card-data">
+                    <strong><%= stats.totalFields %></strong>
+                    <span data-i18n="totalFields">Ukupno Polja</span>
+                </div>
+            </div>
+            <div class="stats-card">
+                <span class="stats-card-icon">📐</span>
+                <div class="stats-card-data">
+                    <strong><%= stats.totalArea.toFixed(1) %> ha</strong>
+                    <span data-i18n="totalAreaLabel">Ukupna Površina</span>
+                </div>
+            </div>
+            <div class="stats-card">
+                <span class="stats-card-icon">🚜</span>
+                <div class="stats-card-data">
+                    <strong><%= stats.totalVehicles %></strong>
+                    <span data-i18n="totalVehicles">Ukupno Vozila</span>
+                </div>
+            </div>
+            <div class="stats-card">
+                <span class="stats-card-icon">📦</span>
+                <div class="stats-card-data">
+                    <strong><%= stats.totalSilos %></strong>
+                    <span data-i18n="totalSilos">Skladišta</span>
+                </div>
+            </div>
+            <div class="stats-card">
+                <span class="stats-card-icon">🏭</span>
+                <div class="stats-card-data">
+                    <strong><%= stats.totalProductions %></strong>
+                    <span data-i18n="totalProductions">Proizvodnje</span>
+                </div>
+            </div>
+            <div class="stats-card">
+                <span class="stats-card-icon">🐄</span>
+                <div class="stats-card-data">
+                    <strong><%= stats.totalAnimals %></strong>
+                    <span data-i18n="totalAnimals">Životinja</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Farms -->
+    <% if (stats.farms && stats.farms.length > 0) { %>
+    <div class="stats-section">
+        <h2 class="stats-section-title" data-i18n="activeFarmsLabel">🏡 Aktivne Farme</h2>
+        <div class="stats-farms-grid">
+            <% stats.farms.forEach(function(farm) { %>
+            <div class="stats-farm-card">
+                <div class="stats-farm-header">
+                    <h3><%= farm.name %></h3>
+                    <span class="stats-farm-id">F<%= farm.farmId %></span>
+                </div>
+                <div class="stats-farm-details">
+                    <div class="stats-farm-detail">
+                        <span>💰</span>
+                        <strong><%= Math.round(farm.balance).toLocaleString('hr-HR') %> €</strong>
+                    </div>
+                    <div class="stats-farm-detail">
+                        <span>👤</span>
+                        <strong><%= farm.playerCount %></strong>
+                    </div>
+                    <div class="stats-farm-detail">
+                        <span>🌾</span>
+                        <strong><%= farm.fieldCount %></strong>
+                    </div>
+                    <div class="stats-farm-detail">
+                        <span>🚜</span>
+                        <strong><%= farm.vehicleCount %></strong>
+                    </div>
+                </div>
+            </div>
+            <% }) %>
+        </div>
+    </div>
+    <% } %>
+
 </div>
 
 <script src="/modal.js"></script>

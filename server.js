@@ -2364,12 +2364,21 @@ app.get('/statistika', async (req, res) => {
   let stats = {
     serverStatus: 'Offline',
     playersOnline: 0,
-    maxPlayers: '-',
+    maxPlayers: 16,
     totalPlayers: 0,
+    onlinePlayers: [],
     discordMembers: discordMemberCount,
     totalFarms: 0,
     totalFields: 0,
     totalVehicles: 0,
+    totalSilos: 0,
+    totalProductions: 0,
+    totalAnimals: 0,
+    totalArea: 0,
+    mapName: null,
+    modCount: null,
+    serverName: null,
+    farms: [],
   };
 
   try {
@@ -2388,23 +2397,61 @@ app.get('/statistika', async (req, res) => {
       const allFarms = await db.collection('farms').find().toArray();
       const allFields = await db.collection('fields').find().toArray();
       const allVehicles = await db.collection('vehicles').find().toArray();
+      const allSilos = await db.collection('silos').find().toArray();
+      const allProductions = await db.collection('productions').find().toArray();
+      const allAnimals = await db.collection('animals').find().toArray();
 
-      const onlinePlayers = allPlayers.filter(p => !!p.isOnline);
+      const online = allPlayers.filter(p => !!p.isOnline);
       stats.totalPlayers = allPlayers.length;
-      stats.totalFarms = allFarms.filter(f => f.farmId && !String(f.farmId).startsWith('U:')).length;
+      stats.onlinePlayers = online.map(p => ({ name: p.name, farmId: p.farmId }));
+
+      const activeFarms = allFarms.filter(f => f.farmId && !String(f.farmId).startsWith('U:'));
+      stats.totalFarms = activeFarms.length;
       stats.totalFields = allFields.length;
       stats.totalVehicles = allVehicles.length;
+      stats.totalSilos = allSilos.length;
+      stats.totalProductions = allProductions.length;
+      stats.totalAnimals = allAnimals.reduce((sum, a) => sum + (a.numAnimals || 0), 0);
+      stats.totalArea = allFields.reduce((sum, f) => sum + (parseFloat(f.fieldArea) || 0), 0);
+
+      // Farm details for the overview
+      stats.farms = activeFarms.map(farm => {
+        const fid = String(farm.farmId);
+        const farmPlayers = allPlayers.filter(p => String(p.farmId) === fid);
+        const farmFields = allFields.filter(f => String(f.ownerFarmId) === fid);
+        return {
+          farmId: farm.farmId,
+          name: farm.name || ('Farma ' + farm.farmId),
+          balance: Math.round(farm.balance || 0),
+          playerCount: farmPlayers.length,
+          fieldCount: farmFields.length,
+          vehicleCount: allVehicles.filter(v => String(v.farmId) === fid).length,
+        };
+      }).sort((a, b) => Number(a.farmId) - Number(b.farmId));
 
       // If G-Portal didn't work, use MongoDB online count
       if (stats.serverStatus === 'Offline' || stats.playersOnline === '-') {
-        if (onlinePlayers.length > 0) {
+        if (online.length > 0) {
           stats.serverStatus = 'Online';
-          stats.playersOnline = onlinePlayers.length;
+          stats.playersOnline = online.length;
         }
-        if (stats.maxPlayers === '-') {
+        if (stats.maxPlayers === '-' || stats.maxPlayers === 0) {
           stats.maxPlayers = allPlayers.length || 16;
         }
       }
+
+      // Read server_info stored by farmbuddy bot (map name, mod count)
+      try {
+        const serverInfo = await db.collection('server_info').findOne({});
+        if (serverInfo) {
+          if (serverInfo.mapName) stats.mapName = serverInfo.mapName;
+          if (serverInfo.modCount) stats.modCount = serverInfo.modCount;
+          if (serverInfo.serverName) stats.serverName = serverInfo.serverName;
+          if (serverInfo.isOnline != null && stats.serverStatus === 'Offline') {
+            stats.serverStatus = serverInfo.isOnline ? 'Online' : 'Offline';
+          }
+        }
+      } catch (e) {}
     }
   } catch (e) {
     console.error('[STATISTIKA] MongoDB error:', e.message);
