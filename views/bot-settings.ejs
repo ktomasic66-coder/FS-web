@@ -171,9 +171,11 @@
               <input type="number" name="reminderHours" min="1" value="<%= ticket.reminderHours || 3 %>" placeholder="Reminder sati">
               <label class="admin-field-label">Pitanja: Igranje na serveru</label>
               <textarea name="igranjeQuestions" rows="6" placeholder="Jedno pitanje po redu"><%= ticket.types && ticket.types.igranje ? ticket.types.igranje.questions.join('\n') : '' %></textarea>
+              <label class="admin-field-label">Pitanja: Žalba na igrače</label>
               <textarea name="zalbaQuestions" rows="4" placeholder="Žalba pitanja"><%= ticket.types && ticket.types.zalba ? ticket.types.zalba.questions.join('\n') : '' %></textarea>
               <label class="admin-field-label">Pitanja: Edit modova</label>
               <textarea name="modoviQuestions" rows="4" placeholder="Jedno pitanje po redu"><%= ticket.types && ticket.types.modovi ? ticket.types.modovi.questions.join('\n') : '' %></textarea>
+              <label class="admin-field-label">Pitanja: Pomoć</label>
               <textarea name="pomocQuestions" rows="4" placeholder="Pomoć pitanja"><%= ticket.types && ticket.types.pomoc ? ticket.types.pomoc.questions.join('\n') : '' %></textarea>
               <label class="admin-field-label">Reminder poruka</label>
               <textarea name="reminderMessage" rows="4" placeholder="Poruka za podsjetnik"><%= ticket.messages ? ticket.messages.reminder : '' %></textarea>
@@ -187,8 +189,10 @@
               <input type="text" name="igranjeRulesTitle" value="<%= ticket.messages ? ticket.messages.igranjeRulesTitle || '' : '' %>" placeholder="Naslov pravila">
               <label class="admin-field-label">Pravila poruka</label>
               <textarea name="igranjeRulesBody" rows="7" placeholder="Tekst pravila servera"><%= ticket.messages ? ticket.messages.igranjeRulesBody || '' : '' %></textarea>
-              <input type="text" name="igranjeLauncherTitle" value="<%= ticket.messages ? ticket.messages.igranjeLauncherTitle || '' : '' %>" placeholder="Launcher naslov">
-              <textarea name="igranjeLauncherBody" rows="8" placeholder="Launcher poruka"><%= ticket.messages ? ticket.messages.igranjeLauncherBody || '' : '' %></textarea>
+              <label class="admin-field-label">Launcher naslov</label>
+              <input type="text" name="igranjeLauncherTitle" value="<%= ticket.messages ? ticket.messages.igranjeLauncherTitle || '' : '' %>" placeholder="Naslov launcher poruke">
+              <label class="admin-field-label">Launcher poruka</label>
+              <textarea name="igranjeLauncherBody" rows="8" placeholder="Možeš koristiti {launcherChannel} i {guildName}"><%= ticket.messages ? ticket.messages.igranjeLauncherBody || '' : '' %></textarea>
               <div class="admin-inline-actions">
                 <button type="submit" class="admin-action-btn">Spremi ticket postavke</button>
               </div>
