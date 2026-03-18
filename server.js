@@ -110,6 +110,7 @@ const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GALLERY_CHANNEL_ID = process.env.GALLERY_CHANNEL_ID || '';
 const IGNORED_GALLERY_BOT_IDS = new Set(['1437239146438594672']);
 const WEB_LOGIN_LOG_CHANNEL_ID = '1271570784866799718';
+const ADMIN_LOG_CHANNEL_ID = '1483917067777212437';
 
 /* ===== GLOBAL ROLE IDS (za admin panel + badge) ===== */
 
@@ -127,7 +128,7 @@ const DEFAULT_BOT_CONFIG = {
     message: 'Dobrodošao {user} na server!',
   },
   logging: {
-    channelId: '',
+    channelId: ADMIN_LOG_CHANNEL_ID,
   },
   embeds: [],
   gallery: {
@@ -1616,6 +1617,7 @@ async function logAction(action, adminUser) {
       date: new Date().toLocaleString(),
     });
     writeJsonSafe(LOG_FILE, logs);
+    await sendAdminActionDiscordLog(action, adminUser);
     return;
   }
 
@@ -1623,6 +1625,7 @@ async function logAction(action, adminUser) {
     'INSERT INTO admin_logs (id, action, admin, date_text) VALUES (?, ?, ?, ?)',
     [Date.now(), action, adminUser, new Date().toLocaleString()]
   );
+  await sendAdminActionDiscordLog(action, adminUser);
 }
 
 async function sendWebLoginDiscordLog(user) {
@@ -1651,6 +1654,34 @@ async function sendWebLoginDiscordLog(user) {
 
   await channel.send(lines.join('\n')).catch((err) => {
     console.log('WEB LOGIN LOG ERROR:', err.message);
+  });
+}
+
+async function sendAdminActionDiscordLog(action, adminUser) {
+  if (!discordClient.isReady()) return;
+
+  let channelId = ADMIN_LOG_CHANNEL_ID;
+  try {
+    const botConfig = await loadBotConfig();
+    channelId = String(botConfig.logging?.channelId || ADMIN_LOG_CHANNEL_ID || '').trim();
+  } catch {
+    channelId = ADMIN_LOG_CHANNEL_ID;
+  }
+
+  if (!channelId) return;
+
+  const channel = await discordClient.channels.fetch(channelId).catch(() => null);
+  if (!channel || !channel.isTextBased()) return;
+
+  const lines = [
+    'Admin log',
+    `Admin: ${adminUser || 'Nepoznat'}`,
+    `Akcija: ${action || 'N/A'}`,
+    `Vrijeme: ${new Date().toLocaleString('hr-HR')}`,
+  ];
+
+  await channel.send(lines.join('\n')).catch((err) => {
+    console.log('ADMIN LOG DISCORD ERROR:', err.message);
   });
 }
 
