@@ -108,6 +108,7 @@ const PLAYER_ROLE_ID = process.env.PLAYER_ROLE_ID; // npr Player role
 const ADMIN_ROLE_ID = process.env.ADMIN_ROLE_ID;   // npr Admin role
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GALLERY_CHANNEL_ID = process.env.GALLERY_CHANNEL_ID || '';
+const IGNORED_GALLERY_BOT_IDS = new Set(['1437239146438594672']);
 const WEB_LOGIN_LOG_CHANNEL_ID = '1271570784866799718';
 
 /* ===== GLOBAL ROLE IDS (za admin panel + badge) ===== */
@@ -1774,6 +1775,8 @@ function isDiscordImageAttachment(attachment) {
 
 async function ingestDiscordGalleryMessage(message) {
   if (!message) return 0;
+  if (IGNORED_GALLERY_BOT_IDS.has(String(message.author?.id || ''))) return 0;
+  if (message.author?.bot && String(message.author?.id || '') !== String(discordClient.user?.id || '')) return 0;
 
   const attachments = Array.from(message.attachments.values()).filter((attachment) => {
     return isDiscordImageAttachment(attachment);
