@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Moj Profil</title>
+    <title>Moj profil</title>
     <link rel="icon" type="image/png" href="/images/logo.png">
     <link rel="stylesheet" href="/style.css">
 </head>
@@ -18,51 +18,44 @@
         <li><a href="/galerija" data-i18n="gallery">Galerija</a></li>
         <li><a href="/pravila" data-i18n="rules">Pravila</a></li>
         <li><a href="/statistika" data-i18n="statistics">Statistika</a></li>
-        <li><a href="/moja-farma" data-i18n="myFarm">Moja Farma</a></li>
+        <li><a href="/moja-farma" data-i18n="myFarm">Moja farma</a></li>
         <li><a href="/profile" data-i18n="profile">Profil</a></li>
         <% if (canAdminNav) { %>
             <li><a href="/admin">Admin</a></li>
             <li><a href="/bot-settings">Bot</a></li>
         <% } %>
-        <li><a href="/logout" data-i18n="logout">Logout</a></li>
+        <li><a href="/logout" data-i18n="logout">Odjava</a></li>
     </ul>
 </nav>
 
 <div class="hero">
-
     <div class="profile-wrapper">
-
         <div class="profile-left">
-            <h1 data-i18n="myProfile">Moj Profil</h1>
+            <h1 data-i18n="myProfile">Moj profil</h1>
         </div>
 
         <div class="profile-card">
-
-            <img 
+            <img
               class="profile-avatar"
               src="https://cdn.discordapp.com/avatars/<%= user.id %>/<%= user.avatar %>.png"
             >
 
             <h2><%= user.username %></h2>
 
-            <!-- SPECIFIČNE BADGE ROLE -->
             <div class="special-badges">
-
-                <% if(isAdmin){ %>
-                    <span class="badge badge-admin" data-i18n="adminBadge">👑 Admin</span>
+                <% if (isAdmin) { %>
+                    <span class="badge badge-admin" data-i18n="adminBadge">Admin</span>
                 <% } %>
 
-                <% if(isPlayer){ %>
-                    <span class="badge badge-player" data-i18n="playerBadge">🚜 Player</span>
+                <% if (isPlayer) { %>
+                    <span class="badge badge-player" data-i18n="playerBadge">Igrač</span>
                 <% } %>
-
             </div>
 
-            <!-- SVE ROLE -->
             <div class="all-roles">
                 <% if (roles && roles.length > 0) { %>
                     <% roles.forEach(role => { %>
-                        <span 
+                        <span
                             class="role-pill"
                             style="background:<%= role.color !== '#000000' ? role.color : '#444' %>">
                             <%= role.name %>
@@ -76,11 +69,8 @@
             <p class="discord-id">
                 Discord ID: <%= user.id %>
             </p>
-
         </div>
-
     </div>
-
 </div>
 
 <script src="/modal.js"></script>

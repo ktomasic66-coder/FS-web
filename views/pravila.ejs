@@ -28,16 +28,16 @@
                 <li><a href="/admin">Admin</a></li>
                 <li><a href="/bot-settings">Bot</a></li>
             <% } %>
-            <li><a href="/logout" data-i18n="logout">Logout</a></li>
+            <li><a href="/logout" data-i18n="logout">Odjava</a></li>
         <% } else { %>
-            <li><a href="/auth/discord" data-i18n="login">Login</a></li>
+            <li><a href="/auth/discord" data-i18n="login">Prijava</a></li>
         <% } %>
     </ul>
 </nav>
 
 <section class="rules-hero">
     <div class="rules-hero-inner">
-        <p class="rules-kicker" data-i18n="serverPolicy">Server policy</p>
+        <p class="rules-kicker" data-i18n="serverPolicy">Pravila servera</p>
         <h1><%= rules.title %></h1>
         <p class="rules-sub"><%= rules.subtitle %></p>
     </div>
@@ -60,8 +60,8 @@
         </div>
     <% } else { %>
         <div class="rules-empty-state">
-            <strong data-i18n="rulesNotAdded">Pravila jos nisu dodana.</strong>
-            <p data-i18n="rulesNotAddedDesc">Admin ih moze dodati i urediti unutar admin panela.</p>
+            <strong data-i18n="rulesNotAdded">Pravila jo? nisu dodana.</strong>
+            <p data-i18n="rulesNotAddedDesc">Admin ih mo?e dodati i urediti unutar admin panela.</p>
         </div>
     <% } %>
 
@@ -75,7 +75,7 @@
     <div class="site-footer-inner">
         <div>
             <strong>Slavonska Ravnica</strong>
-            <p data-i18n="footerDesc">Pravila i informacije za sve clanove zajednice.</p>
+            <p data-i18n="footerDesc">Pravila i informacije za sve ?lanove zajednice.</p>
         </div>
         <div class="site-footer-links">
             <a href="/" data-i18n="home">Početna</a>

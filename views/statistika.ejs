@@ -25,9 +25,9 @@
                 <li><a href="/admin">Admin</a></li>
                 <li><a href="/bot-settings">Bot</a></li>
             <% } %>
-            <li><a href="/logout" data-i18n="logout">Logout</a></li>
+            <li><a href="/logout" data-i18n="logout">Odjava</a></li>
         <% } else { %>
-            <li><a href="/auth/discord" data-i18n="login">Login</a></li>
+            <li><a href="/auth/discord" data-i18n="login">Prijava</a></li>
         <% } %>
     </ul>
 </nav>
@@ -86,7 +86,7 @@
                 <span class="stats-card-icon">🌾</span>
                 <div class="stats-card-data">
                     <strong><%= stats.totalFarms %></strong>
-                    <span data-i18n="activeFarmsLabel">Aktivne Farme</span>
+                    <span data-i18n="activeFarmsLabel">Aktivne farme</span>
                 </div>
             </div>
             <div class="stats-card">
@@ -158,7 +158,7 @@
     <!-- Active Farms -->
     <% if (stats.farms && stats.farms.length > 0) { %>
     <div class="stats-section">
-        <h2 class="stats-section-title" data-i18n="activeFarmsLabel">🏡 Aktivne Farme</h2>
+        <h2 class="stats-section-title" data-i18n="activeFarmsLabel">🏡 Aktivne farme</h2>
         <div class="stats-farms-grid">
             <% stats.farms.forEach(function(farm) { %>
             <div class="stats-farm-card">

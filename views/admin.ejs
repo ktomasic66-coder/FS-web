@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Admin Panel</title>
+  <title>Admin panel</title>
   <link rel="icon" type="image/png" href="/images/logo.png">
   <link rel="stylesheet" href="/style.css">
 
@@ -29,7 +29,7 @@
     <li><a href="/moja-farma" data-i18n="myFarm">Moja Farma</a></li>
     <li><a href="/profile" data-i18n="profile">Profil</a></li>
     <li><a href="/bot-settings">Bot</a></li>
-    <li><a href="/logout" data-i18n="logout">Logout</a></li>
+    <li><a href="/logout" data-i18n="logout">Odjava</a></li>
   </ul>
 </nav>
 
@@ -37,14 +37,14 @@
   <div class="admin-topbar">
     <div>
       <p class="admin-kicker">Kontrolni centar</p>
-      <h1>Admin Panel</h1>
+      <h1>Admin panel</h1>
       <p class="admin-subtitle">Upravljanje novostima, pravilima, blacklistom i logovima na jednom mjestu.</p>
     </div>
   </div>
 
   <div class="admin-stats-grid">
     <div class="admin-stat-card">
-      <span class="admin-stat-label">Discord clanovi</span>
+      <span class="admin-stat-label">Discord ?lanovi</span>
       <strong><%= discordMembers %></strong>
     </div>
     <div class="admin-stat-card">
@@ -60,7 +60,7 @@
       <strong><%= blacklist ? blacklist.length : 0 %></strong>
     </div>
     <div class="admin-stat-card">
-      <span class="admin-stat-label">Sync role</span>
+      <span class="admin-stat-label">Sinkronizirane role</span>
       <strong><%= discordSync ? discordSync.rolesCount : 0 %></strong>
     </div>
   </div>
@@ -71,7 +71,7 @@
       <div class="admin-header" onclick="togglePanel('news')">
         <div>
           <span class="admin-header-label">Novosti</span>
-          <small>Dodaj i brisi objave</small>
+          <small>Dodaj i bri?i objave</small>
         </div>
         <span class="admin-header-count"><%= newsCount %></span>
       </div>
@@ -79,13 +79,13 @@
       <div id="news" class="admin-content open">
         <form method="POST" action="/admin/news" class="admin-form">
           <input type="text" name="title" placeholder="Naslov" required>
-          <textarea name="content" placeholder="Sadrzaj..." required></textarea>
+          <textarea name="content" placeholder="Sadr?aj..." required></textarea>
           <button type="submit" class="admin-action-btn">Objavi</button>
         </form>
 
         <div class="admin-divider"></div>
 
-        <h3 class="admin-content-title">Postojece objave</h3>
+        <h3 class="admin-content-title">Postoje?e objave</h3>
 
         <% if (news && news.length > 0) { %>
           <div class="admin-list">
@@ -97,7 +97,7 @@
                 </div>
 
                 <form method="POST" action="/admin/news/delete/<%= post.id %>" data-confirm="Obrisati ovu objavu?" data-confirm-title="Brisanje objave" data-confirm-ok="Obriši">
-                  <button type="submit" class="admin-danger-btn">Obrisi</button>
+                  <button type="submit" class="admin-danger-btn">Obri?i</button>
                 </form>
               </div>
             <% }) %>
@@ -112,7 +112,7 @@
       <div class="admin-header" onclick="togglePanel('rules')">
         <div>
           <span class="admin-header-label">Pravila</span>
-          <small>Dodaj, uredi i obrisi pravila</small>
+          <small>Dodaj, uredi i obri?i pravila</small>
         </div>
         <span class="admin-header-count"><%= rules && rules.items ? rules.items.length : 0 %></span>
       </div>
@@ -128,7 +128,7 @@
               <textarea name="subtitle" placeholder="Kratki opis..." required><%= rules.subtitle %></textarea>
 
               <label class="admin-field-label">Upozorenje</label>
-              <textarea name="warning" placeholder="Zavrsna napomena..." required><%= rules.warning %></textarea>
+              <textarea name="warning" placeholder="Zavr?na napomena..." required><%= rules.warning %></textarea>
 
               <button type="submit" class="admin-secondary-btn">Spremi zaglavlje</button>
             </form>
@@ -136,7 +136,7 @@
             <form method="POST" action="/admin/rules/add" class="admin-form compact-form">
               <label class="admin-field-label">Dodaj novo pravilo</label>
               <input type="text" name="ruleTitle" placeholder="Naslov pravila..." required>
-              <textarea name="ruleContent" placeholder="Upisi objasnjenje pravila..." required></textarea>
+              <textarea name="ruleContent" placeholder="Upi?i obja?njenje pravila..." required></textarea>
               <button type="submit" class="admin-action-btn">Dodaj pravilo</button>
             </form>
           </div>
@@ -160,13 +160,13 @@
                       </div>
                     </form>
                     <form method="POST" action="/admin/rules/delete/<%= rule.id %>" data-confirm="Obrisati ovo pravilo?" data-confirm-title="Brisanje pravila" data-confirm-ok="Obriši">
-                      <button type="submit" class="admin-danger-btn">Obrisi</button>
+                      <button type="submit" class="admin-danger-btn">Obri?i</button>
                     </form>
                   </div>
                 <% }) %>
               </div>
             <% } else { %>
-              <p class="admin-empty">Jos nema pravila. Dodaj prvo pravilo iz lijevog bloka.</p>
+              <p class="admin-empty">Jo? nema pravila. Dodaj prvo pravilo iz lijevog bloka.</p>
             <% } %>
           </div>
         </div>

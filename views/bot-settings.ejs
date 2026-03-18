@@ -25,9 +25,9 @@
         <li><a href="/admin">Admin</a></li>
         <li><a href="/bot-settings">Bot</a></li>
       <% } %>
-      <li><a href="/logout" data-i18n="logout">Logout</a></li>
+      <li><a href="/logout" data-i18n="logout">Odjava</a></li>
     <% } else { %>
-      <li><a href="/auth/discord" data-i18n="login">Login</a></li>
+      <li><a href="/auth/discord" data-i18n="login">Prijava</a></li>
     <% } %>
   </ul>
 </nav>
@@ -43,11 +43,11 @@
 
   <div class="admin-stats-grid">
     <div class="admin-stat-card">
-      <span class="admin-stat-label">Sync role</span>
+      <span class="admin-stat-label">Sinkronizirane role</span>
       <strong><%= discordSync ? discordSync.rolesCount : 0 %></strong>
     </div>
     <div class="admin-stat-card">
-      <span class="admin-stat-label">Sync članovi</span>
+      <span class="admin-stat-label">Sinkr. članovi</span>
       <strong><%= discordSync ? discordSync.membersCount : 0 %></strong>
     </div>
     <div class="admin-stat-card">
@@ -66,7 +66,7 @@
       <div class="admin-header">
         <div>
           <span class="admin-header-label">Discord Bot</span>
-          <small>Sinkronizacija, welcome, logging i galerija</small>
+          <small>Sinkronizacija, dobrodo?lica, zapisnici i galerija</small>
         </div>
         <span class="admin-header-count"><%= syncedRoles ? syncedRoles.length : 0 %></span>
       </div>
@@ -76,7 +76,7 @@
           <form method="POST" action="/admin/discord-sync" class="admin-form compact-form bot-settings-card">
             <div class="bot-settings-card-head">
               <label class="admin-field-label">Discord sinkronizacija</label>
-              <span class="admin-pill">Sync</span>
+              <span class="admin-pill">Sinkr.</span>
             </div>
             <p class="admin-empty">Role: <%= discordSync ? discordSync.rolesCount : 0 %> | Članovi: <%= discordSync ? discordSync.membersCount : 0 %> | Veze: <%= discordSync ? discordSync.memberRolesCount : 0 %></p>
             <button type="submit" class="admin-action-btn">Pokreni sync</button>
@@ -84,23 +84,23 @@
 
           <form method="POST" action="/admin/bot/greetings" class="admin-form compact-form bot-settings-card">
             <div class="bot-settings-card-head">
-              <label class="admin-field-label">Welcome postavke</label>
-              <span class="admin-pill">Welcome</span>
+              <label class="admin-field-label">Postavke dobrodo?lice</label>
+              <span class="admin-pill">Pozdrav</span>
             </div>
             <select name="welcomeChannelId" class="admin-select">
-              <option value="">Odaberi welcome kanal</option>
+              <option value="">Odaberi kanal dobrodo?lice</option>
               <% (guildChannels || []).forEach(channel => { %>
                 <option value="<%= channel.id %>" <%= bot.welcome && bot.welcome.channelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
               <% }) %>
             </select>
             <textarea name="welcomeMessage" placeholder="Dobrodošlica..."><%= bot.welcome ? bot.welcome.message : '' %></textarea>
-            <button type="submit" class="admin-secondary-btn">Spremi welcome</button>
+            <button type="submit" class="admin-secondary-btn">Spremi dobrodo?licu</button>
           </form>
 
           <form method="POST" action="/admin/bot/logging" class="admin-form compact-form bot-settings-card">
             <div class="bot-settings-card-head">
               <label class="admin-field-label">Log kanal</label>
-              <span class="admin-pill">Logs</span>
+              <span class="admin-pill">Logovi</span>
             </div>
             <select name="logChannelId" class="admin-select">
               <option value="">Odaberi log kanal</option>
@@ -116,7 +116,7 @@
           <section class="bot-settings-panel">
             <div class="admin-content-title-row">
               <h3 class="admin-content-title">Galerija kanal</h3>
-              <span class="admin-pill">Media</span>
+              <span class="admin-pill">Mediji</span>
             </div>
 
             <form method="POST" action="/admin/bot/gallery" class="admin-form compact-form">
@@ -132,7 +132,7 @@
 
           <section class="bot-settings-panel">
             <div class="admin-content-title-row">
-              <h3 class="admin-content-title">Ticket sistem</h3>
+              <h3 class="admin-content-title">Tiket sustav</h3>
               <span class="admin-pill"><%= syncedRoles ? syncedRoles.length : 0 %> rola</span>
             </div>
 
@@ -165,10 +165,10 @@
                   <option value="<%= channel.id %>" <%= ticket.launcherChannelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
                 <% }) %>
               </select>
-              <label class="admin-field-label">Auto close sati</label>
-              <input type="number" name="autoCloseHours" min="1" value="<%= ticket.autoCloseHours || 48 %>" placeholder="Auto close sati">
-              <label class="admin-field-label">Reminder sati</label>
-              <input type="number" name="reminderHours" min="1" value="<%= ticket.reminderHours || 3 %>" placeholder="Reminder sati">
+              <label class="admin-field-label">Sati do automatskog zatvaranja</label>
+              <input type="number" name="autoCloseHours" min="1" value="<%= ticket.autoCloseHours || 48 %>" placeholder="Sati do automatskog zatvaranja">
+              <label class="admin-field-label">Sati do podsjetnika</label>
+              <input type="number" name="reminderHours" min="1" value="<%= ticket.reminderHours || 3 %>" placeholder="Sati do podsjetnika">
               <label class="admin-field-label">Pitanja: Igranje na serveru</label>
               <textarea name="igranjeQuestions" rows="6" placeholder="Jedno pitanje po redu"><%= ticket.types && ticket.types.igranje ? ticket.types.igranje.questions.join('\n') : '' %></textarea>
               <label class="admin-field-label">Pitanja: Žalba na igrače</label>
@@ -217,11 +217,11 @@
                 <textarea name="description" rows="4" placeholder="Opis embed-a"></textarea>
                 <input type="text" name="color" placeholder="#2f855a">
                 <input type="text" name="authorName" placeholder="Autor">
-                <input type="text" name="authorIcon" placeholder="Author icon URL">
-                <input type="text" name="footerText" placeholder="Footer tekst">
-                <input type="text" name="footerIcon" placeholder="Footer icon URL">
-                <input type="text" name="thumbnailUrl" placeholder="Thumbnail URL">
-                <input type="text" name="imageUrl" placeholder="Image URL">
+                <input type="text" name="authorIcon" placeholder="URL ikone autora">
+                <input type="text" name="footerText" placeholder="Tekst podno?ja">
+                <input type="text" name="footerIcon" placeholder="URL ikone podno?ja">
+                <input type="text" name="thumbnailUrl" placeholder="URL sli?ice">
+                <input type="text" name="imageUrl" placeholder="URL slike">
                 <input type="text" name="launcherButtonLabel" placeholder="Tekst dugmeta">
                 <input type="text" name="launcherButtonUrl" placeholder="Link dugmeta">
                 <textarea name="normalMessage" rows="2" placeholder="Običan tekst uz embed"></textarea>
@@ -233,8 +233,8 @@
 
               <div class="embed-preview-shell">
                 <div class="admin-content-title-row">
-                  <h3 class="admin-content-title">Preview embeda</h3>
-                  <span class="admin-pill">Live</span>
+                  <h3 class="admin-content-title">Pregled embeda</h3>
+                  <span class="admin-pill">U?ivo</span>
                 </div>
                 <div class="discord-preview">
                   <div class="discord-preview-message" id="embed-preview-message" hidden></div>
@@ -242,7 +242,7 @@
                     <div class="discord-embed-bar" id="embed-preview-bar"></div>
                     <div class="discord-embed-body">
                       <div class="discord-embed-author" id="embed-preview-author-row" hidden>
-                        <img id="embed-preview-author-icon" alt="Author">
+                        <img id="embed-preview-author-icon" alt="Autor">
                         <span id="embed-preview-author-text"></span>
                       </div>
                       <div class="discord-embed-grid">
@@ -251,15 +251,15 @@
                           <p id="embed-preview-description">Opis embed-a će se prikazati ovdje čim upišeš tekst.</p>
                           <div class="discord-embed-footer" id="embed-preview-footer-row">
                             <img id="embed-preview-footer-icon" alt="Footer">
-                            <span id="embed-preview-footer-text">Footer tekst</span>
+                            <span id="embed-preview-footer-text">Tekst podno?ja</span>
                           </div>
                         </div>
                         <div class="discord-embed-thumb-wrap" id="embed-preview-thumb-wrap" hidden>
-                          <img id="embed-preview-thumbnail" alt="Thumbnail">
+                          <img id="embed-preview-thumbnail" alt="Sli?ica">
                         </div>
                       </div>
                       <div class="discord-embed-image-wrap" id="embed-preview-image-wrap" hidden>
-                        <img id="embed-preview-image" alt="Embed image">
+                        <img id="embed-preview-image" alt="Slika embeda">
                       </div>
                       <div class="discord-embed-button-row" id="embed-preview-button-row" hidden>
                         <span class="discord-embed-button" id="embed-preview-button-label"></span>
@@ -363,7 +363,7 @@
     preview.authorIcon.style.display = authorIcon ? 'block' : 'none';
     setPreviewImage(preview.authorIcon, null, authorIcon);
 
-    preview.footerText.textContent = footerText || 'Footer tekst';
+    preview.footerText.textContent = footerText || 'Tekst podno?ja';
     if (useTimestamp) {
       preview.footerText.textContent += ' • Danas u ' + timeText;
     }

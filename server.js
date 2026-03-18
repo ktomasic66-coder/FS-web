@@ -145,55 +145,55 @@ const DEFAULT_BOT_CONFIG = {
       igranje: {
         title: 'Igranje na serveru',
         questions: [
-          'Koliko ?esto planira? da igra? na serveru?',
-          'U koje vrijeme si naj?e??e aktivan?',
-          'Da li si spreman da po?tuje? raspored i obaveze na farmi?',
-          'Kako bi reagovao ako neko iz tima ne po?tuje dogovor ili pravila igre?',
-          'Da li koristi? voice chat (Discord) tokom igre?',
-          'Da li si spreman da pomogne? drugim igra?ima?',
-          'Za?to ?eli? da igra? ba? na hard serveru?',
+          'Koliko često planiraš igrati na serveru?',
+          'U koje vrijeme si najčešće aktivan?',
+          'Jesi li spreman poštovati raspored i obaveze na farmi?',
+          'Kako bi reagirao kada netko iz tima ne poštuje dogovor ili pravila igre?',
+          'Koristiš li voice chat (Discord) tijekom igre?',
+          'Jesi li spreman pomoći drugim igračima?',
+          'Zašto želiš igrati baš na hard serveru?',
         ],
       },
       zalba: {
-        title: '?alba na igra?e',
+        title: 'Žalba na igrače',
         questions: [
-          'Ime igra?a na kojeg se ?ali??',
+          'Ime igrača na kojeg se žališ?',
           'Vrijeme i detaljan opis situacije?',
-          'Ima? li dokaze (slike, video, log)?',
+          'Imaš li dokaze (slike, video, log)?',
         ],
       },
       modovi: {
         title: 'Edit modova',
         questions: [
-          'Na ?emu trenutno radi??',
+          'Na čemu trenutno radiš?',
           'Koji je konkretan problem?',
-          'Koji editor / verziju igre koristi??',
+          'Koji editor ili verziju igre koristiš?',
         ],
       },
       pomoc: {
-        title: 'Pomo?',
+        title: 'Pomoć',
         questions: [
-          'U ?emu ti treba pomo??',
+          'U čemu ti treba pomoć?',
           'Je li problem hitan?',
-          'Na koga ili na ?to se odnosi problem?',
-          'Dodaj detalje da admin zna ?ta treba pogledati',
+          'Na koga ili na što se odnosi problem?',
+          'Dodaj detalje kako bi admin znao što treba pogledati.',
         ],
       },
     },
     messages: {
       reminder:
-        'Hej {user}!\nJo? uvijek nisi odgovorio na pitanja iz prve poruke u tiketu.\n\nMolimo te da odgovori? na sva pitanja kako bismo mogli nastaviti s procesom.',
+        'Hej {user}!\nJoš uvijek nisi odgovorio na pitanja iz prve poruke u tiketu.\n\nMolimo te da odgovoriš na sva pitanja kako bismo mogli nastaviti s procesom.',
       autoClose:
-        'Ticket je automatski zatvoren jer 48 sati nije bilo aktivnosti. Ako i dalje treba? pomo?, slobodno otvori novi ticket.',
-      igranjeWelcomeTitle: 'Dobrodo?ao/la na Slavonsku Ravnicu!',
+        'Tiket je automatski zatvoren jer 48 sati nije bilo aktivnosti. Ako ti i dalje treba pomoć, slobodno otvori novi tiket.',
+      igranjeWelcomeTitle: 'Dobrodošao/la na Slavonsku Ravnicu!',
       igranjeWelcomeBody:
-        'Bok i dobrodo?ao na Slavonsku Ravnicu! ??\nTicket ti je pro?ao i primljen/a si na server.\n\nZa ulazak u igru idi u kanal {launcherChannel} i tamo skini na? launcher jer unutra ti sve pi?e i to je glavni na?in za ulazak na server.\n\nAko ?eli?, modove mo?e? dodati i ru?no preko ovog linka:\nhttp://176.57.169.250:8620/mods.html?lang=en\n\nSamo imaj na umu da ?e se sva budu?a a?uriranja prikazivati isklju?ivo kroz launcher, tako da vi?e ne?emo posebno lijepiti linkove za nove ili a?urirane modove. Zato ti je launcher ubudu?e glavno mjesto za sve updateove.\n\nAko ti bilo ?to zapne oko instalacije, modova ili ulaska u igru, slobodno se javi.\nVidimo se na farmi. ??',
+        'Bok i dobrodošao/la na Slavonsku Ravnicu!\nTvoj tiket je pregledan i primljen/a si na server.\n\nZa ulazak u igru idi u kanal {launcherChannel} i tamo preuzmi naš launcher. U njemu se nalaze sve važne upute i to je glavni način ulaska na server.\n\nAko želiš, modove možeš dodati i ručno preko ovog linka:\nhttp://176.57.169.250:8620/mods.html?lang=en\n\nImaj na umu da će se sva buduća ažuriranja prikazivati isključivo kroz launcher, tako da više nećemo posebno slati linkove za nove ili ažurirane modove. Launcher ti je glavno mjesto za sve nadogradnje.\n\nAko ti bilo što zapne oko instalacije, modova ili ulaska u igru, slobodno se javi.\nVidimo se na farmi.',
       igranjeRulesTitle: 'Pravila servera',
       igranjeRulesBody:
-        'Molimo te da pro?ita? pravila servera prije po?etka igre.\n\n? Po?tuj sve igra?e na serveru\n? Zabranjeno je uni?tavanje tu?e imovine\n? Ne ostavljaj vozila na cesti\n? Koristi samo svoja polja i farmu\n? Exploit/cheat = trajni ban\n? Slu?aj upute admina i moderatora\n\nKr?enje pravila rezultira opomenom, kickom ili banom. ??',
+        'Molimo te da pročitaš pravila servera prije početka igre.\n\n- Poštuj sve igrače na serveru\n- Zabranjeno je uništavanje tuđe imovine\n- Ne ostavljaj vozila na cesti\n- Koristi samo svoja polja i farmu\n- Exploit ili cheat znači trajni ban\n- Slušaj upute admina i moderatora\n\nKršenje pravila rezultira opomenom, izbacivanjem ili banom.',
       igranjeLauncherTitle: 'Launcher -- preuzimanje i instalacija',
       igranjeLauncherBody:
-        'Na? launcher je glavni na?in za ulazak na server.\n\n**Gdje preuzeti?**\nIdi u kanal {launcherChannel} i preuzmi launcher.\n\n**Kako radi?**\n? Pokreni launcher\n? Automatski ?e preuzeti sve potrebne modove\n? Klikni "Play" i igra te prebacuje na server\n\n**Problemi?**\n? Pokreni launcher kao Administrator\n? Provjeri da ti antivirus ne blokira\n? Ako ni?ta ne poma?e, javi se u support kanal',
+        'Naš launcher je glavni način za ulazak na server.\n\nGdje preuzeti?\nIdi u kanal {launcherChannel} i preuzmi launcher.\n\nKako radi?\n- Pokreni launcher\n- Automatski će preuzeti sve potrebne modove\n- Klikni "Play" i igra će te spojiti na server\n\nAko imaš problem:\n- Pokreni launcher kao administrator\n- Provjeri blokira li ga antivirus\n- Ako ništa ne pomaže, javi se u support kanal',
     },
   },
 };
