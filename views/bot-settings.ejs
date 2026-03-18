@@ -82,20 +82,35 @@
 
             <form method="POST" action="/admin/bot/greetings" class="admin-form compact-form">
               <label class="admin-field-label">Welcome postavke</label>
-              <input type="text" name="welcomeChannelId" value="<%= bot.welcome ? bot.welcome.channelId : '' %>" list="guild-channels" placeholder="Welcome kanal ID">
+              <select name="welcomeChannelId" class="admin-select">
+                <option value="">Odaberi welcome kanal</option>
+                <% (guildChannels || []).forEach(channel => { %>
+                  <option value="<%= channel.id %>" <%= bot.welcome && bot.welcome.channelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
+                <% }) %>
+              </select>
               <textarea name="welcomeMessage" placeholder="Dobrodošlica..."><%= bot.welcome ? bot.welcome.message : '' %></textarea>
               <button type="submit" class="admin-secondary-btn">Spremi welcome</button>
             </form>
 
             <form method="POST" action="/admin/bot/logging" class="admin-form compact-form">
               <label class="admin-field-label">Log kanal</label>
-              <input type="text" name="logChannelId" value="<%= bot.logging ? bot.logging.channelId : '' %>" list="guild-channels" placeholder="Log kanal ID">
+              <select name="logChannelId" class="admin-select">
+                <option value="">Odaberi log kanal</option>
+                <% (guildChannels || []).forEach(channel => { %>
+                  <option value="<%= channel.id %>" <%= bot.logging && bot.logging.channelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
+                <% }) %>
+              </select>
               <button type="submit" class="admin-secondary-btn">Spremi logging</button>
             </form>
 
             <form method="POST" action="/admin/bot/gallery" class="admin-form compact-form">
               <label class="admin-field-label">Galerija kanal</label>
-              <input type="text" name="galleryChannelId" value="<%= bot.gallery ? bot.gallery.channelId : '' %>" list="guild-channels" placeholder="Discord kanal za slike">
+              <select name="galleryChannelId" class="admin-select">
+                <option value="">Odaberi galerija kanal</option>
+                <% (guildChannels || []).forEach(channel => { %>
+                  <option value="<%= channel.id %>" <%= bot.gallery && bot.gallery.channelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
+                <% }) %>
+              </select>
               <button type="submit" class="admin-secondary-btn">Spremi galeriju</button>
             </form>
           </div>
@@ -107,9 +122,24 @@
             </div>
 
             <form method="POST" action="/admin/bot/tickets" class="admin-form admin-rule-form">
-              <input type="text" name="ticketCategoryId" value="<%= ticket.categoryId || '' %>" list="guild-channels" placeholder="Ticket kategorija ID">
-              <input type="text" name="ticketLogChannelId" value="<%= ticket.logChannelId || '' %>" list="guild-channels" placeholder="Ticket log kanal ID">
-              <input type="text" name="ticketSupportRoleId" value="<%= ticket.supportRoleId || '' %>" list="guild-roles" placeholder="Support role ID">
+              <select name="ticketCategoryId" class="admin-select">
+                <option value="">Odaberi ticket kategoriju</option>
+                <% (guildChannels || []).forEach(channel => { %>
+                  <option value="<%= channel.id %>" <%= ticket.categoryId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
+                <% }) %>
+              </select>
+              <select name="ticketLogChannelId" class="admin-select">
+                <option value="">Odaberi ticket log kanal</option>
+                <% (guildChannels || []).forEach(channel => { %>
+                  <option value="<%= channel.id %>" <%= ticket.logChannelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
+                <% }) %>
+              </select>
+              <select name="ticketSupportRoleId" class="admin-select">
+                <option value="">Odaberi support rolu</option>
+                <% (syncedRoles || []).forEach(role => { %>
+                  <option value="<%= role.id %>" <%= ticket.supportRoleId === role.id ? 'selected' : '' %>><%= role.name %> · <%= role.id %></option>
+                <% }) %>
+              </select>
               <input type="number" name="autoCloseHours" min="1" value="<%= ticket.autoCloseHours || 48 %>" placeholder="Auto close sati">
               <input type="number" name="reminderHours" min="1" value="<%= ticket.reminderHours || 3 %>" placeholder="Reminder sati">
               <textarea name="igranjeQuestions" rows="6" placeholder="Igranje pitanja"><%= ticket.types && ticket.types.igranje ? ticket.types.igranje.questions.join('\n') : '' %></textarea>
@@ -130,7 +160,12 @@
             </div>
 
             <form method="POST" action="/admin/bot/embeds" class="admin-form admin-rule-form">
-              <input type="text" name="embedChannelId" list="guild-channels" placeholder="Kanal ID" required>
+              <select name="embedChannelId" class="admin-select" required>
+                <option value="">Odaberi kanal za embed</option>
+                <% (guildChannels || []).forEach(channel => { %>
+                  <option value="<%= channel.id %>">#<%= channel.name %> · <%= channel.id %></option>
+                <% }) %>
+              </select>
               <input type="text" name="title" placeholder="Naslov embed-a">
               <textarea name="description" rows="4" placeholder="Opis embed-a"></textarea>
               <input type="text" name="color" placeholder="#2f855a">
@@ -168,17 +203,6 @@
           </div>
         </div>
 
-        <datalist id="guild-channels">
-          <% (guildChannels || []).forEach(channel => { %>
-            <option value="<%= channel.id %>"><%= channel.name %></option>
-          <% }) %>
-        </datalist>
-
-        <datalist id="guild-roles">
-          <% (syncedRoles || []).forEach(role => { %>
-            <option value="<%= role.id %>"><%= role.name %></option>
-          <% }) %>
-        </datalist>
       </div>
     </div>
   </div>
