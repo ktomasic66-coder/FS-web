@@ -1762,31 +1762,44 @@ async function publishGalleryImageToDiscord(item, buffer) {
   return sent;
 }
 
+function isDiscordImageAttachment(attachment) {
+  if (!attachment) return false;
+
+  const contentType = String(attachment.contentType || '').toLowerCase();
+  if (contentType.startsWith('image/')) return true;
+
+  const name = String(attachment.name || '').toLowerCase();
+  return /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
+}
+
 async function ingestDiscordGalleryMessage(message) {
   if (!message) return 0;
 
   const attachments = Array.from(message.attachments.values()).filter((attachment) => {
-    return String(attachment.contentType || '').startsWith('image/');
+    return isDiscordImageAttachment(attachment);
   });
 
   if (!attachments.length) return 0;
 
+  const existingFilenames = new Set();
   if (useMySql && dbPool) {
     const [existingRows] = await dbPool.query(
-      'SELECT filename FROM gallery_images WHERE discord_message_id = ? LIMIT 1',
+      'SELECT filename FROM gallery_images WHERE discord_message_id = ?',
       [message.id]
     );
-    if (existingRows.length) return 0;
+    existingRows.forEach((row) => existingFilenames.add(String(row.filename || '')));
   } else {
     const gallery = readJsonSafe(DATA_FILE, []);
-    const exists = gallery.some((image) => String(image.discordMessageId || '') === String(message.id));
-    if (exists) return 0;
+    gallery
+      .filter((image) => String(image.discordMessageId || '') === String(message.id))
+      .forEach((image) => existingFilenames.add(String(image.filename || '')));
   }
 
   let created = 0;
   for (let index = 0; index < attachments.length; index += 1) {
     const attachment = attachments[index];
     const filename = `discord-${message.id}-${index}-${sanitizeGalleryFilename(attachment.name || 'image')}`;
+    if (existingFilenames.has(filename)) continue;
 
     let fileBuffer = null;
     try {
@@ -2588,6 +2601,18 @@ app.get('/galerija', async (req, res) => {
     uploadNotice,
     isAdmin,
     openImage,
+  });
+});
+
+app.get('/api/gallery/status', async (req, res) => {
+  const gallery = await loadGallery(req.user?.id || '');
+  const latest = gallery.length
+    ? Math.max(...gallery.map((img) => Number(img.uploadedAtMs || 0)))
+    : 0;
+
+  res.json({
+    count: gallery.length,
+    latestUploadedAtMs: latest,
   });
 });
 

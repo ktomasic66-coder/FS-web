@@ -238,6 +238,12 @@
 <script>
 const uploadBlocked = <%- JSON.stringify(Boolean(uploadBlocked)) %>;
 const uploadNotice = <%- JSON.stringify(uploadNotice || '') %>;
+const initialGalleryStatus = <%- JSON.stringify({
+    count: Array.isArray(gallery) ? gallery.length : 0,
+    latestUploadedAtMs: Array.isArray(gallery) && gallery.length
+        ? Math.max.apply(null, gallery.map(function (img) { return Number(img.uploadedAtMs || 0); }))
+        : 0,
+}) %>;
 
 function showGalleryToast(message) {
     const toast = document.getElementById('gallery-toast');
@@ -316,6 +322,47 @@ if (uploadForm && uploadBlocked) {
 if (uploadNotice === 'blocked') {
     showGalleryToast('Trenutno si na BLACKLISTI i nemaš dozvolu za upload.');
 }
+let latestGalleryStatus = {
+    count: Number(initialGalleryStatus.count || 0),
+    latestUploadedAtMs: Number(initialGalleryStatus.latestUploadedAtMs || 0),
+};
+
+let galleryStatusCheckInFlight = false;
+
+async function checkGalleryRealtimeSync() {
+    if (galleryStatusCheckInFlight) return;
+    galleryStatusCheckInFlight = true;
+
+    try {
+        const response = await fetch('/api/gallery/status', {
+            headers: { 'Accept': 'application/json' },
+            cache: 'no-store',
+        });
+
+        if (!response.ok) return;
+
+        const nextStatus = await response.json();
+        const nextCount = Number(nextStatus.count || 0);
+        const nextLatest = Number(nextStatus.latestUploadedAtMs || 0);
+        const hasNewImage = nextCount > latestGalleryStatus.count || nextLatest > latestGalleryStatus.latestUploadedAtMs;
+
+        if (hasNewImage) {
+            window.location.reload();
+            return;
+        }
+
+        latestGalleryStatus = {
+            count: nextCount,
+            latestUploadedAtMs: nextLatest,
+        };
+    } catch (error) {
+        return;
+    } finally {
+        galleryStatusCheckInFlight = false;
+    }
+}
+
+window.setInterval(checkGalleryRealtimeSync, 5000);
 </script>
 
 <script src="/modal.js"></script>
