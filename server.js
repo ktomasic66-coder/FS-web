@@ -189,6 +189,22 @@ const discordClient = new Client({
 });
 
 let discordMemberCount = 0;
+let gallerySyncInterval = null;
+let gallerySyncInProgress = false;
+
+async function runScheduledGallerySync() {
+  if (gallerySyncInProgress || !discordClient.isReady()) return 0;
+  gallerySyncInProgress = true;
+
+  try {
+    return await syncGalleryFromDiscordChannel();
+  } catch (err) {
+    console.log('SCHEDULED GALLERY SYNC ERROR:', err.message);
+    return 0;
+  } finally {
+    gallerySyncInProgress = false;
+  }
+}
 
 discordClient.once('clientReady', async () => {
   console.log(`🤖 Bot prijavljen kao ${discordClient.user.tag}`);
@@ -200,6 +216,11 @@ discordClient.once('clientReady', async () => {
     console.log('📊 Discord članovi:', discordMemberCount);
     await syncGalleryFromDiscordChannel();
     await syncDiscordStateToDatabase({ includeMembers: false });
+    if (!gallerySyncInterval) {
+      gallerySyncInterval = setInterval(() => {
+        runScheduledGallerySync().catch(() => 0);
+      }, 15000);
+    }
   } catch (err) {
     console.log('❌ Guild error:', err.message);
   }
@@ -1768,6 +1789,7 @@ function isDiscordImageAttachment(attachment) {
 
   const contentType = String(attachment.contentType || '').toLowerCase();
   if (contentType.startsWith('image/')) return true;
+  if (Number(attachment.width || 0) > 0 || Number(attachment.height || 0) > 0) return true;
 
   const name = String(attachment.name || '').toLowerCase();
   return /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
