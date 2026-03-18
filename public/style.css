@@ -2667,6 +2667,7 @@ s input {
   font-size: 18px;
   line-height: 1.8;
   color: rgba(255,255,255,0.92);
+  white-space: pre-line;
 }
 
 .rules-card-modern h3 {
