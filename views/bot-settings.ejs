@@ -137,31 +137,58 @@
             </div>
 
             <form method="POST" action="/admin/bot/tickets" class="admin-form admin-rule-form">
+              <label class="admin-field-label">Ticket kategorija</label>
               <select name="ticketCategoryId" class="admin-select">
                 <option value="">Odaberi ticket kategoriju</option>
                 <% (guildChannels || []).forEach(channel => { %>
                   <option value="<%= channel.id %>" <%= ticket.categoryId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
                 <% }) %>
               </select>
+              <label class="admin-field-label">Ticket log kanal</label>
               <select name="ticketLogChannelId" class="admin-select">
                 <option value="">Odaberi ticket log kanal</option>
                 <% (guildChannels || []).forEach(channel => { %>
                   <option value="<%= channel.id %>" <%= ticket.logChannelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
                 <% }) %>
               </select>
+              <label class="admin-field-label">Support rola</label>
               <select name="ticketSupportRoleId" class="admin-select">
                 <option value="">Odaberi support rolu</option>
                 <% (syncedRoles || []).forEach(role => { %>
                   <option value="<%= role.id %>" <%= ticket.supportRoleId === role.id ? 'selected' : '' %>><%= role.name %> · <%= role.id %></option>
                 <% }) %>
               </select>
+              <label class="admin-field-label">Launcher kanal</label>
+              <select name="ticketLauncherChannelId" class="admin-select">
+                <option value="">Odaberi launcher kanal</option>
+                <% (guildChannels || []).forEach(channel => { %>
+                  <option value="<%= channel.id %>" <%= ticket.launcherChannelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
+                <% }) %>
+              </select>
+              <label class="admin-field-label">Auto close sati</label>
               <input type="number" name="autoCloseHours" min="1" value="<%= ticket.autoCloseHours || 48 %>" placeholder="Auto close sati">
+              <label class="admin-field-label">Reminder sati</label>
               <input type="number" name="reminderHours" min="1" value="<%= ticket.reminderHours || 3 %>" placeholder="Reminder sati">
-              <textarea name="igranjeQuestions" rows="6" placeholder="Igranje pitanja"><%= ticket.types && ticket.types.igranje ? ticket.types.igranje.questions.join('\n') : '' %></textarea>
+              <label class="admin-field-label">Pitanja: Igranje na serveru</label>
+              <textarea name="igranjeQuestions" rows="6" placeholder="Jedno pitanje po redu"><%= ticket.types && ticket.types.igranje ? ticket.types.igranje.questions.join('\n') : '' %></textarea>
               <textarea name="zalbaQuestions" rows="4" placeholder="Žalba pitanja"><%= ticket.types && ticket.types.zalba ? ticket.types.zalba.questions.join('\n') : '' %></textarea>
-              <textarea name="modoviQuestions" rows="4" placeholder="Modovi pitanja"><%= ticket.types && ticket.types.modovi ? ticket.types.modovi.questions.join('\n') : '' %></textarea>
-              <textarea name="reminderMessage" rows="4" placeholder="Reminder poruka"><%= ticket.messages ? ticket.messages.reminder : '' %></textarea>
-              <textarea name="autoCloseMessage" rows="4" placeholder="Auto close poruka"><%= ticket.messages ? ticket.messages.autoClose : '' %></textarea>
+              <label class="admin-field-label">Pitanja: Edit modova</label>
+              <textarea name="modoviQuestions" rows="4" placeholder="Jedno pitanje po redu"><%= ticket.types && ticket.types.modovi ? ticket.types.modovi.questions.join('\n') : '' %></textarea>
+              <textarea name="pomocQuestions" rows="4" placeholder="Pomoć pitanja"><%= ticket.types && ticket.types.pomoc ? ticket.types.pomoc.questions.join('\n') : '' %></textarea>
+              <label class="admin-field-label">Reminder poruka</label>
+              <textarea name="reminderMessage" rows="4" placeholder="Poruka za podsjetnik"><%= ticket.messages ? ticket.messages.reminder : '' %></textarea>
+              <label class="admin-field-label">Auto close poruka</label>
+              <textarea name="autoCloseMessage" rows="4" placeholder="Poruka za automatsko zatvaranje"><%= ticket.messages ? ticket.messages.autoClose : '' %></textarea>
+              <label class="admin-field-label">Igranje welcome naslov</label>
+              <input type="text" name="igranjeWelcomeTitle" value="<%= ticket.messages ? ticket.messages.igranjeWelcomeTitle || '' : '' %>" placeholder="Naslov prve poruke">
+              <label class="admin-field-label">Igranje welcome poruka</label>
+              <textarea name="igranjeWelcomeBody" rows="8" placeholder="Možeš koristiti {launcherChannel} i {guildName}"><%= ticket.messages ? ticket.messages.igranjeWelcomeBody || '' : '' %></textarea>
+              <label class="admin-field-label">Pravila naslov</label>
+              <input type="text" name="igranjeRulesTitle" value="<%= ticket.messages ? ticket.messages.igranjeRulesTitle || '' : '' %>" placeholder="Naslov pravila">
+              <label class="admin-field-label">Pravila poruka</label>
+              <textarea name="igranjeRulesBody" rows="7" placeholder="Tekst pravila servera"><%= ticket.messages ? ticket.messages.igranjeRulesBody || '' : '' %></textarea>
+              <input type="text" name="igranjeLauncherTitle" value="<%= ticket.messages ? ticket.messages.igranjeLauncherTitle || '' : '' %>" placeholder="Launcher naslov">
+              <textarea name="igranjeLauncherBody" rows="8" placeholder="Launcher poruka"><%= ticket.messages ? ticket.messages.igranjeLauncherBody || '' : '' %></textarea>
               <div class="admin-inline-actions">
                 <button type="submit" class="admin-action-btn">Spremi ticket postavke</button>
               </div>

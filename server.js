@@ -21,7 +21,7 @@ let _botClient = null;
 async function getBotDb() {
   if (_botDb) return _botDb;
 
-  // Use MONGO_URL (same as farmbuddy bot) — fall back to MONGO_URI if not set
+  // Use MONGO_URL (same as farmbuddy bot) Ã¢â‚¬â€ fall back to MONGO_URI if not set
   const botMongoUrl = process.env.MONGO_URL || process.env.MONGO_URI || MONGO_URI;
   if (!botMongoUrl) {
     console.error('[BOT-DB] No MONGO_URL or MONGO_URI environment variable set');
@@ -125,7 +125,7 @@ const ROLE_IDS = {
 const DEFAULT_BOT_CONFIG = {
   welcome: {
     channelId: '',
-    message: 'Dobrodošao {user} na server!',
+    message: 'DobrodoÃ…Â¡ao {user} na server!',
   },
   logging: {
     channelId: ADMIN_LOG_CHANNEL_ID,
@@ -138,43 +138,62 @@ const DEFAULT_BOT_CONFIG = {
     logChannelId: '',
     categoryId: '',
     supportRoleId: '',
+    launcherChannelId: '1481028377489047613',
     autoCloseHours: 48,
     reminderHours: 3,
     types: {
       igranje: {
         title: 'Igranje na serveru',
         questions: [
-          'Koliko često planiraš da igraš na serveru?',
-          'U koje vrijeme si najčešće aktivan?',
-          'Da li si spreman da poštuješ raspored i obaveze na farmi?',
-          'Kako bi reagovao ako neko iz tima ne poštuje dogovor ili pravila igre?',
-          'Da li koristiš voice chat (Discord) tokom igre?',
-          'Da li si spreman da pomogneš drugim igračima?',
-          'Zašto želiš da igraš baš na hard serveru?',
+          'Koliko ?esto planira? da igra? na serveru?',
+          'U koje vrijeme si naj?e??e aktivan?',
+          'Da li si spreman da po?tuje? raspored i obaveze na farmi?',
+          'Kako bi reagovao ako neko iz tima ne po?tuje dogovor ili pravila igre?',
+          'Da li koristi? voice chat (Discord) tokom igre?',
+          'Da li si spreman da pomogne? drugim igra?ima?',
+          'Za?to ?eli? da igra? ba? na hard serveru?',
         ],
       },
       zalba: {
-        title: 'Žalba na igrače',
+        title: '?alba na igra?e',
         questions: [
-          'Ime igrača na kojeg se žališ?',
+          'Ime igra?a na kojeg se ?ali??',
           'Vrijeme i detaljan opis situacije?',
-          'Imaš li dokaze (slike, video, log)?',
+          'Ima? li dokaze (slike, video, log)?',
         ],
       },
       modovi: {
         title: 'Edit modova',
         questions: [
-          'Na čemu trenutno radiš?',
+          'Na ?emu trenutno radi??',
           'Koji je konkretan problem?',
-          'Koji editor / verziju igre koristiš?',
+          'Koji editor / verziju igre koristi??',
+        ],
+      },
+      pomoc: {
+        title: 'Pomo?',
+        questions: [
+          'U ?emu ti treba pomo??',
+          'Je li problem hitan?',
+          'Na koga ili na ?to se odnosi problem?',
+          'Dodaj detalje da admin zna ?ta treba pogledati',
         ],
       },
     },
     messages: {
       reminder:
-        'Hej {user}!\nJoš uvijek nisi odgovorio na pitanja iz prve poruke u tiketu.\n\nMolimo te da odgovoriš na sva pitanja kako bismo mogli nastaviti s procesom.',
+        'Hej {user}!\nJo? uvijek nisi odgovorio na pitanja iz prve poruke u tiketu.\n\nMolimo te da odgovori? na sva pitanja kako bismo mogli nastaviti s procesom.',
       autoClose:
-        'Ticket je automatski zatvoren jer 48 sati nije bilo aktivnosti. Ako i dalje trebaš pomoć, slobodno otvori novi ticket.',
+        'Ticket je automatski zatvoren jer 48 sati nije bilo aktivnosti. Ako i dalje treba? pomo?, slobodno otvori novi ticket.',
+      igranjeWelcomeTitle: 'Dobrodo?ao/la na Slavonsku Ravnicu!',
+      igranjeWelcomeBody:
+        'Bok i dobrodo?ao na Slavonsku Ravnicu! ??\nTicket ti je pro?ao i primljen/a si na server.\n\nZa ulazak u igru idi u kanal {launcherChannel} i tamo skini na? launcher jer unutra ti sve pi?e i to je glavni na?in za ulazak na server.\n\nAko ?eli?, modove mo?e? dodati i ru?no preko ovog linka:\nhttp://176.57.169.250:8620/mods.html?lang=en\n\nSamo imaj na umu da ?e se sva budu?a a?uriranja prikazivati isklju?ivo kroz launcher, tako da vi?e ne?emo posebno lijepiti linkove za nove ili a?urirane modove. Zato ti je launcher ubudu?e glavno mjesto za sve updateove.\n\nAko ti bilo ?to zapne oko instalacije, modova ili ulaska u igru, slobodno se javi.\nVidimo se na farmi. ??',
+      igranjeRulesTitle: 'Pravila servera',
+      igranjeRulesBody:
+        'Molimo te da pro?ita? pravila servera prije po?etka igre.\n\n? Po?tuj sve igra?e na serveru\n? Zabranjeno je uni?tavanje tu?e imovine\n? Ne ostavljaj vozila na cesti\n? Koristi samo svoja polja i farmu\n? Exploit/cheat = trajni ban\n? Slu?aj upute admina i moderatora\n\nKr?enje pravila rezultira opomenom, kickom ili banom. ??',
+      igranjeLauncherTitle: 'Launcher -- preuzimanje i instalacija',
+      igranjeLauncherBody:
+        'Na? launcher je glavni na?in za ulazak na server.\n\n**Gdje preuzeti?**\nIdi u kanal {launcherChannel} i preuzmi launcher.\n\n**Kako radi?**\n? Pokreni launcher\n? Automatski ?e preuzeti sve potrebne modove\n? Klikni "Play" i igra te prebacuje na server\n\n**Problemi?**\n? Pokreni launcher kao Administrator\n? Provjeri da ti antivirus ne blokira\n? Ako ni?ta ne poma?e, javi se u support kanal',
     },
   },
 };
@@ -208,13 +227,13 @@ async function runScheduledGallerySync() {
 }
 
 discordClient.once('clientReady', async () => {
-  console.log(`🤖 Bot prijavljen kao ${discordClient.user.tag}`);
+  console.log(`Ã°Å¸Â¤â€“ Bot prijavljen kao ${discordClient.user.tag}`);
 
   try {
     mainGuild = await discordClient.guilds.fetch(GUILD_ID);
     discordMemberCount = mainGuild.memberCount;
 
-    console.log('📊 Discord članovi:', discordMemberCount);
+    console.log('Ã°Å¸â€œÅ  Discord Ã„Âlanovi:', discordMemberCount);
     await syncGalleryFromDiscordChannel();
     await syncDiscordStateToDatabase({ includeMembers: false });
     if (!gallerySyncInterval) {
@@ -223,7 +242,7 @@ discordClient.once('clientReady', async () => {
       }, 15000);
     }
   } catch (err) {
-    console.log('❌ Guild error:', err.message);
+    console.log('Ã¢ÂÅ’ Guild error:', err.message);
   }
 });
 
@@ -325,6 +344,25 @@ function writeJsonSafe(filePath, data) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
+function syncTicketSystemToLocalTicketBotDb(ticketSystem) {
+  try {
+    const localBotDbPath = path.resolve(__dirname, '../tiket-bot/data/db.json');
+    if (!fs.existsSync(localBotDbPath)) return;
+
+    const localBotDb = readJsonSafe(localBotDbPath, {});
+    localBotDb.ticketSystem = normalizeBotConfig({
+      ticketSystem: {
+        ...(localBotDb.ticketSystem || {}),
+        ...(ticketSystem || {}),
+      },
+    }).ticketSystem;
+
+    writeJsonSafe(localBotDbPath, localBotDb);
+  } catch (err) {
+    console.log('[BOT CONFIG SYNC] Local ticket bot DB sync failed:', err.message);
+  }
+}
+
 function cloneDefaultBotConfig() {
   return JSON.parse(JSON.stringify(DEFAULT_BOT_CONFIG));
 }
@@ -396,6 +434,13 @@ function normalizeBotConfig(raw) {
           questions: Array.isArray(cfg.ticketSystem?.types?.modovi?.questions)
             ? cfg.ticketSystem.types.modovi.questions.map((q) => String(q || '')).filter(Boolean)
             : [...base.ticketSystem.types.modovi.questions],
+        },
+        pomoc: {
+          ...base.ticketSystem.types.pomoc,
+          ...(cfg.ticketSystem?.types?.pomoc || {}),
+          questions: Array.isArray(cfg.ticketSystem?.types?.pomoc?.questions)
+            ? cfg.ticketSystem.types.pomoc.questions.map((q) => String(q || '')).filter(Boolean)
+            : [...base.ticketSystem.types.pomoc.questions],
         },
       },
       messages: {
@@ -1158,21 +1203,21 @@ async function deleteNewsById(id) {
 
 function normalizeRulesData(raw) {
   const fallback = {
-    title: 'Pravila Ponašanja',
-    subtitle: 'Ova pravila važe za sve članove servera bez izuzetka.',
-    warning: 'Kršenje pravila može rezultirati upozorenjem, mute-om ili trajnim banom.',
+    title: 'Pravila PonaÃ…Â¡anja',
+    subtitle: 'Ova pravila vaÃ…Â¾e za sve Ã„Âlanove servera bez izuzetka.',
+    warning: 'KrÃ…Â¡enje pravila moÃ…Â¾e rezultirati upozorenjem, mute-om ili trajnim banom.',
     items: [],
   };
 
   const normalizeCroatianText = (value) => {
     const text = String(value || '').trim();
 
-    if (text === 'Pravila Ponasanja') return 'Pravila Ponašanja';
+    if (text === 'Pravila Ponasanja') return 'Pravila PonaÃ…Â¡anja';
     if (text === 'Ova pravila vaze za sve clanove servera bez izuzetka.') {
-      return 'Ova pravila važe za sve članove servera bez izuzetka.';
+      return 'Ova pravila vaÃ…Â¾e za sve Ã„Âlanove servera bez izuzetka.';
     }
     if (text === 'Krsenje pravila moze rezultirati upozorenjem, mute-om ili trajnim banom.') {
-      return 'Kršenje pravila može rezultirati upozorenjem, mute-om ili trajnim banom.';
+      return 'KrÃ…Â¡enje pravila moÃ…Â¾e rezultirati upozorenjem, mute-om ili trajnim banom.';
     }
 
     return text;
@@ -2207,7 +2252,7 @@ app.get('/admin', requireAdmin, async (req, res) => {
   res.render('admin', {
     user: req.user,
     logs: logs,
-    news: news,                   // ⬅️ OVO MORA BITI POSLANO
+    news: news,                   // Ã¢Â¬â€¦Ã¯Â¸Â OVO MORA BITI POSLANO
     blacklist: blacklist,
     rules: rules,
     botConfig,
@@ -2360,7 +2405,7 @@ app.post('/admin/bot/greetings', requireAdmin, async (req, res) => {
   botConfig.welcome.channelId = String(req.body.welcomeChannelId || '').trim();
   botConfig.welcome.message = String(req.body.welcomeMessage || '').trim() || DEFAULT_BOT_CONFIG.welcome.message;
   await saveBotConfig(botConfig);
-  await logAction('Bot postavke: welcome ažuriran', req.user.username);
+  await logAction('Bot postavke: welcome aÃ…Â¾uriran', req.user.username);
   res.redirect('/admin#bot-settings');
 });
 
@@ -2368,7 +2413,7 @@ app.post('/admin/bot/logging', requireAdmin, async (req, res) => {
   const botConfig = await loadBotConfig();
   botConfig.logging.channelId = String(req.body.logChannelId || '').trim();
   await saveBotConfig(botConfig);
-  await logAction('Bot postavke: logging ažuriran', req.user.username);
+  await logAction('Bot postavke: logging aÃ…Â¾uriran', req.user.username);
   res.redirect('/admin#bot-settings');
 });
 
@@ -2377,7 +2422,7 @@ app.post('/admin/bot/gallery', requireAdmin, async (req, res) => {
   botConfig.gallery.channelId = String(req.body.galleryChannelId || '').trim();
   await saveBotConfig(botConfig);
   await syncGalleryFromDiscordChannel().catch(() => 0);
-  await logAction('Bot postavke: gallery kanal ažuriran', req.user.username);
+  await logAction('Bot postavke: gallery kanal aÃ…Â¾uriran', req.user.username);
   res.redirect('/admin#bot-settings');
 });
 
@@ -2385,9 +2430,17 @@ app.post('/admin/bot/tickets', requireAdmin, async (req, res) => {
   const botConfig = await loadBotConfig();
   const ts = botConfig.ticketSystem;
 
+  ts.types = ts.types || {};
+  ts.types.igranje = ts.types.igranje || { ...DEFAULT_BOT_CONFIG.ticketSystem.types.igranje };
+  ts.types.zalba = ts.types.zalba || { ...DEFAULT_BOT_CONFIG.ticketSystem.types.zalba };
+  ts.types.modovi = ts.types.modovi || { ...DEFAULT_BOT_CONFIG.ticketSystem.types.modovi };
+  ts.types.pomoc = ts.types.pomoc || { ...DEFAULT_BOT_CONFIG.ticketSystem.types.pomoc };
+  ts.messages = ts.messages || { ...DEFAULT_BOT_CONFIG.ticketSystem.messages };
+
   ts.categoryId = String(req.body.ticketCategoryId || '').trim();
   ts.logChannelId = String(req.body.ticketLogChannelId || '').trim();
   ts.supportRoleId = String(req.body.ticketSupportRoleId || '').trim();
+  ts.launcherChannelId = String(req.body.ticketLauncherChannelId || '').trim();
   ts.autoCloseHours = Number(req.body.autoCloseHours) || DEFAULT_BOT_CONFIG.ticketSystem.autoCloseHours;
   ts.reminderHours = Number(req.body.reminderHours) || DEFAULT_BOT_CONFIG.ticketSystem.reminderHours;
   ts.types.igranje.questions = String(req.body.igranjeQuestions || '')
@@ -2402,10 +2455,21 @@ app.post('/admin/bot/tickets', requireAdmin, async (req, res) => {
     .split('\n')
     .map((q) => q.trim())
     .filter(Boolean);
+  ts.types.pomoc.questions = String(req.body.pomocQuestions || '')
+    .split('\n')
+    .map((q) => q.trim())
+    .filter(Boolean);
   ts.messages.reminder = String(req.body.reminderMessage || '').trim() || DEFAULT_BOT_CONFIG.ticketSystem.messages.reminder;
   ts.messages.autoClose = String(req.body.autoCloseMessage || '').trim() || DEFAULT_BOT_CONFIG.ticketSystem.messages.autoClose;
+  ts.messages.igranjeWelcomeTitle = String(req.body.igranjeWelcomeTitle || '').trim() || DEFAULT_BOT_CONFIG.ticketSystem.messages.igranjeWelcomeTitle;
+  ts.messages.igranjeWelcomeBody = String(req.body.igranjeWelcomeBody || '').trim() || DEFAULT_BOT_CONFIG.ticketSystem.messages.igranjeWelcomeBody;
+  ts.messages.igranjeRulesTitle = String(req.body.igranjeRulesTitle || '').trim() || DEFAULT_BOT_CONFIG.ticketSystem.messages.igranjeRulesTitle;
+  ts.messages.igranjeRulesBody = String(req.body.igranjeRulesBody || '').trim() || DEFAULT_BOT_CONFIG.ticketSystem.messages.igranjeRulesBody;
+  ts.messages.igranjeLauncherTitle = String(req.body.igranjeLauncherTitle || '').trim() || DEFAULT_BOT_CONFIG.ticketSystem.messages.igranjeLauncherTitle;
+  ts.messages.igranjeLauncherBody = String(req.body.igranjeLauncherBody || '').trim() || DEFAULT_BOT_CONFIG.ticketSystem.messages.igranjeLauncherBody;
 
   await saveBotConfig(botConfig);
+  syncTicketSystemToLocalTicketBotDb(ts);
   await logAction('Bot postavke: ticket sistem ažuriran', req.user.username);
   res.redirect('/admin#bot-settings');
 });
@@ -2496,7 +2560,7 @@ app.post('/admin/discord-sync', requireAdmin, async (req, res) => {
   await syncGalleryFromDiscordChannel().catch((err) => {
     console.log('MANUAL GALLERY SYNC ERROR:', err.message);
   });
-  await logAction('Discord sinkronizacija pokrenuta ručno', req.user.username);
+  await logAction('Discord sinkronizacija pokrenuta ruÃ„Âno', req.user.username);
   res.redirect('/admin#bot-settings');
 });
 
@@ -2698,7 +2762,7 @@ app.get('/moja-farma', async (req, res) => {
         } catch(e) {}
       }
     } catch (err) {
-      console.error('[MOJA-FARMA] Greška pri dohvaćanju farme:', err.message);
+      console.error('[MOJA-FARMA] GreÃ…Â¡ka pri dohvaÃ„â€¡anju farme:', err.message);
     }
   }
 
@@ -2760,7 +2824,7 @@ app.post('/upload', async (req, res) => {
   if (!canUpload) return res.redirect('/no-permission');
 
   upload.single('image')(req, res, async function (err) {
-    if (err) return res.send('Greška.');
+    if (err) return res.send('GreÃ…Â¡ka.');
     try {
       const description = String(req.body.description || '').trim().slice(0, 500);
       const filename = `${Date.now()}-${String(req.file.originalname || 'image').replace(/\s+/g, '-')}`;
@@ -2798,7 +2862,7 @@ app.post('/upload', async (req, res) => {
 
 function sanitizeComment(text) {
   const t = String(text || '').slice(0, 300); // max 300 znakova
-  // osnovno “čišćenje” (nije savršeno, ali je ok za start)
+  // osnovno Ã¢â‚¬Å“Ã„ÂiÃ…Â¡Ã„â€¡enjeÃ¢â‚¬Â (nije savrÃ…Â¡eno, ali je ok za start)
   return t.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
@@ -2923,12 +2987,12 @@ app.post('/api/money-transfer', async (req, res) => {
       return res.status(400).json({ error: 'Neispravan zahtjev' });
     }
     if (String(fromFarmId) === String(toFarmId)) {
-      return res.status(400).json({ error: 'Ne možete slati novac na istu farmu' });
+      return res.status(400).json({ error: 'Ne moÃ…Â¾ete slati novac na istu farmu' });
     }
 
     // Verify user owns the source farm (same fallback chain as moja-farma)
     const playerLink = await db.collection('player_links').findOne({ discordUserId: req.user.id });
-    if (!playerLink) return res.status(403).json({ error: 'Nemate povezan račun' });
+    if (!playerLink) return res.status(403).json({ error: 'Nemate povezan raÃ„Âun' });
 
     let userFarmId = playerLink.defaultFarmId;
 
@@ -2957,7 +3021,7 @@ app.post('/api/money-transfer', async (req, res) => {
     // Check balance
     const fromFarm = await db.collection('farms').findOne({ farmId: String(fromFarmId) });
     if (!fromFarm || (fromFarm.balance || 0) < transferAmount) {
-      return res.status(400).json({ error: 'Nedovoljno sredstava na računu' });
+      return res.status(400).json({ error: 'Nedovoljno sredstava na raÃ„Âunu' });
     }
 
     // Get target farm name
@@ -2972,7 +3036,7 @@ app.post('/api/money-transfer', async (req, res) => {
     const alreadyPending = pendingTotal.length > 0 ? pendingTotal[0].total : 0;
 
     if (alreadyPending + transferAmount > (fromFarm.balance || 0)) {
-      return res.status(400).json({ error: 'Ukupni zakazani prijenosi premašuju stanje računa' });
+      return res.status(400).json({ error: 'Ukupni zakazani prijenosi premaÃ…Â¡uju stanje raÃ„Âuna' });
     }
 
     await db.collection('pending_transfers').insertOne({
@@ -2986,10 +3050,10 @@ app.post('/api/money-transfer', async (req, res) => {
       createdAt: new Date()
     });
 
-    res.json({ success: true, message: 'Prijenos od ' + transferAmount.toLocaleString('hr-HR') + ' € zakazan za ' + toFarmName });
+    res.json({ success: true, message: 'Prijenos od ' + transferAmount.toLocaleString('hr-HR') + ' Ã¢â€šÂ¬ zakazan za ' + toFarmName });
   } catch (err) {
     console.error('[TRANSFER] Error:', err.message);
-    res.status(500).json({ error: 'Greška na serveru' });
+    res.status(500).json({ error: 'GreÃ…Â¡ka na serveru' });
   }
 });
 
@@ -3036,12 +3100,12 @@ app.delete('/api/money-transfer/:id', async (req, res) => {
     }
 
     const transfer = await db.collection('pending_transfers').findOne({ _id: objId });
-    if (!transfer) return res.status(404).json({ error: 'Prijenos nije pronađen' });
+    if (!transfer) return res.status(404).json({ error: 'Prijenos nije pronaÃ„â€˜en' });
     if (transfer.requestedBy !== req.user.id) {
       return res.status(403).json({ error: 'Nemate pristup' });
     }
     if (transfer.status !== 'pending') {
-      return res.status(400).json({ error: 'Prijenos je već obrađen' });
+      return res.status(400).json({ error: 'Prijenos je veÃ„â€¡ obraÃ„â€˜en' });
     }
 
     await db.collection('pending_transfers').updateOne(
@@ -3052,7 +3116,7 @@ app.delete('/api/money-transfer/:id', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('[TRANSFER] Cancel error:', err.message);
-    res.status(500).json({ error: 'Greška na serveru' });
+    res.status(500).json({ error: 'GreÃ…Â¡ka na serveru' });
   }
 });
 
