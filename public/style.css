@@ -2322,6 +2322,16 @@ s input {
   padding: 0 26px 26px;
 }
 
+.bot-settings-page .admin-section,
+.bot-settings-page .admin-content,
+.bot-settings-page .admin-content.open {
+  overflow: visible;
+}
+
+.bot-settings-page .admin-content.open {
+  max-height: none;
+}
+
 .admin-form {
   display: flex;
   flex-direction: column;
