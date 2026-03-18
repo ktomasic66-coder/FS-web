@@ -2582,6 +2582,129 @@ s input {
   justify-content: flex-end;
 }
 
+.embed-preview-shell {
+  margin-top: 18px;
+  padding: 20px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.discord-preview {
+  display: grid;
+  gap: 12px;
+}
+
+.discord-preview-message {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.88);
+  white-space: pre-line;
+}
+
+.discord-embed-preview {
+  display: grid;
+  grid-template-columns: 4px minmax(0, 1fr);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #2b2d31;
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 16px 34px rgba(0,0,0,0.26);
+}
+
+.discord-embed-bar {
+  background: #2f855a;
+}
+
+.discord-embed-body {
+  padding: 16px;
+}
+
+.discord-embed-author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.discord-embed-author img,
+.discord-embed-footer img {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.discord-embed-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+}
+
+.discord-embed-main h4 {
+  margin: 0 0 8px;
+  color: #ffffff;
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.discord-embed-main p {
+  margin: 0;
+  color: #dbdee1;
+  font-size: 14px;
+  line-height: 1.55;
+  white-space: pre-line;
+}
+
+.discord-embed-thumb-wrap img {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.discord-embed-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  color: #b5bac1;
+  font-size: 12px;
+}
+
+.discord-embed-image-wrap {
+  margin-top: 14px;
+}
+
+.discord-embed-image-wrap img {
+  width: 100%;
+  max-height: 280px;
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+.discord-embed-button-row {
+  margin-top: 14px;
+}
+
+.discord-embed-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 160px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #5865f2;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .rules-hero {
   position: relative;
   max-width: 1280px;

@@ -159,7 +159,7 @@
               <span class="admin-pill"><%= bot.embeds ? bot.embeds.length : 0 %></span>
             </div>
 
-            <form method="POST" action="/admin/bot/embeds" class="admin-form admin-rule-form">
+            <form method="POST" action="/admin/bot/embeds" class="admin-form admin-rule-form" id="embed-builder-form">
               <select name="embedChannelId" class="admin-select" required>
                 <option value="">Odaberi kanal za embed</option>
                 <% (guildChannels || []).forEach(channel => { %>
@@ -183,6 +183,44 @@
                 <button type="submit" class="admin-action-btn">Pošalji embed</button>
               </div>
             </form>
+
+            <div class="embed-preview-shell">
+              <div class="admin-content-title-row">
+                <h3 class="admin-content-title">Preview embeda</h3>
+                <span class="admin-pill">Live</span>
+              </div>
+              <div class="discord-preview">
+                <div class="discord-preview-message" id="embed-preview-message" hidden></div>
+                <article class="discord-embed-preview">
+                  <div class="discord-embed-bar" id="embed-preview-bar"></div>
+                  <div class="discord-embed-body">
+                    <div class="discord-embed-author" id="embed-preview-author-row" hidden>
+                      <img id="embed-preview-author-icon" alt="Author">
+                      <span id="embed-preview-author-text"></span>
+                    </div>
+                    <div class="discord-embed-grid">
+                      <div class="discord-embed-main">
+                        <h4 id="embed-preview-title">Naslov embed-a</h4>
+                        <p id="embed-preview-description">Opis embed-a će se prikazati ovdje čim upišeš tekst.</p>
+                        <div class="discord-embed-footer" id="embed-preview-footer-row">
+                          <img id="embed-preview-footer-icon" alt="Footer">
+                          <span id="embed-preview-footer-text">Footer tekst</span>
+                        </div>
+                      </div>
+                      <div class="discord-embed-thumb-wrap" id="embed-preview-thumb-wrap" hidden>
+                        <img id="embed-preview-thumbnail" alt="Thumbnail">
+                      </div>
+                    </div>
+                    <div class="discord-embed-image-wrap" id="embed-preview-image-wrap" hidden>
+                      <img id="embed-preview-image" alt="Embed image">
+                    </div>
+                    <div class="discord-embed-button-row" id="embed-preview-button-row" hidden>
+                      <span class="discord-embed-button" id="embed-preview-button-label"></span>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            </div>
 
             <div class="admin-divider"></div>
 
@@ -209,5 +247,92 @@
 </section>
 
 <script src="/modal.js"></script>
-<script src="/site.js"></script></body>
+<script src="/site.js"></script>
+<script>
+(function () {
+  const form = document.getElementById('embed-builder-form');
+  if (!form) return;
+
+  const getField = function (name) {
+    return form.querySelector('[name="' + name + '"]');
+  };
+
+  const preview = {
+    message: document.getElementById('embed-preview-message'),
+    bar: document.getElementById('embed-preview-bar'),
+    title: document.getElementById('embed-preview-title'),
+    description: document.getElementById('embed-preview-description'),
+    authorRow: document.getElementById('embed-preview-author-row'),
+    authorIcon: document.getElementById('embed-preview-author-icon'),
+    authorText: document.getElementById('embed-preview-author-text'),
+    footerIcon: document.getElementById('embed-preview-footer-icon'),
+    footerText: document.getElementById('embed-preview-footer-text'),
+    thumbWrap: document.getElementById('embed-preview-thumb-wrap'),
+    thumbnail: document.getElementById('embed-preview-thumbnail'),
+    imageWrap: document.getElementById('embed-preview-image-wrap'),
+    image: document.getElementById('embed-preview-image'),
+    buttonRow: document.getElementById('embed-preview-button-row'),
+    buttonLabel: document.getElementById('embed-preview-button-label')
+  };
+
+  function setPreviewImage(imageEl, wrapEl, url) {
+    const value = String(url || '').trim();
+    if (!value) {
+      if (wrapEl) wrapEl.hidden = true;
+      imageEl.removeAttribute('src');
+      return;
+    }
+
+    imageEl.src = value;
+    if (wrapEl) wrapEl.hidden = false;
+    imageEl.onerror = function () {
+      if (wrapEl) wrapEl.hidden = true;
+    };
+  }
+
+  function updateEmbedPreview() {
+    const title = String(getField('title').value || '').trim();
+    const description = String(getField('description').value || '').trim();
+    const color = String(getField('color').value || '').trim() || '#2f855a';
+    const authorName = String(getField('authorName').value || '').trim();
+    const authorIcon = String(getField('authorIcon').value || '').trim();
+    const footerText = String(getField('footerText').value || '').trim();
+    const footerIcon = String(getField('footerIcon').value || '').trim();
+    const thumbnailUrl = String(getField('thumbnailUrl').value || '').trim();
+    const imageUrl = String(getField('imageUrl').value || '').trim();
+    const buttonLabel = String(getField('launcherButtonLabel').value || '').trim();
+    const normalMessage = String(getField('normalMessage').value || '').trim();
+    const useTimestamp = Boolean(getField('timestamp').checked);
+    const timeText = new Date().toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit' });
+
+    preview.message.hidden = !normalMessage;
+    preview.message.textContent = normalMessage;
+    preview.bar.style.background = color;
+    preview.title.textContent = title || 'Naslov embed-a';
+    preview.description.textContent = description || 'Opis embed-a će se prikazati ovdje čim upišeš tekst.';
+
+    preview.authorRow.hidden = !authorName;
+    preview.authorText.textContent = authorName;
+    preview.authorIcon.style.display = authorIcon ? 'block' : 'none';
+    setPreviewImage(preview.authorIcon, null, authorIcon);
+
+    preview.footerText.textContent = footerText || 'Footer tekst';
+    if (useTimestamp) {
+      preview.footerText.textContent += ' • Danas u ' + timeText;
+    }
+    preview.footerIcon.style.display = footerIcon ? 'block' : 'none';
+    setPreviewImage(preview.footerIcon, null, footerIcon);
+
+    setPreviewImage(preview.thumbnail, preview.thumbWrap, thumbnailUrl);
+    setPreviewImage(preview.image, preview.imageWrap, imageUrl);
+
+    preview.buttonRow.hidden = !buttonLabel;
+    preview.buttonLabel.textContent = buttonLabel;
+  }
+
+  form.addEventListener('input', updateEmbedPreview);
+  form.addEventListener('change', updateEmbedPreview);
+  updateEmbedPreview();
+})();
+</script></body>
 </html>
