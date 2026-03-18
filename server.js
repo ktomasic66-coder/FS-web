@@ -83,7 +83,7 @@ try {
   mysql = null;
 }
 
-const { AttachmentBuilder, Client, GatewayIntentBits } = require('discord.js');
+const { AttachmentBuilder, Client, EmbedBuilder, GatewayIntentBits } = require('discord.js');
 
 const app = express();
 let dbPool = null;
@@ -1567,23 +1567,40 @@ async function addRule(title, content) {
   await saveRules(rules);
 }
 
+async function getRuleById(id) {
+  const rules = await loadRules();
+  return rules.items.find((item) => Number(item.id) === Number(id)) || null;
+}
+
 async function updateRuleById(id, title, content) {
   const rules = await loadRules();
   const rule = rules.items.find((item) => Number(item.id) === Number(id));
-  if (!rule) return false;
+  if (!rule) return null;
+  const before = {
+    id: rule.id,
+    title: rule.title,
+    content: rule.content,
+  };
   rule.title = title;
   rule.content = content;
   rule.text = [title, content].filter(Boolean).join('\n');
   await saveRules(rules);
-  return true;
+  return {
+    before,
+    after: {
+      id: rule.id,
+      title: rule.title,
+      content: rule.content,
+    },
+  };
 }
 
 async function deleteRuleById(id) {
   const rules = await loadRules();
-  const before = rules.items.length;
+  const deletedRule = rules.items.find((item) => Number(item.id) === Number(id)) || null;
   rules.items = rules.items.filter((item) => Number(item.id) !== Number(id));
   await saveRules(rules);
-  return before !== rules.items.length;
+  return deletedRule;
 }
 
 async function updateRulesMeta({ title, subtitle, warning }) {
@@ -1607,25 +1624,40 @@ async function loadLogs() {
   return rows;
 }
 
-async function logAction(action, adminUser) {
+function getAdminLogActionText(action) {
+  if (typeof action === 'string') return action;
+  if (action && typeof action.summary === 'string') return action.summary;
+  return 'Admin akcija';
+}
+
+function formatRuleLogSnapshot(rule) {
+  if (!rule) return 'N/A';
+  const title = String(rule.title || '').trim();
+  const content = String(rule.content || '').trim();
+  return [`Naslov: ${title || 'N/A'}`, `Sadrzaj: ${content || 'N/A'}`].join('\n');
+}
+
+async function logAction(action, adminUser, discordPayload = null) {
+  const actionText = getAdminLogActionText(action);
+
   if (!useMySql || !dbPool) {
     const logs = readJsonSafe(LOG_FILE, []);
     logs.unshift({
       id: Date.now(),
-      action,
+      action: actionText,
       admin: adminUser,
       date: new Date().toLocaleString(),
     });
     writeJsonSafe(LOG_FILE, logs);
-    await sendAdminActionDiscordLog(action, adminUser);
+    await sendAdminActionDiscordLog(actionText, adminUser, discordPayload);
     return;
   }
 
   await dbPool.query(
     'INSERT INTO admin_logs (id, action, admin, date_text) VALUES (?, ?, ?, ?)',
-    [Date.now(), action, adminUser, new Date().toLocaleString()]
+    [Date.now(), actionText, adminUser, new Date().toLocaleString()]
   );
-  await sendAdminActionDiscordLog(action, adminUser);
+  await sendAdminActionDiscordLog(actionText, adminUser, discordPayload);
 }
 
 async function sendWebLoginDiscordLog(user) {
@@ -1657,7 +1689,7 @@ async function sendWebLoginDiscordLog(user) {
   });
 }
 
-async function sendAdminActionDiscordLog(action, adminUser) {
+async function sendAdminActionDiscordLog(action, adminUser, payload = null) {
   if (!discordClient.isReady()) return;
 
   let channelId = ADMIN_LOG_CHANNEL_ID;
@@ -1673,14 +1705,41 @@ async function sendAdminActionDiscordLog(action, adminUser) {
   const channel = await discordClient.channels.fetch(channelId).catch(() => null);
   if (!channel || !channel.isTextBased()) return;
 
-  const lines = [
-    'Admin log',
-    `Admin: ${adminUser || 'Nepoznat'}`,
-    `Akcija: ${action || 'N/A'}`,
-    `Vrijeme: ${new Date().toLocaleString('hr-HR')}`,
-  ];
+  const embed = new EmbedBuilder()
+    .setTitle(payload?.title || 'Admin log')
+    .setColor(0xf1c40f)
+    .addFields(
+      { name: 'Admin', value: String(adminUser || 'Nepoznat'), inline: true },
+      { name: 'Akcija', value: String(action || 'N/A'), inline: true },
+      { name: 'Vrijeme', value: new Date().toLocaleString('hr-HR'), inline: false }
+    )
+    .setTimestamp(new Date());
 
-  await channel.send(lines.join('\n')).catch((err) => {
+  if (payload?.before) {
+    embed.addFields({
+      name: 'Prije',
+      value: formatRuleLogSnapshot(payload.before).slice(0, 1024),
+      inline: false,
+    });
+  }
+
+  if (payload?.after) {
+    embed.addFields({
+      name: 'Sada',
+      value: formatRuleLogSnapshot(payload.after).slice(0, 1024),
+      inline: false,
+    });
+  }
+
+  if (payload?.details) {
+    embed.addFields({
+      name: 'Detalji',
+      value: String(payload.details).slice(0, 1024),
+      inline: false,
+    });
+  }
+
+  await channel.send({ embeds: [embed] }).catch((err) => {
     console.log('ADMIN LOG DISCORD ERROR:', err.message);
   });
 }
@@ -2240,7 +2299,10 @@ app.post('/admin/rules/add', requireAdmin, async (req, res) => {
   if (!title || !content) return res.redirect('/admin');
 
   await addRule(title, content);
-  await logAction('Dodano novo pravilo', req.user.username);
+  await logAction('Dodano novo pravilo', req.user.username, {
+    title: 'Dodano novo pravilo',
+    after: { title, content },
+  });
   res.redirect('/admin');
 });
 
@@ -2251,14 +2313,25 @@ app.post('/admin/rules/update/:id', requireAdmin, async (req, res) => {
   if (!title || !content) return res.redirect('/admin');
 
   const updated = await updateRuleById(id, title, content);
-  if (updated) await logAction(`Uredeno pravilo (id=${id})`, req.user.username);
+  if (updated) {
+    await logAction('Uredeno pravilo', req.user.username, {
+      title: 'Uredeno pravilo',
+      before: updated.before,
+      after: updated.after,
+    });
+  }
   res.redirect('/admin');
 });
 
 app.post('/admin/rules/delete/:id', requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
   const deleted = await deleteRuleById(id);
-  if (deleted) await logAction(`Obrisano pravilo (id=${id})`, req.user.username);
+  if (deleted) {
+    await logAction('Obrisano pravilo', req.user.username, {
+      title: 'Obrisano pravilo',
+      before: deleted,
+    });
+  }
   res.redirect('/admin');
 });
 
