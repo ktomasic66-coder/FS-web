@@ -72,39 +72,54 @@
       </div>
 
       <div class="admin-content open">
-        <div class="admin-rules-layout">
-          <div class="admin-rules-sidebar">
-            <form method="POST" action="/admin/discord-sync" class="admin-form compact-form">
+        <div class="bot-settings-top-grid">
+          <form method="POST" action="/admin/discord-sync" class="admin-form compact-form bot-settings-card">
+            <div class="bot-settings-card-head">
               <label class="admin-field-label">Discord sinkronizacija</label>
-              <p class="admin-empty">Role: <%= discordSync ? discordSync.rolesCount : 0 %> | Članovi: <%= discordSync ? discordSync.membersCount : 0 %> | Veze: <%= discordSync ? discordSync.memberRolesCount : 0 %></p>
-              <button type="submit" class="admin-action-btn">Pokreni sync</button>
-            </form>
+              <span class="admin-pill">Sync</span>
+            </div>
+            <p class="admin-empty">Role: <%= discordSync ? discordSync.rolesCount : 0 %> | Članovi: <%= discordSync ? discordSync.membersCount : 0 %> | Veze: <%= discordSync ? discordSync.memberRolesCount : 0 %></p>
+            <button type="submit" class="admin-action-btn">Pokreni sync</button>
+          </form>
 
-            <form method="POST" action="/admin/bot/greetings" class="admin-form compact-form">
+          <form method="POST" action="/admin/bot/greetings" class="admin-form compact-form bot-settings-card">
+            <div class="bot-settings-card-head">
               <label class="admin-field-label">Welcome postavke</label>
-              <select name="welcomeChannelId" class="admin-select">
-                <option value="">Odaberi welcome kanal</option>
-                <% (guildChannels || []).forEach(channel => { %>
-                  <option value="<%= channel.id %>" <%= bot.welcome && bot.welcome.channelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
-                <% }) %>
-              </select>
-              <textarea name="welcomeMessage" placeholder="Dobrodošlica..."><%= bot.welcome ? bot.welcome.message : '' %></textarea>
-              <button type="submit" class="admin-secondary-btn">Spremi welcome</button>
-            </form>
+              <span class="admin-pill">Welcome</span>
+            </div>
+            <select name="welcomeChannelId" class="admin-select">
+              <option value="">Odaberi welcome kanal</option>
+              <% (guildChannels || []).forEach(channel => { %>
+                <option value="<%= channel.id %>" <%= bot.welcome && bot.welcome.channelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
+              <% }) %>
+            </select>
+            <textarea name="welcomeMessage" placeholder="Dobrodošlica..."><%= bot.welcome ? bot.welcome.message : '' %></textarea>
+            <button type="submit" class="admin-secondary-btn">Spremi welcome</button>
+          </form>
 
-            <form method="POST" action="/admin/bot/logging" class="admin-form compact-form">
+          <form method="POST" action="/admin/bot/logging" class="admin-form compact-form bot-settings-card">
+            <div class="bot-settings-card-head">
               <label class="admin-field-label">Log kanal</label>
-              <select name="logChannelId" class="admin-select">
-                <option value="">Odaberi log kanal</option>
-                <% (guildChannels || []).forEach(channel => { %>
-                  <option value="<%= channel.id %>" <%= bot.logging && bot.logging.channelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
-                <% }) %>
-              </select>
-              <button type="submit" class="admin-secondary-btn">Spremi logging</button>
-            </form>
+              <span class="admin-pill">Logs</span>
+            </div>
+            <select name="logChannelId" class="admin-select">
+              <option value="">Odaberi log kanal</option>
+              <% (guildChannels || []).forEach(channel => { %>
+                <option value="<%= channel.id %>" <%= bot.logging && bot.logging.channelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
+              <% }) %>
+            </select>
+            <button type="submit" class="admin-secondary-btn">Spremi logging</button>
+          </form>
+        </div>
+
+        <div class="bot-settings-stack">
+          <section class="bot-settings-panel">
+            <div class="admin-content-title-row">
+              <h3 class="admin-content-title">Galerija kanal</h3>
+              <span class="admin-pill">Media</span>
+            </div>
 
             <form method="POST" action="/admin/bot/gallery" class="admin-form compact-form">
-              <label class="admin-field-label">Galerija kanal</label>
               <select name="galleryChannelId" class="admin-select">
                 <option value="">Odaberi galerija kanal</option>
                 <% (guildChannels || []).forEach(channel => { %>
@@ -113,9 +128,9 @@
               </select>
               <button type="submit" class="admin-secondary-btn">Spremi galeriju</button>
             </form>
-          </div>
+          </section>
 
-          <div class="admin-rules-list">
+          <section class="bot-settings-panel">
             <div class="admin-content-title-row">
               <h3 class="admin-content-title">Ticket sistem</h3>
               <span class="admin-pill"><%= syncedRoles ? syncedRoles.length : 0 %> rola</span>
@@ -151,79 +166,81 @@
                 <button type="submit" class="admin-action-btn">Spremi ticket postavke</button>
               </div>
             </form>
+          </section>
 
-            <div class="admin-divider"></div>
-
+          <section class="bot-settings-panel">
             <div class="admin-content-title-row">
               <h3 class="admin-content-title">Pošalji embed</h3>
               <span class="admin-pill"><%= bot.embeds ? bot.embeds.length : 0 %></span>
             </div>
 
-            <form method="POST" action="/admin/bot/embeds" class="admin-form admin-rule-form" id="embed-builder-form">
-              <select name="embedChannelId" class="admin-select" required>
-                <option value="">Odaberi kanal za embed</option>
-                <% (guildChannels || []).forEach(channel => { %>
-                  <option value="<%= channel.id %>">#<%= channel.name %> · <%= channel.id %></option>
-                <% }) %>
-              </select>
-              <input type="text" name="title" placeholder="Naslov embed-a">
-              <textarea name="description" rows="4" placeholder="Opis embed-a"></textarea>
-              <input type="text" name="color" placeholder="#2f855a">
-              <input type="text" name="authorName" placeholder="Autor">
-              <input type="text" name="authorIcon" placeholder="Author icon URL">
-              <input type="text" name="footerText" placeholder="Footer tekst">
-              <input type="text" name="footerIcon" placeholder="Footer icon URL">
-              <input type="text" name="thumbnailUrl" placeholder="Thumbnail URL">
-              <input type="text" name="imageUrl" placeholder="Image URL">
-              <input type="text" name="launcherButtonLabel" placeholder="Tekst dugmeta">
-              <input type="text" name="launcherButtonUrl" placeholder="Link dugmeta">
-              <textarea name="normalMessage" rows="2" placeholder="Običan tekst uz embed"></textarea>
-              <label class="admin-field-label"><input type="checkbox" name="timestamp" checked> Dodaj timestamp</label>
-              <div class="admin-inline-actions">
-                <button type="submit" class="admin-action-btn">Pošalji embed</button>
-              </div>
-            </form>
+            <div class="bot-embed-layout">
+              <form method="POST" action="/admin/bot/embeds" class="admin-form admin-rule-form" id="embed-builder-form">
+                <select name="embedChannelId" class="admin-select" required>
+                  <option value="">Odaberi kanal za embed</option>
+                  <% (guildChannels || []).forEach(channel => { %>
+                    <option value="<%= channel.id %>">#<%= channel.name %> · <%= channel.id %></option>
+                  <% }) %>
+                </select>
+                <input type="text" name="title" placeholder="Naslov embed-a">
+                <textarea name="description" rows="4" placeholder="Opis embed-a"></textarea>
+                <input type="text" name="color" placeholder="#2f855a">
+                <input type="text" name="authorName" placeholder="Autor">
+                <input type="text" name="authorIcon" placeholder="Author icon URL">
+                <input type="text" name="footerText" placeholder="Footer tekst">
+                <input type="text" name="footerIcon" placeholder="Footer icon URL">
+                <input type="text" name="thumbnailUrl" placeholder="Thumbnail URL">
+                <input type="text" name="imageUrl" placeholder="Image URL">
+                <input type="text" name="launcherButtonLabel" placeholder="Tekst dugmeta">
+                <input type="text" name="launcherButtonUrl" placeholder="Link dugmeta">
+                <textarea name="normalMessage" rows="2" placeholder="Običan tekst uz embed"></textarea>
+                <label class="admin-field-label"><input type="checkbox" name="timestamp" checked> Dodaj timestamp</label>
+                <div class="admin-inline-actions">
+                  <button type="submit" class="admin-action-btn">Pošalji embed</button>
+                </div>
+              </form>
 
-            <div class="embed-preview-shell">
-              <div class="admin-content-title-row">
-                <h3 class="admin-content-title">Preview embeda</h3>
-                <span class="admin-pill">Live</span>
-              </div>
-              <div class="discord-preview">
-                <div class="discord-preview-message" id="embed-preview-message" hidden></div>
-                <article class="discord-embed-preview">
-                  <div class="discord-embed-bar" id="embed-preview-bar"></div>
-                  <div class="discord-embed-body">
-                    <div class="discord-embed-author" id="embed-preview-author-row" hidden>
-                      <img id="embed-preview-author-icon" alt="Author">
-                      <span id="embed-preview-author-text"></span>
-                    </div>
-                    <div class="discord-embed-grid">
-                      <div class="discord-embed-main">
-                        <h4 id="embed-preview-title">Naslov embed-a</h4>
-                        <p id="embed-preview-description">Opis embed-a će se prikazati ovdje čim upišeš tekst.</p>
-                        <div class="discord-embed-footer" id="embed-preview-footer-row">
-                          <img id="embed-preview-footer-icon" alt="Footer">
-                          <span id="embed-preview-footer-text">Footer tekst</span>
+              <div class="embed-preview-shell">
+                <div class="admin-content-title-row">
+                  <h3 class="admin-content-title">Preview embeda</h3>
+                  <span class="admin-pill">Live</span>
+                </div>
+                <div class="discord-preview">
+                  <div class="discord-preview-message" id="embed-preview-message" hidden></div>
+                  <article class="discord-embed-preview">
+                    <div class="discord-embed-bar" id="embed-preview-bar"></div>
+                    <div class="discord-embed-body">
+                      <div class="discord-embed-author" id="embed-preview-author-row" hidden>
+                        <img id="embed-preview-author-icon" alt="Author">
+                        <span id="embed-preview-author-text"></span>
+                      </div>
+                      <div class="discord-embed-grid">
+                        <div class="discord-embed-main">
+                          <h4 id="embed-preview-title">Naslov embed-a</h4>
+                          <p id="embed-preview-description">Opis embed-a će se prikazati ovdje čim upišeš tekst.</p>
+                          <div class="discord-embed-footer" id="embed-preview-footer-row">
+                            <img id="embed-preview-footer-icon" alt="Footer">
+                            <span id="embed-preview-footer-text">Footer tekst</span>
+                          </div>
+                        </div>
+                        <div class="discord-embed-thumb-wrap" id="embed-preview-thumb-wrap" hidden>
+                          <img id="embed-preview-thumbnail" alt="Thumbnail">
                         </div>
                       </div>
-                      <div class="discord-embed-thumb-wrap" id="embed-preview-thumb-wrap" hidden>
-                        <img id="embed-preview-thumbnail" alt="Thumbnail">
+                      <div class="discord-embed-image-wrap" id="embed-preview-image-wrap" hidden>
+                        <img id="embed-preview-image" alt="Embed image">
+                      </div>
+                      <div class="discord-embed-button-row" id="embed-preview-button-row" hidden>
+                        <span class="discord-embed-button" id="embed-preview-button-label"></span>
                       </div>
                     </div>
-                    <div class="discord-embed-image-wrap" id="embed-preview-image-wrap" hidden>
-                      <img id="embed-preview-image" alt="Embed image">
-                    </div>
-                    <div class="discord-embed-button-row" id="embed-preview-button-row" hidden>
-                      <span class="discord-embed-button" id="embed-preview-button-label"></span>
-                    </div>
-                  </div>
-                </article>
+                  </article>
+                </div>
               </div>
             </div>
+          </section>
 
-            <div class="admin-divider"></div>
-
+          <section class="bot-settings-panel">
             <div class="admin-content-title-row">
               <h3 class="admin-content-title">Sinkronizirane role</h3>
               <span class="admin-pill"><%= syncedRoles ? syncedRoles.length : 0 %></span>
@@ -238,9 +255,8 @@
             <% } else { %>
               <p class="admin-empty">Role još nisu sinkronizirane.</p>
             <% } %>
-          </div>
+          </section>
         </div>
-
       </div>
     </div>
   </div>
@@ -334,5 +350,6 @@
   form.addEventListener('change', updateEmbedPreview);
   updateEmbedPreview();
 })();
-</script></body>
+</script>
+</body>
 </html>
