@@ -48,7 +48,7 @@
 <section class="rules-showcase">
     <% if (rules.items && rules.items.length > 0) { %>
         <div class="rules-grid-modern">
-            <% rules.items.forEach((rule, index) => { %>
+            <% rules.items.forEach((rule) => { %>
                 <article class="rules-card-modern">
                     <div class="rules-card-top">
                         <h3><%= rule.title %></h3>
@@ -60,8 +60,8 @@
         </div>
     <% } else { %>
         <div class="rules-empty-state">
-            <strong data-i18n="rulesNotAdded">Pravila jo? nisu dodana.</strong>
-            <p data-i18n="rulesNotAddedDesc">Admin ih mo?e dodati i urediti unutar admin panela.</p>
+            <strong data-i18n="rulesNotAdded">Pravila još nisu dodana.</strong>
+            <p data-i18n="rulesNotAddedDesc">Admin ih može dodati i urediti unutar admin panela.</p>
         </div>
     <% } %>
 
@@ -75,7 +75,7 @@
     <div class="site-footer-inner">
         <div>
             <strong>Slavonska Ravnica</strong>
-            <p data-i18n="footerDesc">Pravila i informacije za sve ?lanove zajednice.</p>
+            <p data-i18n="footerDesc">Pravila i informacije za sve članove zajednice.</p>
         </div>
         <div class="site-footer-links">
             <a href="/" data-i18n="home">Početna</a>

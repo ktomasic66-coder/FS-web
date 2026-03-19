@@ -188,7 +188,7 @@ const DEFAULT_BOT_CONFIG = {
       igranjeWelcomeTitle: 'Dobrodošao/la na Slavonsku Ravnicu!',
       igranjeWelcomeBody:
         'Bok i dobrodošao/la na Slavonsku Ravnicu!\nTvoj tiket je pregledan i primljen/a si na server.\n\nZa ulazak u igru idi u kanal {launcherChannel} i tamo preuzmi naš launcher. U njemu se nalaze sve važne upute i to je glavni način ulaska na server.\n\nAko želiš, modove možeš dodati i ručno preko ovog linka:\nhttp://176.57.169.250:8620/mods.html?lang=en\n\nImaj na umu da će se sva buduća ažuriranja prikazivati isključivo kroz launcher, tako da više nećemo posebno slati linkove za nove ili ažurirane modove. Launcher ti je glavno mjesto za sve nadogradnje.\n\nAko ti bilo što zapne oko instalacije, modova ili ulaska u igru, slobodno se javi.\nVidimo se na farmi.',
-      igranjeRulesTitle: 'Pravila servera',
+      igranjeRulesTitle: 'Pravila pona\u0161anja',
       igranjeRulesBody:
         'Molimo te da pročitaš pravila servera prije početka igre.\n\n- Poštuj sve igrače na serveru\n- Zabranjeno je uništavanje tuđe imovine\n- Ne ostavljaj vozila na cesti\n- Koristi samo svoja polja i farmu\n- Exploit ili cheat znači trajni ban\n- Slušaj upute admina i moderatora\n\nKršenje pravila rezultira opomenom, izbacivanjem ili banom.',
       igranjeLauncherTitle: 'Launcher -- preuzimanje i instalacija',
@@ -1203,21 +1203,21 @@ async function deleteNewsById(id) {
 
 function normalizeRulesData(raw) {
   const fallback = {
-    title: 'Pravila PonaÃ…Â¡anja',
-    subtitle: 'Ova pravila vaÃ…Â¾e za sve Ã„Âlanove servera bez izuzetka.',
-    warning: 'KrÃ…Â¡enje pravila moÃ…Â¾e rezultirati upozorenjem, mute-om ili trajnim banom.',
+    title: 'Pravila pona\u0161anja',
+    subtitle: 'Ova pravila va\u017Ee za sve \u010Dlanove servera bez izuzetka.',
+    warning: 'Kr\u0161enje pravila mo\u017Ee rezultirati upozorenjem, mute-om ili trajnim banom.',
     items: [],
   };
 
   const normalizeCroatianText = (value) => {
     const text = String(value || '').trim();
 
-    if (text === 'Pravila Ponasanja') return 'Pravila PonaÃ…Â¡anja';
+    if (text === 'Pravila Ponasanja') return 'Pravila pona\u0161anja';
     if (text === 'Ova pravila vaze za sve clanove servera bez izuzetka.') {
-      return 'Ova pravila vaÃ…Â¾e za sve Ã„Âlanove servera bez izuzetka.';
+      return 'Ova pravila va\u017Ee za sve \u010Dlanove servera bez izuzetka.';
     }
     if (text === 'Krsenje pravila moze rezultirati upozorenjem, mute-om ili trajnim banom.') {
-      return 'KrÃ…Â¡enje pravila moÃ…Â¾e rezultirati upozorenjem, mute-om ili trajnim banom.';
+      return 'Kr\u0161enje pravila mo\u017Ee rezultirati upozorenjem, mute-om ili trajnim banom.';
     }
 
     return text;
