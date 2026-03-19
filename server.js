@@ -122,6 +122,31 @@ const ROLE_IDS = {
   MEMBER: '1238854428136571000',
 };
 
+const MODAL_TICKET_QUESTIONS = {
+  igranje: [
+    'Koliko \u010Desto planira\u0161 igrati na serveru?',
+    'U koje vrijeme si naj\u010De\u0161\u0107e aktivan?',
+    'Za\u0161to \u017Eeli\u0161 igrati ba\u0161 na na\u0161em serveru?',
+    'Jesi li spreman po\u0161tovati pravila, dogovore i obaveze na farmi?',
+  ],
+  zalba: [
+    'Ime igra\u010Da na kojeg se \u017Eali\u0161?',
+    'Vrijeme i detaljan opis situacije?',
+    'Ima\u0161 li dokaze (slike, video, log)?',
+  ],
+  modovi: [
+    'Na \u010Demu trenutno radi\u0161?',
+    'Koji je konkretan problem?',
+    'Koji editor / verziju igre koristi\u0161?',
+  ],
+  pomoc: [
+    'U \u010Demu ti treba pomo\u0107?',
+    'Je li problem hitan?',
+    'Na koga ili na \u0161to se odnosi problem?',
+    'Dodaj detalje da admin zna \u0161to treba pogledati.',
+  ],
+};
+
 const DEFAULT_BOT_CONFIG = {
   welcome: {
     channelId: '',
@@ -197,6 +222,35 @@ const DEFAULT_BOT_CONFIG = {
     },
   },
 };
+
+DEFAULT_BOT_CONFIG.ticketSystem.types.igranje.questions = [...MODAL_TICKET_QUESTIONS.igranje];
+DEFAULT_BOT_CONFIG.ticketSystem.types.zalba.questions = [...MODAL_TICKET_QUESTIONS.zalba];
+DEFAULT_BOT_CONFIG.ticketSystem.types.modovi.questions = [...MODAL_TICKET_QUESTIONS.modovi];
+DEFAULT_BOT_CONFIG.ticketSystem.types.pomoc.questions = [...MODAL_TICKET_QUESTIONS.pomoc];
+
+function normalizeTicketQuestions(type, questions) {
+  const nextQuestions = Array.isArray(questions)
+    ? questions.map((q) => String(q || '').trim()).filter(Boolean)
+    : [];
+
+  const joined = nextQuestions.join(' | ').toLowerCase();
+
+  if (!joined) return [...(MODAL_TICKET_QUESTIONS[type] || [])];
+
+  if (type === 'igranje' && (nextQuestions.length > 4 || joined.includes('voice chat') || joined.includes('hard serveru'))) {
+    return [...MODAL_TICKET_QUESTIONS.igranje];
+  }
+
+  if (type === 'modovi' && joined.includes('koji editor') && joined.includes('ili verziju igre')) {
+    return [...MODAL_TICKET_QUESTIONS.modovi];
+  }
+
+  if (type === 'pomoc' && joined.includes('admin zna') && joined.includes('treba pogledati')) {
+    return [...MODAL_TICKET_QUESTIONS.pomoc];
+  }
+
+  return nextQuestions;
+}
 
 /* ================= DISCORD BOT ================= */
 
@@ -418,28 +472,28 @@ function normalizeBotConfig(raw) {
           ...base.ticketSystem.types.igranje,
           ...(cfg.ticketSystem?.types?.igranje || {}),
           questions: Array.isArray(cfg.ticketSystem?.types?.igranje?.questions)
-            ? cfg.ticketSystem.types.igranje.questions.map((q) => String(q || '')).filter(Boolean)
+            ? normalizeTicketQuestions('igranje', cfg.ticketSystem.types.igranje.questions)
             : [...base.ticketSystem.types.igranje.questions],
         },
         zalba: {
           ...base.ticketSystem.types.zalba,
           ...(cfg.ticketSystem?.types?.zalba || {}),
           questions: Array.isArray(cfg.ticketSystem?.types?.zalba?.questions)
-            ? cfg.ticketSystem.types.zalba.questions.map((q) => String(q || '')).filter(Boolean)
+            ? normalizeTicketQuestions('zalba', cfg.ticketSystem.types.zalba.questions)
             : [...base.ticketSystem.types.zalba.questions],
         },
         modovi: {
           ...base.ticketSystem.types.modovi,
           ...(cfg.ticketSystem?.types?.modovi || {}),
           questions: Array.isArray(cfg.ticketSystem?.types?.modovi?.questions)
-            ? cfg.ticketSystem.types.modovi.questions.map((q) => String(q || '')).filter(Boolean)
+            ? normalizeTicketQuestions('modovi', cfg.ticketSystem.types.modovi.questions)
             : [...base.ticketSystem.types.modovi.questions],
         },
         pomoc: {
           ...base.ticketSystem.types.pomoc,
           ...(cfg.ticketSystem?.types?.pomoc || {}),
           questions: Array.isArray(cfg.ticketSystem?.types?.pomoc?.questions)
-            ? cfg.ticketSystem.types.pomoc.questions.map((q) => String(q || '')).filter(Boolean)
+            ? normalizeTicketQuestions('pomoc', cfg.ticketSystem.types.pomoc.questions)
             : [...base.ticketSystem.types.pomoc.questions],
         },
       },
