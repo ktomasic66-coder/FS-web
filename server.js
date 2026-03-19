@@ -2328,21 +2328,75 @@ app.get('/bot-settings', requireAdmin, async (req, res) => {
   const syncStats = await loadDiscordSyncStats();
 
   let guildChannels = [];
+  let guildChannelGroups = [];
+  let guildCategories = [];
   if (mainGuild) {
     await mainGuild.channels.fetch().catch(() => null);
-    guildChannels = mainGuild.channels.cache
+
+    const allChannels = Array.from(mainGuild.channels.cache.values());
+    const textChannels = allChannels
       .filter((channel) => channel.isTextBased?.() || channel.type === 0 || channel.type === 5)
+      .sort((a, b) => {
+        const groupA = a.parent?.rawPosition ?? 999999;
+        const groupB = b.parent?.rawPosition ?? 999999;
+        if (groupA !== groupB) return groupA - groupB;
+        const posA = typeof a.rawPosition === 'number' ? a.rawPosition : 999999;
+        const posB = typeof b.rawPosition === 'number' ? b.rawPosition : 999999;
+        if (posA !== posB) return posA - posB;
+        return a.name.localeCompare(b.name, 'hr');
+      });
+
+    guildChannels = textChannels.map((channel) => ({
+      id: channel.id,
+      name: channel.name,
+      parentId: channel.parentId || '',
+      parentName: channel.parent?.name || '',
+    }));
+
+    guildCategories = allChannels
+      .filter((channel) => channel.type === 4)
+      .sort((a, b) => {
+        const posA = typeof a.rawPosition === 'number' ? a.rawPosition : 999999;
+        const posB = typeof b.rawPosition === 'number' ? b.rawPosition : 999999;
+        if (posA !== posB) return posA - posB;
+        return a.name.localeCompare(b.name, 'hr');
+      })
       .map((channel) => ({
         id: channel.id,
         name: channel.name,
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name, 'hr'));
+      }));
+
+    const groupedMap = new Map();
+    textChannels.forEach((channel) => {
+      const groupId = channel.parentId || 'no-category';
+      const groupName = channel.parent?.name || 'Bez kategorije';
+      if (!groupedMap.has(groupId)) {
+        groupedMap.set(groupId, {
+          id: groupId,
+          label: groupName,
+          channels: [],
+          sortOrder: channel.parent?.rawPosition ?? 999999,
+        });
+      }
+
+      groupedMap.get(groupId).channels.push({
+        id: channel.id,
+        name: channel.name,
+      });
+    });
+
+    guildChannelGroups = Array.from(groupedMap.values()).sort((a, b) => {
+      if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+      return a.label.localeCompare(b.label, 'hr');
+    });
   }
 
   res.render('bot-settings', {
     user: req.user,
     botConfig,
     guildChannels,
+    guildChannelGroups,
+    guildCategories,
     syncedRoles,
     discordSync: syncStats,
   });

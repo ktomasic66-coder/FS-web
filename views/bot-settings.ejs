@@ -100,8 +100,12 @@
             </div>
             <select name="welcomeChannelId" class="admin-select">
               <option value="">Odaberi kanal dobrodošlice</option>
-              <% (guildChannels || []).forEach(channel => { %>
-                <option value="<%= channel.id %>" <%= bot.welcome && bot.welcome.channelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
+              <% (guildChannelGroups || []).forEach(group => { %>
+                <optgroup label="<%= group.label %>">
+                  <% group.channels.forEach(channel => { %>
+                    <option value="<%= channel.id %>" <%= bot.welcome && bot.welcome.channelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
+                  <% }) %>
+                </optgroup>
               <% }) %>
             </select>
             <textarea name="welcomeMessage" rows="5" placeholder="Dobrodošlica..."><%= bot.welcome ? bot.welcome.message : '' %></textarea>
@@ -115,8 +119,12 @@
             </div>
             <select name="logChannelId" class="admin-select">
               <option value="">Odaberi log kanal</option>
-              <% (guildChannels || []).forEach(channel => { %>
-                <option value="<%= channel.id %>" <%= bot.logging && bot.logging.channelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
+              <% (guildChannelGroups || []).forEach(group => { %>
+                <optgroup label="<%= group.label %>">
+                  <% group.channels.forEach(channel => { %>
+                    <option value="<%= channel.id %>" <%= bot.logging && bot.logging.channelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
+                  <% }) %>
+                </optgroup>
               <% }) %>
             </select>
             <button type="submit" class="admin-secondary-btn">Spremi logging</button>
@@ -129,8 +137,12 @@
             </div>
             <select name="galleryChannelId" class="admin-select">
               <option value="">Odaberi galerija kanal</option>
-              <% (guildChannels || []).forEach(channel => { %>
-                <option value="<%= channel.id %>" <%= bot.gallery && bot.gallery.channelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
+              <% (guildChannelGroups || []).forEach(group => { %>
+                <optgroup label="<%= group.label %>">
+                  <% group.channels.forEach(channel => { %>
+                    <option value="<%= channel.id %>" <%= bot.gallery && bot.gallery.channelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
+                  <% }) %>
+                </optgroup>
               <% }) %>
             </select>
             <button type="submit" class="admin-secondary-btn">Spremi galeriju</button>
@@ -155,8 +167,8 @@
               <span>Ticket kategorija</span>
               <select name="ticketCategoryId" class="admin-select">
                 <option value="">Odaberi ticket kategoriju</option>
-                <% (guildChannels || []).forEach(channel => { %>
-                  <option value="<%= channel.id %>" <%= ticket.categoryId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
+                <% (guildCategories || []).forEach(category => { %>
+                  <option value="<%= category.id %>" <%= ticket.categoryId === category.id ? 'selected' : '' %>><%= category.name %> · <%= category.id %></option>
                 <% }) %>
               </select>
             </label>
@@ -165,8 +177,12 @@
               <span>Ticket log kanal</span>
               <select name="ticketLogChannelId" class="admin-select">
                 <option value="">Odaberi ticket log kanal</option>
-                <% (guildChannels || []).forEach(channel => { %>
-                  <option value="<%= channel.id %>" <%= ticket.logChannelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
+                <% (guildChannelGroups || []).forEach(group => { %>
+                  <optgroup label="<%= group.label %>">
+                    <% group.channels.forEach(channel => { %>
+                      <option value="<%= channel.id %>" <%= ticket.logChannelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
+                    <% }) %>
+                  </optgroup>
                 <% }) %>
               </select>
             </label>
@@ -185,8 +201,12 @@
               <span>Launcher kanal</span>
               <select name="ticketLauncherChannelId" class="admin-select">
                 <option value="">Odaberi launcher kanal</option>
-                <% (guildChannels || []).forEach(channel => { %>
-                  <option value="<%= channel.id %>" <%= ticket.launcherChannelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
+                <% (guildChannelGroups || []).forEach(group => { %>
+                  <optgroup label="<%= group.label %>">
+                    <% group.channels.forEach(channel => { %>
+                      <option value="<%= channel.id %>" <%= ticket.launcherChannelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
+                    <% }) %>
+                  </optgroup>
                 <% }) %>
               </select>
             </label>
@@ -334,8 +354,12 @@
           <form method="POST" action="/admin/bot/embeds" class="admin-form admin-rule-form" id="embed-builder-form">
             <select name="embedChannelId" class="admin-select" required>
               <option value="">Odaberi kanal za embed</option>
-              <% (guildChannels || []).forEach(channel => { %>
-                <option value="<%= channel.id %>">#<%= channel.name %> · <%= channel.id %></option>
+              <% (guildChannelGroups || []).forEach(group => { %>
+                <optgroup label="<%= group.label %>">
+                  <% group.channels.forEach(channel => { %>
+                    <option value="<%= channel.id %>">#<%= channel.name %> · <%= channel.id %></option>
+                  <% }) %>
+                </optgroup>
               <% }) %>
             </select>
             <input type="text" name="title" placeholder="Naslov embed-a">
