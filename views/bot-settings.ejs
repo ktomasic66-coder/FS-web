@@ -5,6 +5,13 @@
   <title>Bot Postavke</title>
   <link rel="icon" type="image/png" href="/images/logo.png">
   <link rel="stylesheet" href="/style.css">
+  <script>
+    function togglePanel(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.toggle('open');
+    }
+  </script>
 </head>
 <body class="bot-settings-page">
 
@@ -37,7 +44,7 @@
     <div>
       <p class="admin-kicker">Discord upravljanje</p>
       <h1>Bot Postavke</h1>
-      <p class="admin-subtitle">Centralne postavke Discord bota odvojene od glavnog admin panela.</p>
+      <p class="admin-subtitle">Sve bot opcije su sada odvojene po dropdown sekcijama radi lakšeg uređivanja.</p>
     </div>
   </div>
 
@@ -60,23 +67,27 @@
     </div>
   </div>
 
-  <% const bot = botConfig || {}; const ticket = bot.ticketSystem || {}; %>
+  <% const bot = botConfig || {}; %>
+  <% const ticket = bot.ticketSystem || {}; %>
+  <% const ticketTypes = ticket.types || {}; %>
+  <% const ticketMessages = ticket.messages || {}; %>
+
   <div class="admin-wrapper">
     <div class="admin-section">
-      <div class="admin-header">
+      <div class="admin-header" onclick="togglePanel('bot-core-settings')">
         <div>
           <span class="admin-header-label">Discord Bot</span>
-          <small>Sinkronizacija, dobrodo?lica, zapisnici i galerija</small>
+          <small>Sinkronizacija, dobrodošlica, zapisnici i galerija</small>
         </div>
-        <span class="admin-header-count"><%= syncedRoles ? syncedRoles.length : 0 %></span>
+        <span class="admin-header-count">4</span>
       </div>
 
-      <div class="admin-content open">
-        <div class="bot-settings-top-grid">
+      <div id="bot-core-settings" class="admin-content open">
+        <div class="bot-settings-top-grid bot-settings-top-grid-quad">
           <form method="POST" action="/admin/discord-sync" class="admin-form compact-form bot-settings-card">
             <div class="bot-settings-card-head">
               <label class="admin-field-label">Discord sinkronizacija</label>
-              <span class="admin-pill">Sinkr.</span>
+              <span class="admin-pill">Sync</span>
             </div>
             <p class="admin-empty">Role: <%= discordSync ? discordSync.rolesCount : 0 %> | Članovi: <%= discordSync ? discordSync.membersCount : 0 %> | Veze: <%= discordSync ? discordSync.memberRolesCount : 0 %></p>
             <button type="submit" class="admin-action-btn">Pokreni sync</button>
@@ -84,23 +95,23 @@
 
           <form method="POST" action="/admin/bot/greetings" class="admin-form compact-form bot-settings-card">
             <div class="bot-settings-card-head">
-              <label class="admin-field-label">Postavke dobrodo?lice</label>
-              <span class="admin-pill">Pozdrav</span>
+              <label class="admin-field-label">Dobrodošlica</label>
+              <span class="admin-pill">Welcome</span>
             </div>
             <select name="welcomeChannelId" class="admin-select">
-              <option value="">Odaberi kanal dobrodo?lice</option>
+              <option value="">Odaberi kanal dobrodošlice</option>
               <% (guildChannels || []).forEach(channel => { %>
                 <option value="<%= channel.id %>" <%= bot.welcome && bot.welcome.channelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
               <% }) %>
             </select>
-            <textarea name="welcomeMessage" placeholder="Dobrodošlica..."><%= bot.welcome ? bot.welcome.message : '' %></textarea>
-            <button type="submit" class="admin-secondary-btn">Spremi dobrodo?licu</button>
+            <textarea name="welcomeMessage" rows="5" placeholder="Dobrodošlica..."><%= bot.welcome ? bot.welcome.message : '' %></textarea>
+            <button type="submit" class="admin-secondary-btn">Spremi dobrodošlicu</button>
           </form>
 
           <form method="POST" action="/admin/bot/logging" class="admin-form compact-form bot-settings-card">
             <div class="bot-settings-card-head">
-              <label class="admin-field-label">Log kanal</label>
-              <span class="admin-pill">Logovi</span>
+              <label class="admin-field-label">Zapisnici</label>
+              <span class="admin-pill">Log</span>
             </div>
             <select name="logChannelId" class="admin-select">
               <option value="">Odaberi log kanal</option>
@@ -110,183 +121,278 @@
             </select>
             <button type="submit" class="admin-secondary-btn">Spremi logging</button>
           </form>
+
+          <form method="POST" action="/admin/bot/gallery" class="admin-form compact-form bot-settings-card">
+            <div class="bot-settings-card-head">
+              <label class="admin-field-label">Galerija</label>
+              <span class="admin-pill">Media</span>
+            </div>
+            <select name="galleryChannelId" class="admin-select">
+              <option value="">Odaberi galerija kanal</option>
+              <% (guildChannels || []).forEach(channel => { %>
+                <option value="<%= channel.id %>" <%= bot.gallery && bot.gallery.channelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
+              <% }) %>
+            </select>
+            <button type="submit" class="admin-secondary-btn">Spremi galeriju</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <form method="POST" action="/admin/bot/tickets" class="bot-settings-master-form">
+      <div class="admin-section">
+        <div class="admin-header" onclick="togglePanel('ticket-system-settings')">
+          <div>
+            <span class="admin-header-label">Tiket sustav</span>
+            <small>Osnovne postavke kanala, role i vremena</small>
+          </div>
+          <span class="admin-header-count">6</span>
         </div>
 
-        <div class="bot-settings-stack">
-          <section class="bot-settings-panel">
-            <div class="admin-content-title-row">
-              <h3 class="admin-content-title">Galerija kanal</h3>
-              <span class="admin-pill">Mediji</span>
-            </div>
-
-            <form method="POST" action="/admin/bot/gallery" class="admin-form compact-form">
-              <select name="galleryChannelId" class="admin-select">
-                <option value="">Odaberi galerija kanal</option>
-                <% (guildChannels || []).forEach(channel => { %>
-                  <option value="<%= channel.id %>" <%= bot.gallery && bot.gallery.channelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
-                <% }) %>
-              </select>
-              <button type="submit" class="admin-secondary-btn">Spremi galeriju</button>
-            </form>
-          </section>
-
-          <section class="bot-settings-panel">
-            <div class="admin-content-title-row">
-              <h3 class="admin-content-title">Tiket sustav</h3>
-              <span class="admin-pill"><%= syncedRoles ? syncedRoles.length : 0 %> rola</span>
-            </div>
-
-            <form method="POST" action="/admin/bot/tickets" class="admin-form admin-rule-form">
-              <label class="admin-field-label">Ticket kategorija</label>
+        <div id="ticket-system-settings" class="admin-content open">
+          <div class="bot-settings-form-grid">
+            <label class="bot-settings-field">
+              <span>Ticket kategorija</span>
               <select name="ticketCategoryId" class="admin-select">
                 <option value="">Odaberi ticket kategoriju</option>
                 <% (guildChannels || []).forEach(channel => { %>
                   <option value="<%= channel.id %>" <%= ticket.categoryId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
                 <% }) %>
               </select>
-              <label class="admin-field-label">Ticket log kanal</label>
+            </label>
+
+            <label class="bot-settings-field">
+              <span>Ticket log kanal</span>
               <select name="ticketLogChannelId" class="admin-select">
                 <option value="">Odaberi ticket log kanal</option>
                 <% (guildChannels || []).forEach(channel => { %>
                   <option value="<%= channel.id %>" <%= ticket.logChannelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
                 <% }) %>
               </select>
-              <label class="admin-field-label">Support rola</label>
+            </label>
+
+            <label class="bot-settings-field">
+              <span>Support rola</span>
               <select name="ticketSupportRoleId" class="admin-select">
                 <option value="">Odaberi support rolu</option>
                 <% (syncedRoles || []).forEach(role => { %>
                   <option value="<%= role.id %>" <%= ticket.supportRoleId === role.id ? 'selected' : '' %>><%= role.name %> · <%= role.id %></option>
                 <% }) %>
               </select>
-              <label class="admin-field-label">Launcher kanal</label>
+            </label>
+
+            <label class="bot-settings-field">
+              <span>Launcher kanal</span>
               <select name="ticketLauncherChannelId" class="admin-select">
                 <option value="">Odaberi launcher kanal</option>
                 <% (guildChannels || []).forEach(channel => { %>
                   <option value="<%= channel.id %>" <%= ticket.launcherChannelId === channel.id ? 'selected' : '' %>>#<%= channel.name %> · <%= channel.id %></option>
                 <% }) %>
               </select>
-              <label class="admin-field-label">Sati do automatskog zatvaranja</label>
-              <input type="number" name="autoCloseHours" min="1" value="<%= ticket.autoCloseHours || 48 %>" placeholder="Sati do automatskog zatvaranja">
-              <label class="admin-field-label">Sati do podsjetnika</label>
-              <input type="number" name="reminderHours" min="1" value="<%= ticket.reminderHours || 3 %>" placeholder="Sati do podsjetnika">
-              <label class="admin-field-label">Pitanja: Igranje na serveru</label>
-              <textarea name="igranjeQuestions" rows="6" placeholder="Jedno pitanje po redu"><%= ticket.types && ticket.types.igranje ? ticket.types.igranje.questions.join('\n') : '' %></textarea>
-              <label class="admin-field-label">Pitanja: Žalba na igrače</label>
-              <textarea name="zalbaQuestions" rows="4" placeholder="Žalba pitanja"><%= ticket.types && ticket.types.zalba ? ticket.types.zalba.questions.join('\n') : '' %></textarea>
-              <label class="admin-field-label">Pitanja: Edit modova</label>
-              <textarea name="modoviQuestions" rows="4" placeholder="Jedno pitanje po redu"><%= ticket.types && ticket.types.modovi ? ticket.types.modovi.questions.join('\n') : '' %></textarea>
-              <label class="admin-field-label">Pitanja: Pomoć</label>
-              <textarea name="pomocQuestions" rows="4" placeholder="Pomoć pitanja"><%= ticket.types && ticket.types.pomoc ? ticket.types.pomoc.questions.join('\n') : '' %></textarea>
-              <label class="admin-field-label">Reminder poruka</label>
-              <textarea name="reminderMessage" rows="4" placeholder="Poruka za podsjetnik"><%= ticket.messages ? ticket.messages.reminder : '' %></textarea>
-              <label class="admin-field-label">Auto close poruka</label>
-              <textarea name="autoCloseMessage" rows="4" placeholder="Poruka za automatsko zatvaranje"><%= ticket.messages ? ticket.messages.autoClose : '' %></textarea>
-              <label class="admin-field-label">Igranje welcome naslov</label>
-              <input type="text" name="igranjeWelcomeTitle" value="<%= ticket.messages ? ticket.messages.igranjeWelcomeTitle || '' : '' %>" placeholder="Naslov prve poruke">
-              <label class="admin-field-label">Igranje welcome poruka</label>
-              <textarea name="igranjeWelcomeBody" rows="8" placeholder="Možeš koristiti {launcherChannel} i {guildName}"><%= ticket.messages ? ticket.messages.igranjeWelcomeBody || '' : '' %></textarea>
-              <label class="admin-field-label">Pravila naslov</label>
-              <input type="text" name="igranjeRulesTitle" value="<%= ticket.messages ? ticket.messages.igranjeRulesTitle || '' : '' %>" placeholder="Naslov pravila">
-              <label class="admin-field-label">Pravila poruka</label>
-              <textarea name="igranjeRulesBody" rows="7" placeholder="Tekst pravila servera"><%= ticket.messages ? ticket.messages.igranjeRulesBody || '' : '' %></textarea>
-              <label class="admin-field-label">Launcher naslov</label>
-              <input type="text" name="igranjeLauncherTitle" value="<%= ticket.messages ? ticket.messages.igranjeLauncherTitle || '' : '' %>" placeholder="Naslov launcher poruke">
-              <label class="admin-field-label">Launcher poruka</label>
-              <textarea name="igranjeLauncherBody" rows="8" placeholder="Možeš koristiti {launcherChannel} i {guildName}"><%= ticket.messages ? ticket.messages.igranjeLauncherBody || '' : '' %></textarea>
-              <div class="admin-inline-actions">
-                <button type="submit" class="admin-action-btn">Spremi ticket postavke</button>
-              </div>
-            </form>
-          </section>
+            </label>
 
-          <section class="bot-settings-panel">
-            <div class="admin-content-title-row">
-              <h3 class="admin-content-title">Pošalji embed</h3>
-              <span class="admin-pill"><%= bot.embeds ? bot.embeds.length : 0 %></span>
+            <label class="bot-settings-field">
+              <span>Sati do automatskog zatvaranja</span>
+              <input type="number" name="autoCloseHours" min="1" value="<%= ticket.autoCloseHours || 48 %>" placeholder="48">
+            </label>
+
+            <label class="bot-settings-field">
+              <span>Sati do podsjetnika</span>
+              <input type="number" name="reminderHours" min="1" value="<%= ticket.reminderHours || 3 %>" placeholder="3">
+            </label>
+          </div>
+
+          <div class="admin-inline-actions bot-settings-savebar">
+            <button type="submit" class="admin-action-btn">Spremi ticket sustav</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-header" onclick="togglePanel('ticket-question-settings')">
+          <div>
+            <span class="admin-header-label">Pitanja za tiket</span>
+            <small>Samo pitanja za modal i izmjene pitanja</small>
+          </div>
+          <span class="admin-header-count">4</span>
+        </div>
+
+        <div id="ticket-question-settings" class="admin-content">
+          <div class="bot-settings-form-grid bot-settings-form-grid-wide">
+            <label class="bot-settings-field bot-settings-field-wide">
+              <span>Pitanja: Igranje na serveru</span>
+              <textarea name="igranjeQuestions" rows="6" placeholder="Jedno pitanje po redu"><%= ticketTypes.igranje ? ticketTypes.igranje.questions.join('\n') : '' %></textarea>
+            </label>
+
+            <label class="bot-settings-field">
+              <span>Pitanja: Žalba na igrače</span>
+              <textarea name="zalbaQuestions" rows="5" placeholder="Jedno pitanje po redu"><%= ticketTypes.zalba ? ticketTypes.zalba.questions.join('\n') : '' %></textarea>
+            </label>
+
+            <label class="bot-settings-field">
+              <span>Pitanja: Edit modova</span>
+              <textarea name="modoviQuestions" rows="5" placeholder="Jedno pitanje po redu"><%= ticketTypes.modovi ? ticketTypes.modovi.questions.join('\n') : '' %></textarea>
+            </label>
+
+            <label class="bot-settings-field bot-settings-field-wide">
+              <span>Pitanja: Pomoć</span>
+              <textarea name="pomocQuestions" rows="5" placeholder="Jedno pitanje po redu"><%= ticketTypes.pomoc ? ticketTypes.pomoc.questions.join('\n') : '' %></textarea>
+            </label>
+          </div>
+
+          <div class="admin-inline-actions bot-settings-savebar">
+            <button type="submit" class="admin-secondary-btn">Spremi pitanja</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-header" onclick="togglePanel('ticket-message-settings')">
+          <div>
+            <span class="admin-header-label">Poruke u tiketu</span>
+            <small>Reminder, auto close i sve bot poruke unutar ticket flowa</small>
+          </div>
+          <span class="admin-header-count">8</span>
+        </div>
+
+        <div id="ticket-message-settings" class="admin-content">
+          <div class="bot-settings-message-stack">
+            <div class="bot-settings-panel">
+              <div class="admin-content-title-row">
+                <h3 class="admin-content-title">Reminder i auto close poruke</h3>
+                <span class="admin-pill">2</span>
+              </div>
+              <div class="bot-settings-form-grid">
+                <label class="bot-settings-field bot-settings-field-wide">
+                  <span>Reminder poruka</span>
+                  <textarea name="reminderMessage" rows="5" placeholder="Poruka za podsjetnik"><%= ticketMessages.reminder || '' %></textarea>
+                </label>
+                <label class="bot-settings-field bot-settings-field-wide">
+                  <span>Auto close poruka</span>
+                  <textarea name="autoCloseMessage" rows="5" placeholder="Poruka za automatsko zatvaranje"><%= ticketMessages.autoClose || '' %></textarea>
+                </label>
+              </div>
             </div>
 
-            <div class="bot-embed-layout">
-              <form method="POST" action="/admin/bot/embeds" class="admin-form admin-rule-form" id="embed-builder-form">
-                <select name="embedChannelId" class="admin-select" required>
-                  <option value="">Odaberi kanal za embed</option>
-                  <% (guildChannels || []).forEach(channel => { %>
-                    <option value="<%= channel.id %>">#<%= channel.name %> · <%= channel.id %></option>
-                  <% }) %>
-                </select>
-                <input type="text" name="title" placeholder="Naslov embed-a">
-                <textarea name="description" rows="4" placeholder="Opis embed-a"></textarea>
-                <input type="text" name="color" placeholder="#2f855a">
-                <input type="text" name="authorName" placeholder="Autor">
-                <input type="text" name="authorIcon" placeholder="URL ikone autora">
-                <input type="text" name="footerText" placeholder="Tekst podno?ja">
-                <input type="text" name="footerIcon" placeholder="URL ikone podno?ja">
-                <input type="text" name="thumbnailUrl" placeholder="URL sli?ice">
-                <input type="text" name="imageUrl" placeholder="URL slike">
-                <input type="text" name="launcherButtonLabel" placeholder="Tekst dugmeta">
-                <input type="text" name="launcherButtonUrl" placeholder="Link dugmeta">
-                <textarea name="normalMessage" rows="2" placeholder="Običan tekst uz embed"></textarea>
-                <label class="admin-field-label"><input type="checkbox" name="timestamp" checked> Dodaj timestamp</label>
-                <div class="admin-inline-actions">
-                  <button type="submit" class="admin-action-btn">Pošalji embed</button>
-                </div>
-              </form>
+            <div class="bot-settings-panel">
+              <div class="admin-content-title-row">
+                <h3 class="admin-content-title">Bot poruke u tiketu</h3>
+                <span class="admin-pill">6</span>
+              </div>
+              <div class="bot-settings-form-grid">
+                <label class="bot-settings-field">
+                  <span>Igranje welcome naslov</span>
+                  <input type="text" name="igranjeWelcomeTitle" value="<%= ticketMessages.igranjeWelcomeTitle || '' %>" placeholder="Naslov prve poruke">
+                </label>
 
-              <div class="embed-preview-shell">
-                <div class="admin-content-title-row">
-                  <h3 class="admin-content-title">Pregled embeda</h3>
-                  <span class="admin-pill">U?ivo</span>
-                </div>
-                <div class="discord-preview">
-                  <div class="discord-preview-message" id="embed-preview-message" hidden></div>
-                  <article class="discord-embed-preview">
-                    <div class="discord-embed-bar" id="embed-preview-bar"></div>
-                    <div class="discord-embed-body">
-                      <div class="discord-embed-author" id="embed-preview-author-row" hidden>
-                        <img id="embed-preview-author-icon" alt="Autor">
-                        <span id="embed-preview-author-text"></span>
-                      </div>
-                      <div class="discord-embed-grid">
-                        <div class="discord-embed-main">
-                          <h4 id="embed-preview-title">Naslov embed-a</h4>
-                          <p id="embed-preview-description">Opis embed-a će se prikazati ovdje čim upišeš tekst.</p>
-                          <div class="discord-embed-footer" id="embed-preview-footer-row">
-                            <img id="embed-preview-footer-icon" alt="Footer">
-                            <span id="embed-preview-footer-text">Tekst podno?ja</span>
-                          </div>
-                        </div>
-                        <div class="discord-embed-thumb-wrap" id="embed-preview-thumb-wrap" hidden>
-                          <img id="embed-preview-thumbnail" alt="Sli?ica">
-                        </div>
-                      </div>
-                      <div class="discord-embed-image-wrap" id="embed-preview-image-wrap" hidden>
-                        <img id="embed-preview-image" alt="Slika embeda">
-                      </div>
-                      <div class="discord-embed-button-row" id="embed-preview-button-row" hidden>
-                        <span class="discord-embed-button" id="embed-preview-button-label"></span>
+                <label class="bot-settings-field bot-settings-field-wide">
+                  <span>Igranje welcome poruka</span>
+                  <textarea name="igranjeWelcomeBody" rows="8" placeholder="Možeš koristiti {launcherChannel} i {guildName}"><%= ticketMessages.igranjeWelcomeBody || '' %></textarea>
+                </label>
+
+                <label class="bot-settings-field">
+                  <span>Pravila naslov</span>
+                  <input type="text" name="igranjeRulesTitle" value="<%= ticketMessages.igranjeRulesTitle || '' %>" placeholder="Naslov pravila">
+                </label>
+
+                <label class="bot-settings-field bot-settings-field-wide">
+                  <span>Pravila poruka</span>
+                  <textarea name="igranjeRulesBody" rows="7" placeholder="Tekst pravila servera"><%= ticketMessages.igranjeRulesBody || '' %></textarea>
+                </label>
+
+                <label class="bot-settings-field">
+                  <span>Launcher naslov</span>
+                  <input type="text" name="igranjeLauncherTitle" value="<%= ticketMessages.igranjeLauncherTitle || '' %>" placeholder="Naslov launcher poruke">
+                </label>
+
+                <label class="bot-settings-field bot-settings-field-wide">
+                  <span>Launcher poruka</span>
+                  <textarea name="igranjeLauncherBody" rows="8" placeholder="Možeš koristiti {launcherChannel} i {guildName}"><%= ticketMessages.igranjeLauncherBody || '' %></textarea>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-inline-actions bot-settings-savebar">
+            <button type="submit" class="admin-action-btn">Spremi poruke ticketa</button>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <div class="admin-section">
+      <div class="admin-header" onclick="togglePanel('embed-settings')">
+        <div>
+          <span class="admin-header-label">Embed</span>
+          <small>Poseban dropdown za slanje i pregled embeda</small>
+        </div>
+        <span class="admin-header-count"><%= bot.embeds ? bot.embeds.length : 0 %></span>
+      </div>
+
+      <div id="embed-settings" class="admin-content">
+        <div class="bot-embed-layout">
+          <form method="POST" action="/admin/bot/embeds" class="admin-form admin-rule-form" id="embed-builder-form">
+            <select name="embedChannelId" class="admin-select" required>
+              <option value="">Odaberi kanal za embed</option>
+              <% (guildChannels || []).forEach(channel => { %>
+                <option value="<%= channel.id %>">#<%= channel.name %> · <%= channel.id %></option>
+              <% }) %>
+            </select>
+            <input type="text" name="title" placeholder="Naslov embed-a">
+            <textarea name="description" rows="4" placeholder="Opis embed-a"></textarea>
+            <input type="text" name="color" placeholder="#2f855a">
+            <input type="text" name="authorName" placeholder="Autor">
+            <input type="text" name="authorIcon" placeholder="URL ikone autora">
+            <input type="text" name="footerText" placeholder="Tekst podnožja">
+            <input type="text" name="footerIcon" placeholder="URL ikone podnožja">
+            <input type="text" name="thumbnailUrl" placeholder="URL sličice">
+            <input type="text" name="imageUrl" placeholder="URL slike">
+            <input type="text" name="launcherButtonLabel" placeholder="Tekst dugmeta">
+            <input type="text" name="launcherButtonUrl" placeholder="Link dugmeta">
+            <textarea name="normalMessage" rows="2" placeholder="Običan tekst uz embed"></textarea>
+            <label class="admin-field-label"><input type="checkbox" name="timestamp" checked> Dodaj timestamp</label>
+            <div class="admin-inline-actions">
+              <button type="submit" class="admin-action-btn">Pošalji embed</button>
+            </div>
+          </form>
+
+          <div class="embed-preview-shell">
+            <div class="admin-content-title-row">
+              <h3 class="admin-content-title">Pregled embeda</h3>
+              <span class="admin-pill">Uživo</span>
+            </div>
+            <div class="discord-preview">
+              <div class="discord-preview-message" id="embed-preview-message" hidden></div>
+              <article class="discord-embed-preview">
+                <div class="discord-embed-bar" id="embed-preview-bar"></div>
+                <div class="discord-embed-body">
+                  <div class="discord-embed-author" id="embed-preview-author-row" hidden>
+                    <img id="embed-preview-author-icon" alt="Autor">
+                    <span id="embed-preview-author-text"></span>
+                  </div>
+                  <div class="discord-embed-grid">
+                    <div class="discord-embed-main">
+                      <h4 id="embed-preview-title">Naslov embed-a</h4>
+                      <p id="embed-preview-description">Opis embed-a će se prikazati ovdje čim upišeš tekst.</p>
+                      <div class="discord-embed-footer" id="embed-preview-footer-row">
+                        <img id="embed-preview-footer-icon" alt="Footer">
+                        <span id="embed-preview-footer-text">Tekst podnožja</span>
                       </div>
                     </div>
-                  </article>
+                    <div class="discord-embed-thumb-wrap" id="embed-preview-thumb-wrap" hidden>
+                      <img id="embed-preview-thumbnail" alt="Sličica">
+                    </div>
+                  </div>
+                  <div class="discord-embed-image-wrap" id="embed-preview-image-wrap" hidden>
+                    <img id="embed-preview-image" alt="Slika embeda">
+                  </div>
+                  <div class="discord-embed-button-row" id="embed-preview-button-row" hidden>
+                    <span class="discord-embed-button" id="embed-preview-button-label"></span>
+                  </div>
                 </div>
-              </div>
+              </article>
             </div>
-          </section>
-
-          <section class="bot-settings-panel">
-            <div class="admin-content-title-row">
-              <h3 class="admin-content-title">Sinkronizirane role</h3>
-              <span class="admin-pill"><%= syncedRoles ? syncedRoles.length : 0 %></span>
-            </div>
-
-            <% if (syncedRoles && syncedRoles.length > 0) { %>
-              <div class="all-roles">
-                <% syncedRoles.forEach(role => { %>
-                  <span class="role-pill" style="background:<%= role.color || '#444' %>"><%= role.name %></span>
-                <% }) %>
-              </div>
-            <% } else { %>
-              <p class="admin-empty">Role još nisu sinkronizirane.</p>
-            <% } %>
-          </section>
+          </div>
         </div>
       </div>
     </div>
@@ -363,7 +469,7 @@
     preview.authorIcon.style.display = authorIcon ? 'block' : 'none';
     setPreviewImage(preview.authorIcon, null, authorIcon);
 
-    preview.footerText.textContent = footerText || 'Tekst podno?ja';
+    preview.footerText.textContent = footerText || 'Tekst podnožja';
     if (useTimestamp) {
       preview.footerText.textContent += ' • Danas u ' + timeText;
     }

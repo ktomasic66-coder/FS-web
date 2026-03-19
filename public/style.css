@@ -2599,6 +2599,10 @@ s input {
   margin-bottom: 22px;
 }
 
+.bot-settings-top-grid-quad {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .bot-settings-card,
 .bot-settings-panel {
   border-radius: 22px;
@@ -2630,6 +2634,54 @@ s input {
 
 .bot-settings-panel .admin-form {
   margin: 0;
+}
+
+.bot-settings-master-form {
+  display: grid;
+  gap: 18px;
+}
+
+.bot-settings-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.bot-settings-form-grid-wide {
+  align-items: start;
+}
+
+.bot-settings-field {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.bot-settings-field span {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.68;
+}
+
+.bot-settings-field input,
+.bot-settings-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.bot-settings-field-wide {
+  grid-column: 1 / -1;
+}
+
+.bot-settings-message-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.bot-settings-savebar {
+  margin-top: 18px;
 }
 
 .bot-embed-layout {
@@ -3001,7 +3053,8 @@ s input {
   }
 
   .bot-settings-top-grid,
-  .bot-embed-layout {
+  .bot-embed-layout,
+  .bot-settings-form-grid {
     grid-template-columns: 1fr;
   }
 
@@ -3018,6 +3071,10 @@ s input {
 @media (max-width: 700px) {
   .bot-settings-top-grid {
     gap: 14px;
+  }
+
+  .bot-settings-top-grid-quad {
+    grid-template-columns: 1fr;
   }
 
   .bot-settings-panel {
