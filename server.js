@@ -1843,6 +1843,13 @@ async function sendAdminActionDiscordLog(action, adminUser, payload = null) {
   });
 }
 
+function parseOpenPanelsParam(value) {
+  return String(value || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 /* ----- Blacklist ----- */
 
 async function loadBlacklist() {
@@ -2290,6 +2297,7 @@ app.get('/admin', requireAdmin, async (req, res) => {
   const botConfig = await loadBotConfig();
   const syncedRoles = await loadSyncedGuildRoles();
   const syncStats = await loadDiscordSyncStats();
+  const openPanels = parseOpenPanelsParam(req.query.open);
 
   let guildChannels = [];
   if (mainGuild) {
@@ -2315,7 +2323,8 @@ app.get('/admin', requireAdmin, async (req, res) => {
     discordSync: syncStats,
     discordMembers: discordMemberCount,
     imagesCount: images.length,
-    newsCount: news.length
+    newsCount: news.length,
+    openPanels
   });
 
 });
@@ -2326,6 +2335,7 @@ app.get('/bot-settings', requireAdmin, async (req, res) => {
   const botConfig = await loadBotConfig();
   const syncedRoles = await loadSyncedGuildRoles();
   const syncStats = await loadDiscordSyncStats();
+  const openPanels = parseOpenPanelsParam(req.query.open);
 
   let guildChannels = [];
   let guildChannelGroups = [];
@@ -2399,6 +2409,7 @@ app.get('/bot-settings', requireAdmin, async (req, res) => {
     guildCategories,
     syncedRoles,
     discordSync: syncStats,
+    openPanels,
   });
 });
 
@@ -2408,7 +2419,7 @@ app.post('/admin/news', requireAdmin, async (req, res) => {
   const title = (req.body.title || '').trim();
   const content = (req.body.content || '').trim();
 
-  if (!title || !content) return res.redirect('/admin');
+  if (!title || !content) return res.redirect('/admin?open=news');
 
   await addNews({
     id: Date.now(),
@@ -2419,14 +2430,14 @@ app.post('/admin/news', requireAdmin, async (req, res) => {
   });
 
   await logAction(`News objava dodana: "${title}"`, req.user.username);
-  res.redirect('/admin');
+  res.redirect('/admin?open=news');
 });
 
 app.post('/admin/news/delete/:id', requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
   const deleted = await deleteNewsById(id);
   if (deleted) await logAction(`News obrisan (id=${id})`, req.user.username);
-  res.redirect('/admin');
+  res.redirect('/admin?open=news');
 });
 
 /* ===== PRAVILA ===== */
@@ -2443,27 +2454,27 @@ app.post('/admin/rules', requireAdmin, async (req, res) => {
     warning: (req.body.warning || '').trim(),
   });
   await logAction('Pravila uredena', req.user.username);
-  res.redirect('/admin');
+  res.redirect('/admin?open=rules');
 });
 
 app.post('/admin/rules/add', requireAdmin, async (req, res) => {
   const title = (req.body.ruleTitle || '').trim();
   const content = (req.body.ruleContent || '').trim();
-  if (!title || !content) return res.redirect('/admin');
+  if (!title || !content) return res.redirect('/admin?open=rules');
 
   await addRule(title, content);
   await logAction('Dodano novo pravilo', req.user.username, {
     title: 'Dodano novo pravilo',
     after: { title, content },
   });
-  res.redirect('/admin');
+  res.redirect('/admin?open=rules');
 });
 
 app.post('/admin/rules/update/:id', requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
   const title = (req.body.ruleTitle || '').trim();
   const content = (req.body.ruleContent || '').trim();
-  if (!title || !content) return res.redirect('/admin');
+  if (!title || !content) return res.redirect('/admin?open=rules');
 
   const updated = await updateRuleById(id, title, content);
   if (updated) {
@@ -2473,7 +2484,7 @@ app.post('/admin/rules/update/:id', requireAdmin, async (req, res) => {
       after: updated.after,
     });
   }
-  res.redirect('/admin');
+  res.redirect('/admin?open=rules');
 });
 
 app.post('/admin/rules/delete/:id', requireAdmin, async (req, res) => {
@@ -2485,27 +2496,27 @@ app.post('/admin/rules/delete/:id', requireAdmin, async (req, res) => {
       before: deleted,
     });
   }
-  res.redirect('/admin');
+  res.redirect('/admin?open=rules');
 });
 
 /* ===== ADMIN: BLACKLIST ===== */
 
 app.post('/admin/blacklist/add', requireAdmin, async (req, res) => {
   const userId = (req.body.userId || '').trim();
-  if (!userId) return res.redirect('/admin');
+  if (!userId) return res.redirect('/admin?open=blacklist');
 
   await addToBlacklist(userId);
   await logAction(`Blacklist ADD: ${userId}`, req.user.username);
-  res.redirect('/admin');
+  res.redirect('/admin?open=blacklist');
 });
 
 app.post('/admin/blacklist/remove', requireAdmin, async (req, res) => {
   const userId = (req.body.userId || '').trim();
-  if (!userId) return res.redirect('/admin');
+  if (!userId) return res.redirect('/admin?open=blacklist');
 
   await removeFromBlacklist(userId);
   await logAction(`Blacklist REMOVE: ${userId}`, req.user.username);
-  res.redirect('/admin');
+  res.redirect('/admin?open=blacklist');
 });
 
 app.post('/admin/bot/greetings', requireAdmin, async (req, res) => {
@@ -2514,7 +2525,7 @@ app.post('/admin/bot/greetings', requireAdmin, async (req, res) => {
   botConfig.welcome.message = String(req.body.welcomeMessage || '').trim() || DEFAULT_BOT_CONFIG.welcome.message;
   await saveBotConfig(botConfig);
   await logAction('Bot postavke: welcome aÃ…Â¾uriran', req.user.username);
-  res.redirect('/admin#bot-settings');
+  res.redirect('/bot-settings?open=bot-core-settings');
 });
 
 app.post('/admin/bot/logging', requireAdmin, async (req, res) => {
@@ -2522,7 +2533,7 @@ app.post('/admin/bot/logging', requireAdmin, async (req, res) => {
   botConfig.logging.channelId = String(req.body.logChannelId || '').trim();
   await saveBotConfig(botConfig);
   await logAction('Bot postavke: logging aÃ…Â¾uriran', req.user.username);
-  res.redirect('/admin#bot-settings');
+  res.redirect('/bot-settings?open=bot-core-settings');
 });
 
 app.post('/admin/bot/gallery', requireAdmin, async (req, res) => {
@@ -2531,12 +2542,16 @@ app.post('/admin/bot/gallery', requireAdmin, async (req, res) => {
   await saveBotConfig(botConfig);
   await syncGalleryFromDiscordChannel().catch(() => 0);
   await logAction('Bot postavke: gallery kanal aÃ…Â¾uriran', req.user.username);
-  res.redirect('/admin#bot-settings');
+  res.redirect('/bot-settings?open=bot-core-settings');
 });
 
 app.post('/admin/bot/tickets', requireAdmin, async (req, res) => {
   const botConfig = await loadBotConfig();
   const ts = botConfig.ticketSystem;
+  const allowedPanels = new Set(['ticket-system-settings', 'ticket-question-settings', 'ticket-message-settings']);
+  const returnPanel = allowedPanels.has(String(req.body.returnPanel || '').trim())
+    ? String(req.body.returnPanel || '').trim()
+    : 'ticket-system-settings';
 
   ts.types = ts.types || {};
   ts.types.igranje = ts.types.igranje || { ...DEFAULT_BOT_CONFIG.ticketSystem.types.igranje };
@@ -2579,15 +2594,15 @@ app.post('/admin/bot/tickets', requireAdmin, async (req, res) => {
   await saveBotConfig(botConfig);
   syncTicketSystemToLocalTicketBotDb(ts);
   await logAction('Bot postavke: ticket sistem ažuriran', req.user.username);
-  res.redirect('/admin#bot-settings');
+  res.redirect(`/bot-settings?open=${returnPanel}`);
 });
 
 app.post('/admin/bot/embeds', requireAdmin, async (req, res) => {
   const channelId = String(req.body.embedChannelId || '').trim();
-  if (!channelId) return res.redirect('/admin#bot-settings');
+  if (!channelId) return res.redirect('/bot-settings?open=embed-settings');
 
   const channel = await discordClient.channels.fetch(channelId).catch(() => null);
-  if (!channel || !channel.isTextBased()) return res.redirect('/admin#bot-settings');
+  if (!channel || !channel.isTextBased()) return res.redirect('/bot-settings?open=embed-settings');
 
   const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
   const embed = new EmbedBuilder();
@@ -2658,7 +2673,7 @@ app.post('/admin/bot/embeds', requireAdmin, async (req, res) => {
   botConfig.embeds = botConfig.embeds.slice(-20);
   await saveBotConfig(botConfig);
   await logAction('Bot postavke: embed poslan', req.user.username);
-  res.redirect('/admin#bot-settings');
+  res.redirect('/bot-settings?open=embed-settings');
 });
 
 app.post('/admin/discord-sync', requireAdmin, async (req, res) => {
@@ -2669,7 +2684,7 @@ app.post('/admin/discord-sync', requireAdmin, async (req, res) => {
     console.log('MANUAL GALLERY SYNC ERROR:', err.message);
   });
   await logAction('Discord sinkronizacija pokrenuta ruÃ„Âno', req.user.username);
-  res.redirect('/admin#bot-settings');
+  res.redirect('/bot-settings?open=bot-core-settings');
 });
 
 /* ===== STATISTIKA ===== */

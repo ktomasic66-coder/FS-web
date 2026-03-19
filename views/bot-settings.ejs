@@ -14,6 +14,7 @@
   </script>
 </head>
 <body class="bot-settings-page">
+<% const openPanelSet = new Set(openPanels || []); %>
 
 <nav class="navbar">
   <div class="logo">
@@ -82,7 +83,7 @@
         <span class="admin-header-count">4</span>
       </div>
 
-      <div id="bot-core-settings" class="admin-content open">
+      <div id="bot-core-settings" class="admin-content<%= openPanelSet.has('bot-core-settings') ? ' open' : '' %>">
         <div class="bot-settings-top-grid bot-settings-top-grid-quad">
           <form method="POST" action="/admin/discord-sync" class="admin-form compact-form bot-settings-card">
             <div class="bot-settings-card-head">
@@ -161,7 +162,7 @@
           <span class="admin-header-count">6</span>
         </div>
 
-        <div id="ticket-system-settings" class="admin-content open">
+        <div id="ticket-system-settings" class="admin-content<%= openPanelSet.has('ticket-system-settings') ? ' open' : '' %>">
           <div class="bot-settings-form-grid">
             <label class="bot-settings-field">
               <span>Ticket kategorija</span>
@@ -223,7 +224,7 @@
           </div>
 
           <div class="admin-inline-actions bot-settings-savebar">
-            <button type="submit" class="admin-action-btn">Spremi ticket sustav</button>
+            <button type="submit" name="returnPanel" value="ticket-system-settings" class="admin-action-btn">Spremi ticket sustav</button>
           </div>
         </div>
       </div>
@@ -237,7 +238,7 @@
           <span class="admin-header-count">4</span>
         </div>
 
-        <div id="ticket-question-settings" class="admin-content">
+        <div id="ticket-question-settings" class="admin-content<%= openPanelSet.has('ticket-question-settings') ? ' open' : '' %>">
           <div class="bot-settings-form-grid bot-settings-form-grid-wide">
             <label class="bot-settings-field bot-settings-field-wide">
               <span>Pitanja: Igranje na serveru</span>
@@ -261,7 +262,7 @@
           </div>
 
           <div class="admin-inline-actions bot-settings-savebar">
-            <button type="submit" class="admin-secondary-btn">Spremi pitanja</button>
+            <button type="submit" name="returnPanel" value="ticket-question-settings" class="admin-secondary-btn">Spremi pitanja</button>
           </div>
         </div>
       </div>
@@ -275,7 +276,7 @@
           <span class="admin-header-count">8</span>
         </div>
 
-        <div id="ticket-message-settings" class="admin-content">
+        <div id="ticket-message-settings" class="admin-content<%= openPanelSet.has('ticket-message-settings') ? ' open' : '' %>">
           <div class="bot-settings-message-stack">
             <div class="bot-settings-panel">
               <div class="admin-content-title-row">
@@ -334,7 +335,7 @@
           </div>
 
           <div class="admin-inline-actions bot-settings-savebar">
-            <button type="submit" class="admin-action-btn">Spremi poruke ticketa</button>
+            <button type="submit" name="returnPanel" value="ticket-message-settings" class="admin-action-btn">Spremi poruke ticketa</button>
           </div>
         </div>
       </div>
@@ -349,7 +350,7 @@
         <span class="admin-header-count"><%= bot.embeds ? bot.embeds.length : 0 %></span>
       </div>
 
-      <div id="embed-settings" class="admin-content">
+      <div id="embed-settings" class="admin-content<%= openPanelSet.has('embed-settings') ? ' open' : '' %>">
         <div class="bot-embed-layout">
           <form method="POST" action="/admin/bot/embeds" class="admin-form admin-rule-form" id="embed-builder-form">
             <select name="embedChannelId" class="admin-select" required>
