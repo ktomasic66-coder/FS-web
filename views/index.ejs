@@ -153,6 +153,103 @@
   </div>
 </div>
 
+<% if (discordCommunity && (discordCommunity.textChannels.length || discordCommunity.voiceChannels.length)) { %>
+<section class="section discord-community-section">
+    <div class="discord-community-shell">
+        <div class="discord-community-intro">
+            <p class="discord-community-kicker">Discord zajednica</p>
+            <h2>Kanali koje vrijedi pratiti</h2>
+            <p class="discord-community-copy">
+                Ovdje rucno prikazujemo vise Discord kanala tako da posjetitelji odmah vide gdje idu obavijesti, dogovori i voice okupljanje ekipe.
+            </p>
+
+            <div class="discord-community-stats">
+                <div class="discord-community-stat">
+                    <strong><%= discordCommunity.memberCount %></strong>
+                    <span>clanova</span>
+                </div>
+                <div class="discord-community-stat">
+                    <strong><%= discordCommunity.totalTextChannels %></strong>
+                    <span>text kanala</span>
+                </div>
+                <div class="discord-community-stat">
+                    <strong><%= discordCommunity.totalVoiceChannels %></strong>
+                    <span>voice kanala</span>
+                </div>
+                <div class="discord-community-stat">
+                    <strong><%= discordCommunity.activeVoiceMembers %></strong>
+                    <span>u voiceu sada</span>
+                </div>
+            </div>
+
+            <div class="discord-community-actions">
+                <a href="<%= discordCommunity.inviteUrl %>" class="btn-primary" target="_blank" rel="noopener noreferrer">
+                    Udji na Discord
+                </a>
+                <span class="discord-community-note">
+                    Server: <%= discordCommunity.serverName %>
+                    <% if (discordCommunity.usesManualSelection) { %>
+                        | rucno odabrani kanali
+                    <% } %>
+                </span>
+            </div>
+        </div>
+
+        <div class="discord-community-panels">
+            <% if (discordCommunity.textChannels.length) { %>
+            <div class="discord-community-panel">
+                <div class="discord-community-panel-head">
+                    <h3>Text kanali</h3>
+                    <span>obavijesti, pravila i dogovor</span>
+                </div>
+
+                <div class="discord-community-list">
+                    <% discordCommunity.textChannels.forEach((channel) => { %>
+                        <article class="discord-community-card">
+                            <div class="discord-community-card-top">
+                                <span class="discord-community-icon">#</span>
+                                <div>
+                                    <strong><%= channel.name %></strong>
+                                    <small><%= channel.parentName %> | <%= channel.typeLabel %></small>
+                                </div>
+                                <span class="discord-community-badge"><%= channel.badge %></span>
+                            </div>
+                            <p><%= channel.description %></p>
+                        </article>
+                    <% }) %>
+                </div>
+            </div>
+            <% } %>
+
+            <% if (discordCommunity.voiceChannels.length) { %>
+            <div class="discord-community-panel">
+                <div class="discord-community-panel-head">
+                    <h3>Voice kanali</h3>
+                    <span>igra, koordinacija i druzenje</span>
+                </div>
+
+                <div class="discord-community-list">
+                    <% discordCommunity.voiceChannels.forEach((channel) => { %>
+                        <article class="discord-community-card">
+                            <div class="discord-community-card-top">
+                                <span class="discord-community-icon">V</span>
+                                <div>
+                                    <strong><%= channel.name %></strong>
+                                    <small><%= channel.parentName %> | <%= channel.typeLabel %></small>
+                                </div>
+                                <span class="discord-community-badge"><%= channel.badge %></span>
+                            </div>
+                            <p><%= channel.description %></p>
+                        </article>
+                    <% }) %>
+                </div>
+            </div>
+            <% } %>
+        </div>
+    </div>
+</section>
+<% } %>
+
 <!-- TKO SMO MI -->
 
 <% if (typeof farmsOverview !== 'undefined' && farmsOverview && farmsOverview.length > 0) { %>

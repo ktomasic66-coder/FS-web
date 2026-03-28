@@ -4261,3 +4261,213 @@ s input {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== HOMEPAGE DISCORD COMMUNITY ===== */
+.discord-community-section {
+  padding-top: 24px;
+}
+
+.discord-community-shell {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.95fr) minmax(320px, 1.25fr);
+  gap: 28px;
+  align-items: start;
+  padding: 34px;
+  border-radius: 28px;
+  border: 1px solid rgba(88, 101, 242, 0.2);
+  background:
+    radial-gradient(circle at top right, rgba(88, 101, 242, 0.18), transparent 32%),
+    linear-gradient(180deg, rgba(6, 11, 26, 0.96), rgba(5, 12, 17, 0.96));
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+  text-align: left;
+}
+
+.discord-community-kicker {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: #9fb3ff;
+}
+
+.discord-community-intro h2 {
+  margin: 0;
+  font-size: clamp(30px, 4vw, 42px);
+  line-height: 1.06;
+}
+
+.discord-community-copy {
+  margin: 18px 0 0;
+  max-width: 58ch;
+  line-height: 1.75;
+  color: rgba(233, 240, 255, 0.82);
+}
+
+.discord-community-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 26px;
+}
+
+.discord-community-stat {
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(159, 179, 255, 0.12);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.discord-community-stat strong {
+  display: block;
+  font-size: 28px;
+  color: #ffffff;
+}
+
+.discord-community-stat span {
+  display: block;
+  margin-top: 6px;
+  color: rgba(221, 230, 255, 0.68);
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.discord-community-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  margin-top: 24px;
+}
+
+.discord-community-note {
+  color: rgba(220, 229, 255, 0.74);
+  font-size: 14px;
+}
+
+.discord-community-panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.discord-community-panel {
+  padding: 20px;
+  border-radius: 22px;
+  border: 1px solid rgba(159, 179, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px);
+}
+
+.discord-community-panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  margin-bottom: 16px;
+}
+
+.discord-community-panel-head h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.discord-community-panel-head span {
+  color: rgba(223, 231, 255, 0.58);
+  font-size: 13px;
+}
+
+.discord-community-list {
+  display: grid;
+  gap: 12px;
+}
+
+.discord-community-card {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.025));
+}
+
+.discord-community-card-top {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.discord-community-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(88, 101, 242, 0.22);
+  color: #dce4ff;
+  font-weight: 800;
+}
+
+.discord-community-card strong {
+  display: block;
+  font-size: 16px;
+  color: #fff;
+}
+
+.discord-community-card small {
+  display: block;
+  margin-top: 4px;
+  color: rgba(219, 228, 255, 0.62);
+}
+
+.discord-community-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(88, 101, 242, 0.18);
+  color: #d5deff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.discord-community-card p {
+  margin: 14px 0 0;
+  color: rgba(236, 242, 255, 0.82);
+  line-height: 1.65;
+}
+
+@media (max-width: 1100px) {
+  .discord-community-shell,
+  .discord-community-panels {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .discord-community-shell {
+    padding: 22px 18px;
+    border-radius: 22px;
+  }
+
+  .discord-community-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .discord-community-panel-head,
+  .discord-community-card-top {
+    grid-template-columns: 1fr;
+  }
+
+  .discord-community-badge {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 520px) {
+  .discord-community-stats {
+    grid-template-columns: 1fr;
+  }
+}

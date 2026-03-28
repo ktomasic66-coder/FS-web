@@ -108,6 +108,11 @@ const PLAYER_ROLE_ID = process.env.PLAYER_ROLE_ID; // npr Player role
 const ADMIN_ROLE_ID = process.env.ADMIN_ROLE_ID;   // npr Admin role
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GALLERY_CHANNEL_ID = process.env.GALLERY_CHANNEL_ID || '';
+const DISCORD_INVITE_URL = process.env.DISCORD_INVITE_URL || 'https://discord.gg/slavonskaravnica';
+const HOMEPAGE_DISCORD_CHANNEL_IDS = String(process.env.HOMEPAGE_DISCORD_CHANNEL_IDS || '')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
 const IGNORED_GALLERY_BOT_IDS = new Set(['1437239146438594672']);
 const WEB_LOGIN_LOG_CHANNEL_ID = '1271570784866799718';
 const ADMIN_LOG_CHANNEL_ID = '1483917067777212437';
@@ -2218,8 +2223,116 @@ app.use(async (req, res, next) => {
 
 /* ================= ROUTES ================= */
 
+function getHomepageDiscordChannelType(channel) {
+  if (!channel) return '';
+  if (channel.type === 2) return 'voice';
+  if (channel.type === 0 || channel.type === 5 || channel.isTextBased?.()) return 'text';
+  return '';
+}
+
+function sortHomepageDiscordChannels(a, b) {
+  const parentA = a.parent?.rawPosition ?? 999999;
+  const parentB = b.parent?.rawPosition ?? 999999;
+  if (parentA !== parentB) return parentA - parentB;
+
+  const posA = typeof a.rawPosition === 'number' ? a.rawPosition : 999999;
+  const posB = typeof b.rawPosition === 'number' ? b.rawPosition : 999999;
+  if (posA !== posB) return posA - posB;
+
+  return a.name.localeCompare(b.name, 'hr');
+}
+
+function mapHomepageDiscordChannel(channel) {
+  const type = getHomepageDiscordChannelType(channel);
+  if (!type) return null;
+
+  if (type === 'voice') {
+    const connectedMembers = channel.members?.size || 0;
+    return {
+      id: channel.id,
+      name: channel.name,
+      type,
+      typeLabel: 'Voice kanal',
+      parentName: channel.parent?.name || 'Voice',
+      badge: connectedMembers === 1 ? '1 u voiceu' : `${connectedMembers} u voiceu`,
+      description: connectedMembers > 0
+        ? 'Ekipa je trenutno aktivna na ovom voice kanalu.'
+        : 'Voice kanal za dogovor, voznju i zajednicku igru.',
+    };
+  }
+
+  const topic = typeof channel.topic === 'string' ? channel.topic.trim() : '';
+  return {
+    id: channel.id,
+    name: channel.name,
+    type,
+    typeLabel: 'Text kanal',
+    parentName: channel.parent?.name || 'Obavijesti',
+    badge: `#${channel.name}`,
+    description: topic
+      ? (topic.length > 120 ? `${topic.slice(0, 117)}...` : topic)
+      : 'Kanal zajednice za obavijesti, pitanja i dogovore.',
+  };
+}
+
+async function buildHomepageDiscordCommunity() {
+  if (!mainGuild) return null;
+
+  await mainGuild.channels.fetch().catch(() => null);
+
+  const channels = Array.from(mainGuild.channels.cache.values())
+    .filter((channel) => getHomepageDiscordChannelType(channel))
+    .sort(sortHomepageDiscordChannels);
+
+  if (!channels.length) return null;
+
+  const selectedChannels = HOMEPAGE_DISCORD_CHANNEL_IDS
+    .map((id) => mainGuild.channels.cache.get(id))
+    .filter(Boolean)
+    .filter((channel) => getHomepageDiscordChannelType(channel))
+    .sort(sortHomepageDiscordChannels);
+
+  const sourceChannels = selectedChannels.length ? selectedChannels : channels;
+  const textChannels = sourceChannels
+    .filter((channel) => getHomepageDiscordChannelType(channel) === 'text')
+    .slice(0, 4)
+    .map(mapHomepageDiscordChannel)
+    .filter(Boolean);
+
+  const voiceChannels = sourceChannels
+    .filter((channel) => getHomepageDiscordChannelType(channel) === 'voice')
+    .slice(0, 4)
+    .map(mapHomepageDiscordChannel)
+    .filter(Boolean);
+
+  const totalTextChannels = channels.filter((channel) => getHomepageDiscordChannelType(channel) === 'text').length;
+  const totalVoiceChannels = channels.filter((channel) => getHomepageDiscordChannelType(channel) === 'voice').length;
+  const activeVoiceMembers = channels
+    .filter((channel) => getHomepageDiscordChannelType(channel) === 'voice')
+    .reduce((sum, channel) => sum + (channel.members?.size || 0), 0);
+
+  return {
+    serverName: mainGuild.name,
+    inviteUrl: DISCORD_INVITE_URL,
+    memberCount: discordMemberCount || mainGuild.memberCount || 0,
+    totalTextChannels,
+    totalVoiceChannels,
+    activeVoiceMembers,
+    textChannels,
+    voiceChannels,
+    usesManualSelection: selectedChannels.length > 0,
+  };
+}
+
 app.get('/', async (req, res) => {
   const news = await loadNews();
+  let discordCommunity = null;
+
+  try {
+    discordCommunity = await buildHomepageDiscordCommunity();
+  } catch (err) {
+    console.error('[INDEX] Error building Discord community:', err.message);
+  }
 
   // Fetch active farms overview from bot database
   let farmsOverview = [];
@@ -2256,7 +2369,7 @@ app.get('/', async (req, res) => {
     console.error('[INDEX] Error fetching farms overview:', err.message);
   }
 
-  res.render('index', { user: req.user, news, farmsOverview });
+  res.render('index', { user: req.user, news, farmsOverview, discordCommunity });
 });
 
 app.get('/no-permission', (req, res) => {
